@@ -694,7 +694,6 @@ export const EthereumSignTxView: FunctionComponent<{
       title={intl.formatMessage({
         id: `page.sign.ethereum.${signType}.title`,
       })}
-      fixedHeight={true}
       left={headerLeft}
       bottomButtons={bottomButtons}
     >
