@@ -156,7 +156,6 @@ export const SwapVenues: {
   { name: "chihuahua-white-whale", chainId: "chihuahua-1" },
   { name: "injective-dojoswap", chainId: "injective-1" },
   { name: "injective-white-whale", chainId: "injective-1" },
-  { name: "elys-native", chainId: "elys-1" },
   { name: "neutron-astroport", chainId: "neutron-1" },
   { name: "neutron-astrovault", chainId: "neutron-1" },
   { name: "terra-nauticus", chainId: "phoenix-1" },
