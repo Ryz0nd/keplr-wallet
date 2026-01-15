@@ -99,7 +99,7 @@ export class SwapAmountConfig extends AmountConfig {
      *    일시적으로 빈 배열이 반환되면서 버튼 유형이 플리커링 되는 현상이 UI에서 발생할 수 있음
      * 2. 이를 방지하기 위해 swap txs의 마지막 계산 결과(requiresMultipleTxBundles 여부)를 저장하고 있다가,
      *    getTxsIfReady에서 결과가 반환되는 동안 UI 상태 일관성을 보장
-     * 3. one-click swap 버튼 활성화(hold 가능)는 'isQuoteReady'와 조합하여, 조건이 모두 만족될 때에만 허용되도록 함
+     * 3. hold to swap 버튼 활성화(hold 가능)는 'isQuoteReady'와 조합하여, 조건이 모두 만족될 때에만 허용되도록 함
      */
     autorun(() => {
       const txs = this.getTxsIfReady();

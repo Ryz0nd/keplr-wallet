@@ -463,23 +463,23 @@ export const IBCSwapPage: FunctionComponent = observer(() => {
   const isSwap = swapConfigs.amountConfig.type === "swap";
 
   /**
-   * One-click swap is enabled only when:
+   * Hold-to-swap is enabled only when:
    * 1. Single transaction (or erc20 approval + swap bundle with bundle tx simulation)
    * 2. Not a hardware wallet
    * 3. EVM gas simulation is TX_SIMULATED or TX_BUNDLE_SIMULATED
    * 4. Cosmos Top-up is not required
    */
   const evmOutcome = gasSimulator.evmSimulationOutcome;
-  const isCosmosOneClickSwapEnabled = !shouldTopUp;
-  const isEvmOneClickSwapEnabled =
+  const isCosmosHoldToSwapEnabled = !shouldTopUp;
+  const isEvmHoldToSwapEnabled =
     evmOutcome === EvmGasSimulationOutcome.TX_SIMULATED ||
     evmOutcome === EvmGasSimulationOutcome.TX_BUNDLE_SIMULATED;
 
-  const oneClickSwapEnabled =
+  const holdToSwapEnabled =
     swapConfigs.amountConfig.isQuoteReady &&
     !swapConfigs.amountConfig.requiresMultipleTxBundles &&
     !isHardwareWallet &&
-    (isInChainEVMOnly ? isEvmOneClickSwapEnabled : isCosmosOneClickSwapEnabled);
+    (isInChainEVMOnly ? isEvmHoldToSwapEnabled : isCosmosHoldToSwapEnabled);
 
   const { showUSDNWarning, showCelestiaWarning } = getSwapWarnings(
     swapConfigs.amountConfig.currency,
@@ -506,7 +506,7 @@ export const IBCSwapPage: FunctionComponent = observer(() => {
         if (interactionBlocked) {
           return;
         }
-        if (isSwap && !oneClickSwapEnabled) {
+        if (isSwap && !holdToSwapEnabled) {
           logSwapSignOpened();
         }
 
@@ -660,7 +660,7 @@ export const IBCSwapPage: FunctionComponent = observer(() => {
             seenChains.add(toChainId);
           }
 
-          // txs를 새로 가져오기 때문에 ui에서 보여주는 one click swap 가능 여부라던가
+          // txs를 새로 가져오기 때문에 ui에서 보여주는 hold to swap 가능 여부라던가
           // total signature count도 새로 계산되므로, 기대되는 결과와 다르게 로직이 실행될 가능성이 있다.
           // 그러나 우선 낙관적으로 처리하고, 추후에 변동성이 커질 경우에 이를 처리하도록 한다.
           const [_txs] = await Promise.all([
@@ -1165,7 +1165,7 @@ export const IBCSwapPage: FunctionComponent = observer(() => {
           if (isSwap) {
             logEvent("swap_tx_submitted", {
               quote_id: quoteIdRef.current,
-              is_one_click_swap: oneClickSwapEnabled,
+              is_hold_to_swap: holdToSwapEnabled,
             });
           }
 
@@ -1225,7 +1225,7 @@ export const IBCSwapPage: FunctionComponent = observer(() => {
           if (isSwap) {
             logEvent("swap_tx_success", {
               quote_id: quoteIdRef.current,
-              is_one_click_swap: oneClickSwapEnabled,
+              is_hold_to_swap: holdToSwapEnabled,
             });
           }
 
@@ -1334,7 +1334,7 @@ export const IBCSwapPage: FunctionComponent = observer(() => {
             logEvent("swap_tx_failed", {
               quote_id: quoteIdRef.current,
               error_message: e?.message,
-              is_one_click_swap: oneClickSwapEnabled,
+              is_hold_to_swap: holdToSwapEnabled,
             });
           }
 
@@ -1595,7 +1595,7 @@ export const IBCSwapPage: FunctionComponent = observer(() => {
         <Gutter size="1rem" />
         <VerticalCollapseTransition
           collapsed={
-            oneClickSwapEnabled ||
+            holdToSwapEnabled ||
             swapConfigs.amountConfig.totalIndividualTxCount <= 1 ||
             swapConfigs.amountConfig.isFetchingInAmount ||
             swapConfigs.amountConfig.isFetchingOutAmount ||
@@ -1636,7 +1636,7 @@ export const IBCSwapPage: FunctionComponent = observer(() => {
           <Gutter size="0.75rem" />
         </VerticalCollapseTransition>
 
-        {oneClickSwapEnabled ? (
+        {holdToSwapEnabled ? (
           <HoldButton
             type="submit"
             holdDurationMs={1000}
