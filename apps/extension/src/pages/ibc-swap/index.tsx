@@ -747,13 +747,12 @@ export const IBCSwapPage: FunctionComponent = observer(() => {
           }
         }, 0);
 
-        // find the index of the tx to be recorded as history
-        // and set the balance update callback based on the first tx type
-        let historyTxIndex: number;
+        // 트랜잭션 실행이 블로킹된 경우, 마지막으로 성공한 트랜잭션의 해시가 기록되므로 historyTxIndex는 필요 없다.
+        // let historyTxIndex: number | undefined;
+
         let updateBalanceCallback: (() => Promise<void>) | undefined =
           undefined;
         if ("send" in txs[0]) {
-          historyTxIndex = 0;
           updateBalanceCallback = async () => {
             const queryBalances = queriesStore.get(
               swapConfigs.amountConfig.chainId
@@ -775,7 +774,6 @@ export const IBCSwapPage: FunctionComponent = observer(() => {
               });
           };
         } else {
-          historyTxIndex = txs[0].requiredErc20Approvals?.length ?? 0;
           updateBalanceCallback = async () => {
             const queryBalances = queriesStore.get(
               swapConfigs.amountConfig.chainId
@@ -1176,8 +1174,7 @@ export const IBCSwapPage: FunctionComponent = observer(() => {
             executionType,
             backgroundTxs,
             executableChainIds,
-            historyData,
-            historyTxIndex
+            historyData
           );
 
           const result = await new InExtensionMessageRequester().sendMessage(
