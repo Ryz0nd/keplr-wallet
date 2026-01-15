@@ -48,8 +48,6 @@ import {
   BackgroundTx,
   BackgroundTxStatus,
   BackgroundTxType,
-  IBCTransferHistoryData,
-  IBCSwapHistoryData,
   SwapV2HistoryData,
   LogAnalyticsEventMsg,
   RecordAndExecuteTxsMsg,
@@ -531,14 +529,6 @@ export const IBCSwapPage: FunctionComponent = observer(() => {
             })
           | UnsignedEVMTransactionWithErc20Approvals
         )[];
-        const channels: {
-          portId: string;
-          channelId: string;
-          counterpartyChainId: string;
-        }[] = [];
-        let swapChannelIndex: number = -1;
-        const swapReceiver: string[] = [];
-        const swapFeeBpsReceiver: string[] = [];
         const simpleRoute: {
           isOnlyEvm: boolean;
           chainId: string;
@@ -546,11 +536,16 @@ export const IBCSwapPage: FunctionComponent = observer(() => {
         }[] = [];
         let provider: SwapProvider | undefined;
         let routeDurationSeconds: number | undefined;
-        let isInterChainSwap: boolean = false;
-        let isSingleEVMChainOperation: boolean = false;
         let requiresMultipleTxBundles: boolean = false;
 
         uiConfigStore.ibcSwapConfig.setIsSwapExecuting(true, swapLoadingKey);
+
+        const normalizeChainId = (chainId: string): string => {
+          const evmLikeChainId = Number(chainId);
+          const isEVMChainId =
+            !Number.isNaN(evmLikeChainId) && evmLikeChainId > 0;
+          return isEVMChainId ? `eip155:${evmLikeChainId}` : chainId;
+        };
 
         //================================================================================
         // 1. Get route information and prepare txs
@@ -567,11 +562,6 @@ export const IBCSwapPage: FunctionComponent = observer(() => {
 
           // inter-chain swap인지 여부를 확인 (bridge가 필요한 경우)
           const steps = queryRoute.response.data.steps;
-          isInterChainSwap = steps.some(
-            (step) => step.type === RouteStepType.BRIDGE
-          );
-          isSingleEVMChainOperation =
-            isInChainEVMOnly && inChainId === outChainId && !isInterChainSwap;
           provider = queryRoute.response.data.provider;
 
           const initializedAccounts: Map<
@@ -580,17 +570,12 @@ export const IBCSwapPage: FunctionComponent = observer(() => {
           > = new Map();
 
           for (const chainId of queryRoute.response.data.required_chain_ids) {
-            const evmLikeChainId = Number(chainId);
-            const isEVMChainId =
-              !Number.isNaN(evmLikeChainId) && evmLikeChainId > 0;
-
-            const chainIdInKeplr = isEVMChainId
-              ? `eip155:${evmLikeChainId}`
-              : chainId;
-
+            const chainIdInKeplr = normalizeChainId(chainId);
             if (initializedAccounts.has(chainIdInKeplr)) {
               continue;
             }
+
+            const isEVMChainId = chainIdInKeplr.startsWith("eip155:");
 
             const receiverAccount = accountStore.getAccount(chainIdInKeplr);
             if (receiverAccount.walletStatus !== WalletStatus.Loaded) {
@@ -631,7 +616,51 @@ export const IBCSwapPage: FunctionComponent = observer(() => {
             });
           }
 
-          // NOTE: txs를 새로 가져오기 때문에 ui에서 보여주는 one click swap 가능 여부라던가
+          routeDurationSeconds = queryRoute.response.data.estimated_time;
+
+          // required_chain_ids는 fallback 처리를 위한 체인 id가 포함되어 있을 수 있으므로,
+          // 실제 경로 단계를 기반으로 simpleRoute를 구성한다.
+          const seenChains = new Set<string>();
+
+          // Add source chain (from first step)
+          if (steps.length > 0) {
+            const firstChainId = normalizeChainId(steps[0].from_chain);
+            const accountInfo = initializedAccounts.get(firstChainId);
+            if (!accountInfo) {
+              throw new Error(`Account for ${firstChainId} is not initialized`);
+            }
+
+            simpleRoute.push({
+              isOnlyEvm: accountInfo.isEvm,
+              chainId: firstChainId,
+              receiver: accountInfo.address,
+            });
+            seenChains.add(firstChainId);
+          }
+
+          // Add destination chain from each step
+          for (const step of steps) {
+            const toChainId = normalizeChainId(step.to_chain);
+
+            // Skip if already added (avoid duplicates)
+            if (seenChains.has(toChainId)) {
+              continue;
+            }
+
+            const accountInfo = initializedAccounts.get(toChainId);
+            if (!accountInfo) {
+              throw new Error(`Account for ${toChainId} is not initialized`);
+            }
+
+            simpleRoute.push({
+              isOnlyEvm: accountInfo.isEvm,
+              chainId: toChainId,
+              receiver: accountInfo.address,
+            });
+            seenChains.add(toChainId);
+          }
+
+          // txs를 새로 가져오기 때문에 ui에서 보여주는 one click swap 가능 여부라던가
           // total signature count도 새로 계산되므로, 기대되는 결과와 다르게 로직이 실행될 가능성이 있다.
           // 그러나 우선 낙관적으로 처리하고, 추후에 변동성이 커질 경우에 이를 처리하도록 한다.
           const [_txs] = await Promise.all([
@@ -644,213 +673,6 @@ export const IBCSwapPage: FunctionComponent = observer(() => {
 
           txs = _txs;
           requiresMultipleTxBundles = txs.length > 1;
-
-          // 브릿지를 사용하는 경우, ibc swap channel까지 보여주면 ui가 너무 복잡해질 수 있으므로 (operation이 최소 3개 이상)
-          // evm -> osmosis -> destination 식으로 뭉퉁그려서 보여주는 것이 좋다고 판단, 경로를 간소화한다.
-          // 단일 evm 체인 위에서의 스왑인 경우에는 history data 구성을 위해 여기서 처리한다.
-          // requiresMultipleTxBundles인 경우에도 swap v2 history를 사용하므로 simpleRoute를 구성한다.
-          if (
-            isInterChainSwap ||
-            isSingleEVMChainOperation ||
-            requiresMultipleTxBundles
-          ) {
-            routeDurationSeconds = queryRoute.response.data.estimated_time;
-
-            for (const chainId of queryRoute.response.data.required_chain_ids) {
-              const evmLikeChainId = Number(chainId);
-              const isEVMChainId =
-                !Number.isNaN(evmLikeChainId) && evmLikeChainId > 0;
-
-              const chainIdInKeplr = isEVMChainId
-                ? `eip155:${evmLikeChainId}`
-                : chainId;
-
-              const accountInfo = initializedAccounts.get(chainIdInKeplr);
-              if (!accountInfo) {
-                throw new Error(
-                  `Account for ${chainIdInKeplr} is not initialized`
-                );
-              }
-
-              // required_chain_ids can contain duplicated chain ids,
-              // so avoid adding the chain if it's the same as the last chain in simpleRoute.
-              if (
-                simpleRoute.length === 0 ||
-                simpleRoute[simpleRoute.length - 1].chainId !== chainIdInKeplr
-              ) {
-                simpleRoute.push({
-                  isOnlyEvm: isEVMChainId,
-                  chainId: chainIdInKeplr,
-                  receiver: accountInfo.address,
-                });
-              }
-            }
-          } else {
-            // 브릿지를 사용하지 않고 single tx인 경우, 자세한 ibc swap channel 정보를 보여준다.
-            const skipOperations =
-              queryRoute.response.data.provider === "skip"
-                ? queryRoute.response.data.skip_operations
-                : undefined;
-
-            // skip_operations에서 상세 정보를 추출한다 (SKIP provider인 경우에만 사용 가능)
-            if (skipOperations) {
-              // skip_operations를 순회하면서 transfer와 swap 정보를 추출
-              for (const operation of skipOperations) {
-                if ("transfer" in operation) {
-                  const transfer = operation.transfer;
-                  if (
-                    !transfer.port ||
-                    !transfer.channel ||
-                    !transfer.from_chain_id
-                  ) {
-                    throw new Error(
-                      "unable to construct channel info by missing fields"
-                    );
-                  }
-
-                  const queryClientState = queriesStore
-                    .get(transfer.from_chain_id)
-                    .cosmos.queryIBCClientState.getClientState(
-                      transfer.port,
-                      transfer.channel
-                    );
-
-                  await queryClientState.waitResponse();
-                  if (!queryClientState.response) {
-                    throw new Error("queryClientState.response is undefined");
-                  }
-                  if (!queryClientState.clientChainId) {
-                    throw new Error(
-                      "queryClientState.clientChainId is undefined"
-                    );
-                  }
-
-                  channels.push({
-                    portId: transfer.port,
-                    channelId: transfer.channel,
-                    counterpartyChainId: queryClientState.clientChainId,
-                  });
-                } else if ("swap" in operation) {
-                  const swapIn =
-                    operation.swap.swap_in ?? operation.swap.smart_swap_in;
-                  if (swapIn && swapIn.swap_venue) {
-                    const swapVenueChainId = swapIn.swap_venue.chain_id;
-                    const swapFeeBpsReceiverAddress = SwapFeeBps.receivers.find(
-                      (r) => r.chainId === swapVenueChainId
-                    );
-                    if (swapFeeBpsReceiverAddress) {
-                      swapFeeBpsReceiver.push(
-                        swapFeeBpsReceiverAddress.address
-                      );
-                    }
-                  }
-                  // swap이 발생하는 channel index는 마지막 channel 다음이므로
-                  // 현재 channels.length가 swap channel index가 된다
-                  swapChannelIndex = channels.length - 1;
-                }
-              }
-
-              // receiver chain IDs를 구성하고 각 chain의 receiver address를 가져온다
-              const receiverChainIds = [inChainId];
-              for (const channel of channels) {
-                receiverChainIds.push(channel.counterpartyChainId);
-              }
-              for (const receiverChainId of receiverChainIds) {
-                const receiverAccount =
-                  accountStore.getAccount(receiverChainId);
-                // 계정은 이미 초기화되어 있음
-
-                if (!receiverAccount.bech32Address) {
-                  throw new Error("receiverAccount.bech32Address is undefined");
-                }
-                swapReceiver.push(receiverAccount.bech32Address);
-              }
-            } else {
-              // skip_operations가 없는 경우 (예: SQUID provider)
-              // steps에서 정보를 추출하고, swapQueriesStore를 사용하여 IBC 채널 정보를 찾는다
-              for (const step of steps) {
-                if (step.type === RouteStepType.IBC_TRANSFER) {
-                  // IBC transfer step의 경우, from_chain과 from_token을 사용하여 채널을 찾는다
-                  const ibcChannels =
-                    swapQueriesStore.queryTransferPaths.getIBCChannels(
-                      step.from_chain,
-                      step.from_token
-                    );
-
-                  // to_chain과 매칭되는 채널을 찾는다
-                  const matchingChannel = ibcChannels.find(
-                    (channel) => channel.destinationChainId === step.to_chain
-                  );
-
-                  if (matchingChannel && matchingChannel.channels.length > 0) {
-                    // 매칭되는 채널이 있으면 channels 배열에 추가
-                    // IBCChannelV2의 channels에는 이미 counterpartyChainId가 포함되어 있음
-                    for (const channel of matchingChannel.channels) {
-                      channels.push({
-                        portId: channel.portId,
-                        channelId: channel.channelId,
-                        counterpartyChainId: channel.counterpartyChainId,
-                      });
-                    }
-                  }
-                } else if (step.type === RouteStepType.SWAP) {
-                  // swap venue chain ID는 step의 to_chain을 사용할 수 있다
-                  // 하지만 정확한 swap_venue 정보는 없으므로 단순히 to_chain을 사용
-                  const evmLikeChainId = Number(step.to_chain);
-                  const isEVMChainId =
-                    !Number.isNaN(evmLikeChainId) && evmLikeChainId > 0;
-
-                  const swapVenueChainId = isEVMChainId
-                    ? `eip155:${evmLikeChainId}`
-                    : step.to_chain;
-                  const swapFeeBpsReceiverAddress = SwapFeeBps.receivers.find(
-                    (r) => r.chainId === swapVenueChainId
-                  );
-                  if (swapFeeBpsReceiverAddress) {
-                    swapFeeBpsReceiver.push(swapFeeBpsReceiverAddress.address);
-                  }
-                  // swap이 발생하는 channel index는 마지막 channel 다음이므로
-                  // 현재 channels.length가 swap channel index가 된다
-                  swapChannelIndex = channels.length - 1;
-                }
-              }
-
-              // receiver chain IDs를 steps에서 추출
-              const receiverChainIds = [inChainId];
-              for (const step of steps) {
-                if (step.type === RouteStepType.IBC_TRANSFER) {
-                  receiverChainIds.push(step.to_chain);
-                }
-              }
-              // 마지막 step의 to_chain이 최종 destination이 될 수 있다
-              if (steps.length > 0) {
-                const lastStep = steps[steps.length - 1];
-                if (!receiverChainIds.includes(lastStep.to_chain)) {
-                  receiverChainIds.push(lastStep.to_chain);
-                }
-              }
-
-              for (const receiverChainId of receiverChainIds) {
-                const evmLikeChainId = Number(receiverChainId);
-                const isEVMChainId =
-                  !Number.isNaN(evmLikeChainId) && evmLikeChainId > 0;
-
-                const receiverChainIdInKeplr = isEVMChainId
-                  ? `eip155:${evmLikeChainId}`
-                  : receiverChainId;
-
-                const receiverAccount = accountStore.getAccount(
-                  receiverChainIdInKeplr
-                );
-                // 계정은 이미 초기화되어 있음
-
-                if (!receiverAccount.bech32Address) {
-                  throw new Error("receiverAccount.bech32Address is undefined");
-                }
-                swapReceiver.push(receiverAccount.bech32Address);
-              }
-            }
-          }
         } catch (e) {
           setCalculatingTxError(e);
           uiConfigStore.ibcSwapConfig.setIsSwapExecuting(false, swapLoadingKey);
@@ -862,115 +684,48 @@ export const IBCSwapPage: FunctionComponent = observer(() => {
         //================================================================================
         // 2. Prepare history data
         //================================================================================
-
-        let executionType: TxExecutionType;
-        let historyData:
-          | IBCTransferHistoryData
-          | IBCSwapHistoryData
-          | SwapV2HistoryData
-          | undefined;
-        if (
-          isInterChainSwap ||
-          isSingleEVMChainOperation ||
-          requiresMultipleTxBundles
-        ) {
-          executionType = TxExecutionType.SWAP_V2;
-          historyData = {
-            fromChainId: inChainId,
-            toChainId: outChainId,
-            provider: provider,
-            destinationAsset: {
-              chainId: outChainId,
-              denom: outCurrency.coinMinimalDenom,
-              expectedAmount:
-                swapConfigs.amountConfig.outAmount.toCoin().amount,
+        const executionType = TxExecutionType.SWAP_V2;
+        const historyData: SwapV2HistoryData = {
+          fromChainId: inChainId,
+          toChainId: outChainId,
+          provider,
+          destinationAsset: {
+            chainId: outChainId,
+            denom: outCurrency.coinMinimalDenom,
+            expectedAmount: swapConfigs.amountConfig.outAmount.toCoin().amount,
+          },
+          simpleRoute,
+          sender: swapConfigs.senderConfig.sender,
+          recipient: chainStore.isEvmOnlyChain(outChainId)
+            ? accountStore.getAccount(outChainId).ethereumHexAddress
+            : accountStore.getAccount(outChainId).bech32Address,
+          amount: [
+            // Input amount
+            ...swapConfigs.amountConfig.amount.map((amount) => ({
+              amount: DecUtils.getTenExponentN(amount.currency.coinDecimals)
+                .mul(amount.toDec())
+                .toString(),
+              denom: amount.currency.coinMinimalDenom,
+            })),
+            // Expected output amount
+            {
+              amount: DecUtils.getTenExponentN(
+                swapConfigs.amountConfig.outAmount.currency.coinDecimals
+              )
+                .mul(swapConfigs.amountConfig.outAmount.toDec())
+                .toString(),
+              denom:
+                swapConfigs.amountConfig.outAmount.currency.coinMinimalDenom,
             },
-            simpleRoute,
-            sender: swapConfigs.senderConfig.sender,
-            recipient: chainStore.isEvmOnlyChain(outChainId)
-              ? accountStore.getAccount(outChainId).ethereumHexAddress
-              : accountStore.getAccount(outChainId).bech32Address,
-            amount: [
-              ...swapConfigs.amountConfig.amount.map((amount) => {
-                return {
-                  amount: DecUtils.getTenExponentN(amount.currency.coinDecimals)
-                    .mul(amount.toDec())
-                    .toString(),
-                  denom: amount.currency.coinMinimalDenom,
-                };
-              }),
-              {
-                amount: DecUtils.getTenExponentN(
-                  swapConfigs.amountConfig.outAmount.currency.coinDecimals
-                )
-                  .mul(swapConfigs.amountConfig.outAmount.toDec())
-                  .toString(),
-                denom:
-                  swapConfigs.amountConfig.outAmount.currency.coinMinimalDenom,
-              },
-            ], // [inChain asset, outChain asset] format
-            notificationInfo: {
-              currencies: chainStore.getChain(outChainId).currencies,
-            },
-            routeDurationSeconds: routeDurationSeconds ?? 0,
-          };
-        } else if (
-          swapConfigs.amountConfig.type === "transfer" &&
-          !isInterChainSwap
-        ) {
-          executionType = TxExecutionType.IBC_TRANSFER;
-          historyData = {
-            historyType: "ibc-swap/ibc-transfer",
-            sourceChainId: inChainId,
-            destinationChainId: outChainId,
-            channels,
-            sender: swapConfigs.senderConfig.sender,
-            recipient: accountStore.getAccount(outChainId).bech32Address,
-            amount: swapConfigs.amountConfig.amount.map((amount) => {
-              return {
-                amount: DecUtils.getTenExponentN(amount.currency.coinDecimals)
-                  .mul(amount.toDec())
-                  .toString(),
-                denom: amount.currency.coinMinimalDenom,
-              };
-            }),
-            memo: swapConfigs.memoConfig.memo,
-            notificationInfo: {
-              currencies: chainStore.getChain(outChainId).currencies,
-            },
-          };
-        } else {
-          executionType = TxExecutionType.IBC_SWAP;
-          historyData = {
-            historyType: "ibc-swap/ibc-swap",
-            swapType: "amount-in",
-            chainId: inChainId,
-            destinationChainId: outChainId,
-            sender: swapConfigs.senderConfig.sender,
-            amount: swapConfigs.amountConfig.amount.map((amount) => {
-              return {
-                amount: DecUtils.getTenExponentN(amount.currency.coinDecimals)
-                  .mul(amount.toDec())
-                  .toString(),
-                denom: amount.currency.coinMinimalDenom,
-              };
-            }),
-            memo: swapConfigs.memoConfig.memo,
-            ibcChannels: channels,
-            destinationAsset: {
-              chainId: outChainId,
-              denom: outCurrency.coinMinimalDenom,
-            },
-            swapChannelIndex,
-            swapReceiver,
-            notificationInfo: {
-              currencies: chainStore.getChain(outChainId).currencies,
-            },
-          };
-        }
+          ],
+          notificationInfo: {
+            currencies: chainStore.getChain(outChainId).currencies,
+          },
+          routeDurationSeconds: routeDurationSeconds ?? 0,
+        };
 
         //================================================================================
-        // 3. Process txs and prepare background txs
+        // 4. Process txs and prepare background txs
         //================================================================================
 
         const vaultId = selectedKeyInfo.id;
