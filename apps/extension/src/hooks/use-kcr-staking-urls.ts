@@ -19,10 +19,7 @@ export const useKcrStakingUrls = () => {
 
   const queryChains = queriesStore.simpleQuery.queryGet<{
     chains: ChainInfo[];
-  }>(
-    "https://7v6zjsr36fqrqcaeuqbhyrq46a0qndzt.lambda-url.us-west-2.on.aws",
-    `/chains`
-  );
+  }>("https://kcr-lambda.keplr.app", `/chains`);
 
   const urlMap = useMemo(() => {
     const map = new Map<string, string>();

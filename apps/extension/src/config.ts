@@ -3940,5 +3940,4 @@ export const CommunityChainInfoRepo = {
     : undefined,
 };
 
-export const TokenContractListURL =
-  "https://opbaqquqruxn7fdsgcncrtfrwa0qxnoj.lambda-url.us-west-2.on.aws";
+export const TokenContractListURL = "https://kcr-token-lambda.keplr.app";

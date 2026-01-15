@@ -622,7 +622,7 @@ export class FeeConfig extends TxChainSetter implements IFeeConfig {
               average?: number;
               high?: number;
             }>(
-              "https://gjsttg7mkgtqhjpt3mv5aeuszi0zblbb.lambda-url.us-west-2.on.aws/osmosis/osmosis-base-fee-beta.json"
+              "https://config-lambda.keplr.app/osmosis/osmosis-base-fee-beta.json"
             );
 
             const baseFee = queryOsmosis.queryBaseFee.baseFee;
@@ -1416,10 +1416,7 @@ export class FeeConfig extends TxChainSetter implements IFeeConfig {
             high: number;
           }
         | undefined;
-    }>(
-      "https://gjsttg7mkgtqhjpt3mv5aeuszi0zblbb.lambda-url.us-west-2.on.aws",
-      "/feemarket/info.json"
-    );
+    }>("https://config-lambda.keplr.app", "/feemarket/info.json");
 
     if (multificationConfig.response) {
       const _default = multificationConfig.response.data["__default__"];
