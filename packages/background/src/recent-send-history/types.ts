@@ -156,8 +156,6 @@ export type IBCHistory = {
 
   txHash: string;
 
-  backgroundExecutionId?: string;
-
   txFulfilled?: boolean;
   txError?: string;
   packetTimeout?: boolean;

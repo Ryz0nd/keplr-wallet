@@ -531,8 +531,7 @@ export class RecentSendHistoryService {
     notificationInfo: {
       currencies: AppCurrency[];
     },
-    txHash: Uint8Array,
-    backgroundExecutionId?: string
+    txHash: Uint8Array
   ): string {
     const id = (this.recentIBCHistorySeq++).toString();
 
@@ -557,57 +556,9 @@ export class RecentSendHistoryService {
       }),
       notificationInfo,
       txHash: Buffer.from(txHash).toString("hex"),
-      backgroundExecutionId: backgroundExecutionId,
     };
 
     this.recentIBCHistoryMap.set(id, history);
-
-    return id;
-  }
-
-  addRecentIBCTransferHistoryWithTracking(
-    chainId: string,
-    destinationChainId: string,
-    sender: string,
-    recipient: string,
-    amount: {
-      amount: string;
-      denom: string;
-    }[],
-    memo: string,
-    ibcChannels:
-      | {
-          portId: string;
-          channelId: string;
-          counterpartyChainId: string;
-        }[],
-    notificationInfo: {
-      currencies: AppCurrency[];
-    },
-    txHash: Uint8Array,
-    backgroundExecutionId?: string
-  ): string {
-    const id = this.addRecentIBCTransferHistory(
-      chainId,
-      destinationChainId,
-      sender,
-      recipient,
-      amount,
-      memo,
-      ibcChannels,
-      notificationInfo,
-      txHash,
-      backgroundExecutionId
-    );
-
-    this.trackIBCPacketForwardingRecursive((onFulfill, onClose, onError) => {
-      this.trackIBCPacketForwardingRecursiveInternal(
-        id,
-        onFulfill,
-        onClose,
-        onError
-      );
-    });
 
     return id;
   }
@@ -638,8 +589,7 @@ export class RecentSendHistoryService {
     notificationInfo: {
       currencies: AppCurrency[];
     },
-    txHash: Uint8Array,
-    backgroundExecutionId?: string
+    txHash: Uint8Array
   ): string {
     const id = (this.recentIBCHistorySeq++).toString();
 
@@ -668,66 +618,9 @@ export class RecentSendHistoryService {
       resAmount: [],
       notificationInfo,
       txHash: Buffer.from(txHash).toString("hex"),
-      backgroundExecutionId: backgroundExecutionId,
     };
 
     this.recentIBCHistoryMap.set(id, history);
-
-    return id;
-  }
-
-  addRecentIBCSwapHistoryWithTracking(
-    swapType: "amount-in" | "amount-out",
-    chainId: string,
-    destinationChainId: string,
-    sender: string,
-    amount: {
-      amount: string;
-      denom: string;
-    }[],
-    memo: string,
-    ibcChannels:
-      | {
-          portId: string;
-          channelId: string;
-          counterpartyChainId: string;
-        }[],
-    destinationAsset: {
-      chainId: string;
-      denom: string;
-    },
-    swapChannelIndex: number,
-    swapReceiver: string[],
-    notificationInfo: {
-      currencies: AppCurrency[];
-    },
-    txHash: Uint8Array,
-    backgroundExecutionId?: string
-  ): string {
-    const id = this.addRecentIBCSwapHistory(
-      swapType,
-      chainId,
-      destinationChainId,
-      sender,
-      amount,
-      memo,
-      ibcChannels,
-      destinationAsset,
-      swapChannelIndex,
-      swapReceiver,
-      notificationInfo,
-      txHash,
-      backgroundExecutionId
-    );
-
-    this.trackIBCPacketForwardingRecursive((onFulfill, onClose, onError) => {
-      this.trackIBCPacketForwardingRecursiveInternal(
-        id,
-        onFulfill,
-        onClose,
-        onError
-      );
-    });
 
     return id;
   }
