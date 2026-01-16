@@ -245,6 +245,11 @@ export const EthereumSignTxView: FunctionComponent<{
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Capture the completed count at mount time for multi-signature flow
+  const [mountTimeCompletedCount] = useState(() => {
+    return uiConfigStore.ibcSwapConfig.signatureProgress.completed;
+  });
+
   useEffect(() => {
     // NOTE: set fee only for external requests
     if (!interactionData.isInternal) {
@@ -511,7 +516,7 @@ export const EthereumSignTxView: FunctionComponent<{
             { id: "button.approve-with-progress" },
             {
               total: progress.total,
-              completed: progress.completed,
+              completed: mountTimeCompletedCount + 1,
             }
           );
         }
@@ -524,7 +529,7 @@ export const EthereumSignTxView: FunctionComponent<{
           return (
             <StepIndicator
               totalCount={progress.total}
-              completedCount={progress.completed}
+              completedCount={mountTimeCompletedCount}
               inactiveOpacity={0.4}
               activeColor={ColorPalette["white"]}
               blinkCurrentStep={true}

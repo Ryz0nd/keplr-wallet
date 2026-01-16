@@ -186,6 +186,11 @@ export const CosmosTxView: FunctionComponent<{
     signDocHelper,
   ]);
 
+  // Capture the completed count at mount time for multi-signature flow
+  const [mountTimeCompletedCount] = useState(() => {
+    return uiConfigStore.ibcSwapConfig.signatureProgress.completed;
+  });
+
   const msgs = signDocHelper.signDocWrapper
     ? signDocHelper.signDocWrapper.mode === "amino"
       ? signDocHelper.signDocWrapper.aminoSignDoc.msgs
@@ -621,7 +626,7 @@ export const CosmosTxView: FunctionComponent<{
                 { id: "button.approve-with-progress" },
                 {
                   total: progress.total,
-                  completed: progress.completed,
+                  completed: mountTimeCompletedCount + 1,
                 }
               );
             }
@@ -637,7 +642,7 @@ export const CosmosTxView: FunctionComponent<{
               return (
                 <StepIndicator
                   totalCount={progress.total}
-                  completedCount={progress.completed}
+                  completedCount={mountTimeCompletedCount}
                   inactiveOpacity={0.4}
                   activeColor={ColorPalette["white"]}
                   blinkCurrentStep={true}
