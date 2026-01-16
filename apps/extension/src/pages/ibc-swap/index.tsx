@@ -560,16 +560,18 @@ export const IBCSwapPage: FunctionComponent = observer(() => {
 
           const priorOutAmount = new Int(queryRoute.response.data.amount_out);
 
-          // inter-chain swap인지 여부를 확인 (bridge가 필요한 경우)
-          const steps = queryRoute.response.data.steps;
-          provider = queryRoute.response.data.provider;
+          const requiredChainIds = queryRoute.response.data.required_chain_ids;
+          const allRequiredChainIds = [
+            ...requiredChainIds,
+            ...(queryRoute.response.data.required_fallback_chain_ids ?? []),
+          ];
 
           const initializedAccounts: Map<
             string,
             { isEvm: boolean; address: string }
           > = new Map();
 
-          for (const chainId of queryRoute.response.data.required_chain_ids) {
+          for (const chainId of allRequiredChainIds) {
             const chainIdInKeplr = normalizeChainId(chainId);
             if (initializedAccounts.has(chainIdInKeplr)) {
               continue;
@@ -616,48 +618,37 @@ export const IBCSwapPage: FunctionComponent = observer(() => {
             });
           }
 
+          provider = queryRoute.response.data.provider;
           routeDurationSeconds = queryRoute.response.data.estimated_time;
 
-          // required_chain_ids는 fallback 처리를 위한 체인 id가 포함되어 있을 수 있으므로,
-          // 실제 경로 단계를 기반으로 simpleRoute를 구성한다.
-          const seenChains = new Set<string>();
+          for (const chainId of requiredChainIds) {
+            const evmLikeChainId = Number(chainId);
+            const isEVMChainId =
+              !Number.isNaN(evmLikeChainId) && evmLikeChainId > 0;
 
-          // Add source chain (from first step)
-          if (steps.length > 0) {
-            const firstChainId = normalizeChainId(steps[0].from_chain);
-            const accountInfo = initializedAccounts.get(firstChainId);
+            const chainIdInKeplr = isEVMChainId
+              ? `eip155:${evmLikeChainId}`
+              : chainId;
+
+            const accountInfo = initializedAccounts.get(chainIdInKeplr);
             if (!accountInfo) {
-              throw new Error(`Account for ${firstChainId} is not initialized`);
+              throw new Error(
+                `Account for ${chainIdInKeplr} is not initialized`
+              );
             }
 
-            simpleRoute.push({
-              isOnlyEvm: accountInfo.isEvm,
-              chainId: firstChainId,
-              receiver: accountInfo.address,
-            });
-            seenChains.add(firstChainId);
-          }
-
-          // Add destination chain from each step
-          for (const step of steps) {
-            const toChainId = normalizeChainId(step.to_chain);
-
-            // Skip if already added (avoid duplicates)
-            if (seenChains.has(toChainId)) {
-              continue;
+            // required_chain_ids can contain duplicated chain ids,
+            // so avoid adding the chain if it's the same as the last chain in simpleRoute.
+            if (
+              simpleRoute.length === 0 ||
+              simpleRoute[simpleRoute.length - 1].chainId !== chainIdInKeplr
+            ) {
+              simpleRoute.push({
+                isOnlyEvm: isEVMChainId,
+                chainId: chainIdInKeplr,
+                receiver: accountInfo.address,
+              });
             }
-
-            const accountInfo = initializedAccounts.get(toChainId);
-            if (!accountInfo) {
-              throw new Error(`Account for ${toChainId} is not initialized`);
-            }
-
-            simpleRoute.push({
-              isOnlyEvm: accountInfo.isEvm,
-              chainId: toChainId,
-              receiver: accountInfo.address,
-            });
-            seenChains.add(toChainId);
           }
 
           // txs를 새로 가져오기 때문에 ui에서 보여주는 hold to swap 가능 여부라던가
