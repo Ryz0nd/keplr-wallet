@@ -203,7 +203,7 @@ export class AmountConfig extends TxChainSetter implements IAmountConfig {
       }
       if (dec.lt(new Dec(0))) {
         return {
-          error: new NegativeAmountError("Amount is negative"),
+          error: new NegativeAmountError("Enter a positive number"),
         };
       }
 
@@ -214,7 +214,7 @@ export class AmountConfig extends TxChainSetter implements IAmountConfig {
       );
     } catch {
       return {
-        error: new InvalidNumberAmountError("Invalid form of number"),
+        error: new InvalidNumberAmountError("Enter a valid number"),
       };
     }
 
@@ -223,13 +223,13 @@ export class AmountConfig extends TxChainSetter implements IAmountConfig {
 
       if (!("type" in currency) || currency.type !== "erc20") {
         return {
-          error: new NotSupportedCurrencyError("Not supported currency"),
+          error: new NotSupportedCurrencyError("Token not supported"),
         };
       }
 
       if (!this.canUseCurrency(currency)) {
         return {
-          error: new NotSupportedCurrencyError("Not supported currency"),
+          error: new NotSupportedCurrencyError("Token not supported"),
         };
       }
 

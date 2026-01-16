@@ -555,7 +555,7 @@ export const IBCSwapPage: FunctionComponent = observer(() => {
           // queryRoute는 ibc history를 추적하기 위한 채널 정보 등을 얻기 위해서 사용된다.
           // swapConfigs.amountConfig.getTx에서 queryRoute.waitFreshResponse()를 하므로 굳이 여기서 또 하지 않는다.
           if (!queryRoute.response) {
-            throw new Error("queryRoute.response is undefined");
+            throw new Error("Failed to get response for the selected route");
           }
 
           const priorOutAmount = new Int(queryRoute.response.data.amount_out);
@@ -659,7 +659,9 @@ export const IBCSwapPage: FunctionComponent = observer(() => {
           ]);
 
           if (_txs.length === 0) {
-            throw new Error("Txs are not ready");
+            throw new Error(
+              "Failed to prepare the transaction. Please try again"
+            );
           }
 
           txs = _txs;

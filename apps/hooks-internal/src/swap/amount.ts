@@ -445,7 +445,7 @@ export class SwapAmountConfig extends AmountConfig {
       customRecipient
     );
     if (!txs || txs.length === 0) {
-      throw new Error("Txs are not ready");
+      throw new Error("Failed to prepare the transaction. Please try again");
     }
 
     if (priorOutAmount) {
