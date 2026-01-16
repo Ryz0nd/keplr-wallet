@@ -62,6 +62,7 @@ const RouteResponseV2Schema = Joi.object<RouteResponseV2>({
   fees: Joi.array().items(FeeSchema).required(),
   steps: Joi.array().items(RouteStepSchema).required(),
   required_chain_ids: Joi.array().items(Joi.string()).required(),
+  required_fallback_chain_ids: Joi.array().items(Joi.string()).optional(),
   skip_operations: Joi.when("provider", {
     is: SwapProvider.SKIP,
     then: Joi.array().items(SkipOperationSchema).required(),

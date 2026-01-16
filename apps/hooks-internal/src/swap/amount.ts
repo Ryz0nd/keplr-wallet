@@ -392,7 +392,10 @@ export class SwapAmountConfig extends AmountConfig {
     }
 
     // Normalize order so the tx query cache key stays stable across refetches.
-    const requiredChainIds = [...routeResponse.data.required_chain_ids].sort();
+    const requiredChainIds = [
+      ...routeResponse.data.required_chain_ids,
+      ...(routeResponse.data.required_fallback_chain_ids ?? []),
+    ].sort();
 
     const chainIdsToAddresses: Record<string, string> = {};
 
@@ -520,7 +523,10 @@ export class SwapAmountConfig extends AmountConfig {
       return;
     }
 
-    const requiredChainIds = routeResponse.data.required_chain_ids;
+    const requiredChainIds = [
+      ...routeResponse.data.required_chain_ids,
+      ...(routeResponse.data.required_fallback_chain_ids ?? []),
+    ].sort();
 
     const chainIdsToAddresses: Record<string, string> = {};
 
