@@ -40,7 +40,7 @@ import {
 const DEFAULT_PROVIDERS = [SwapProvider.SQUID, SwapProvider.SKIP];
 
 export class SwapAmountConfig extends AmountConfig {
-  static readonly QueryMsgsDirectRefreshInterval = 10000;
+  static readonly QueryRouteRefreshInterval = 20000;
   private static readonly ZERO_DEC = new Dec(0);
 
   @observable
@@ -113,8 +113,6 @@ export class SwapAmountConfig extends AmountConfig {
         }, 0);
       }
     });
-
-    // CHECK: autorun으로 in, out chain id가 변경되면 계정 초기화 하기 필요?
   }
 
   @computed
@@ -386,7 +384,7 @@ export class SwapAmountConfig extends AmountConfig {
       const diff = Date.now() - routeResponse.timestamp;
       // 오래전에 캐싱된 쿼리 응답으로 tx를 만들 경우 quote가 크게 변경될 수 있으므로 에러를 발생시킨다.
       // 쿼리 응답 오는데에 시간이 좀 드니, RefreshInterval에 5초를 더 추가한다.
-      if (diff > SwapAmountConfig.QueryMsgsDirectRefreshInterval + 5000) {
+      if (diff > SwapAmountConfig.QueryRouteRefreshInterval + 5000) {
         throw new Error("The quote is expired. Please try again.");
       }
     }
@@ -858,7 +856,6 @@ export class SwapAmountConfig extends AmountConfig {
         };
       }
 
-      // CHECK: 현재 에러 메시지를 프로바이더에서 발생한 오류를 그대로 던져주는지 체크 필요
       const routeError = routeQuery.error;
       if (routeError) {
         const CCTP_BRIDGE_FEE_ERROR_MESSAGE =
@@ -937,7 +934,6 @@ export class SwapAmountConfig extends AmountConfig {
       };
     }
 
-    // CHECK: 현재 에러 메시지를 프로바이더에서 발생한 오류를 그대로 던져주는지 체크 필요
     const routeError = routeQuery.error;
     if (routeError) {
       const CCTP_BRIDGE_FEE_ERROR_MESSAGE =
