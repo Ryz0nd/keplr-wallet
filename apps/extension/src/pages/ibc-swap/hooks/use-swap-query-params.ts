@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from "react";
+import { useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { SwapAmountConfig } from "@keplr-wallet/hooks-internal";
 
@@ -79,7 +79,19 @@ export const useSwapQueryParams = (
   }, [searchParams, swapAmountConfig, isSwapExecuting]);
 
   // Clear initialAmount from query params (called on swap success)
-  const clearInitialAmount = useCallback(() => {
+  const clearInitialAmount = () => {
+    // Only clear params if user is still on the swap page
+    // This prevents unwanted navigation when swap completes after user navigated away
+    // Use window.location.hash to get the actual current route (works in Chrome extension context)
+    // Hash format: "#/ibc-swap" or "#/ibc-swap?param=value"
+    const hash = window.location.hash;
+
+    const hashPath = hash.split("?")[0]; // Get path part without query string
+
+    if (!hashPath.startsWith("#/ibc-swap")) {
+      return;
+    }
+
     setSearchParams(
       (prev) => {
         prev.delete("initialAmount");
@@ -88,7 +100,7 @@ export const useSwapQueryParams = (
       },
       { replace: true }
     );
-  }, [setSearchParams]);
+  };
 
   return {
     setSearchParams,
