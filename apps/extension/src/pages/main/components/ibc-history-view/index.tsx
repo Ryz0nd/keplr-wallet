@@ -291,6 +291,10 @@ export const IbcHistoryView: FunctionComponent<{
     });
 
     const filteredSwapV2Histories = swapV2Histories.filter((history) => {
+      if (history.hidden) {
+        return false;
+      }
+
       const firstRoute = history.simpleRoute[0];
       const account = accountStore.getAccount(firstRoute.chainId);
 
@@ -1478,8 +1482,12 @@ const SwapV2HistoryViewItem: FunctionComponent<{
       return false;
     }
 
-    // If there's a track error, check if assetLocationInfo exists (refund completed)
-    if (history.trackError || history.additionalTrackError) {
+    // If there's a track error or FAILED status, check if assetLocationInfo exists (refund completed)
+    if (
+      history.status === SwapV2TxStatus.FAILED ||
+      history.trackError ||
+      history.additionalTrackError
+    ) {
       return !!history.assetLocationInfo;
     }
 
@@ -2235,6 +2243,14 @@ const SwapV2HistoryViewItem: FunctionComponent<{
               );
             }
 
+            if (failedRouteIndex >= 0) {
+              return intl.formatMessage({
+                id: historyCompleted
+                  ? "page.main.components.ibc-history-view.ibc-swap.failed.complete"
+                  : "page.main.components.ibc-history-view.ibc-swap.failed.in-progress",
+              });
+            }
+
             // swap v2 history의 amount에는 [sourceChain의 amount, destinationChain의 expected amount]가 들어있으므로
             // 첫 번째 amount만 사용
             const assets = (() => {
@@ -2326,7 +2342,9 @@ const SwapV2HistoryViewItem: FunctionComponent<{
                 (!history.additionalTrackingData ||
                   !!history.additionalTrackDone);
               const hasTrackError =
-                !!history.trackError || !!history.additionalTrackError;
+                history.status === SwapV2TxStatus.FAILED ||
+                !!history.trackError ||
+                !!history.additionalTrackError;
 
               return chainIds.map((chainId, i) => {
                 const chainInfo = chainStore.getChain(chainId);
@@ -2339,18 +2357,26 @@ const SwapV2HistoryViewItem: FunctionComponent<{
                   (assetReleasedRouteIndex >= 0 &&
                     i <= assetReleasedRouteIndex);
 
-                // 에러는 assetReleasedRouteIndex보다 큰 인덱스에서만 표시
+                // 에러는 진행된 route까지만 표시 (routeIndex 이하), 그 이후는 표시 안함
                 const error =
                   hasTrackError &&
                   i >= failedRouteIndex &&
+                  i <= history.routeIndex &&
                   (assetReleasedRouteIndex < 0 || i > assetReleasedRouteIndex);
 
-                // 환불된 체인인지 확인 (에러가 있고, assetLocationInfo가 있고, 해당 체인이 환불 목적지인 경우)
+                // 환불된 체인인지 확인 (에러가 있고, 환불 경로에 있는 모든 체인에 경고 표시)
+                // arrowWarning 로직과 동일하게 type 체크 없이 위치 기반으로 판단
+                // (type이 "refund" 또는 "intermediate" 모두 환불 상황일 수 있음)
                 const refunded =
                   hasTrackError &&
                   assetReleasedRouteIndex >= 0 &&
-                  history.assetLocationInfo?.type === "refund" &&
-                  i === assetReleasedRouteIndex;
+                  // Case 1: 뒤로 환불 - 환불 경로의 모든 체인에 경고 표시
+                  ((assetReleasedRouteIndex < history.routeIndex &&
+                    i >= assetReleasedRouteIndex &&
+                    i < history.routeIndex) ||
+                    // Case 2: 같은 체인 환불 - 환불 목적지 체인에만 경고 표시
+                    (assetReleasedRouteIndex >= history.routeIndex &&
+                      i === assetReleasedRouteIndex));
 
                 return (
                   // 일부분 순환하는 경우도 이론적으로 가능은 하기 때문에 chain id를 key로 사용하지 않음.
@@ -2504,7 +2530,9 @@ const SwapV2HistoryViewItem: FunctionComponent<{
             />
           </Caption1>
         </VerticalCollapseTransition>
-        <VerticalCollapseTransition collapsed={historyCompleted}>
+        <VerticalCollapseTransition
+          collapsed={historyCompleted || failedRouteIndex >= 0}
+        >
           <Gutter size="1rem" />
           <Box
             height="1px"
@@ -2514,8 +2542,8 @@ const SwapV2HistoryViewItem: FunctionComponent<{
                 : ColorPalette["gray-500"]
             }
           />
-          {/* only show estimated duration when there is no executable tx */}
-          {!hasExecutableTx && (
+          {/* only show estimated duration when there is no executable tx, not failed, and no additional tracking */}
+          {!hasExecutableTx && !history.additionalTrackingData && (
             <React.Fragment>
               <Gutter size="1rem" />
 
