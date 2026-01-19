@@ -3901,6 +3901,67 @@ export const EmbedChainInfos: (ChainInfo | ModularChainInfo)[] = [
     ],
     features: ["cosmwasm"],
   },
+  {
+    chainId: "nyx",
+    chainName: "Nyx",
+    chainSymbolImageUrl:
+      "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/nyx/chain.png",
+    rpc: "https://rpc-nyx.keplr.app",
+    rest: "https://lcd-nyx.keplr.app",
+    bip44: {
+      coinType: 118,
+    },
+    bech32Config: {
+      bech32PrefixAccAddr: "n",
+      bech32PrefixAccPub: "npub",
+      bech32PrefixValAddr: "nvaloper",
+      bech32PrefixValPub: "nvaloperpub",
+      bech32PrefixConsAddr: "nvalcons",
+      bech32PrefixConsPub: "nvalconspub",
+    },
+    currencies: [
+      {
+        coinDenom: "NYM",
+        coinMinimalDenom: "unym",
+        coinDecimals: 6,
+        coinGeckoId: "nym",
+      },
+      {
+        coinDenom: "NYX",
+        coinMinimalDenom: "unyx",
+        coinDecimals: 6,
+      },
+    ],
+    feeCurrencies: [
+      {
+        coinDenom: "nym",
+        coinMinimalDenom: "unym",
+        coinDecimals: 6,
+        coinGeckoId: "nym",
+        gasPriceStep: {
+          low: 0.025,
+          average: 0.025,
+          high: 0.04,
+        },
+      },
+      {
+        coinDenom: "nyx",
+        coinMinimalDenom: "unyx",
+        coinDecimals: 6,
+        gasPriceStep: {
+          low: 0.025,
+          average: 0.025,
+          high: 0.04,
+        },
+      },
+    ],
+    stakeCurrency: {
+      coinDenom: "nyx",
+      coinMinimalDenom: "unyx",
+      coinDecimals: 6,
+    },
+    features: ["cosmwasm"],
+  },
 ];
 
 // The origins that are able to pass any permission that external webpages can have.
