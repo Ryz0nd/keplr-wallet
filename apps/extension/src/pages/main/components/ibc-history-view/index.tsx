@@ -2469,65 +2469,67 @@ const SwapV2HistoryViewItem: FunctionComponent<{
                 : ColorPalette["yellow-400"]
             }
           >
-            <FormattedMessage
-              id={(() => {
-                const completedAnyways =
-                  history.status === SwapV2TxStatus.SUCCESS ||
-                  history.status === SwapV2TxStatus.PARTIAL_SUCCESS;
+            {(() => {
+              const completedAnyways =
+                history.status === SwapV2TxStatus.SUCCESS ||
+                history.status === SwapV2TxStatus.PARTIAL_SUCCESS;
 
-                // status tracking이 오류로 끝난 경우
-                // SwapV2에서는 assetLocationInfo를 사용하여 환불 정보 표시
-                const allDone =
-                  !!history.trackDone &&
-                  (!history.additionalTrackingData ||
-                    !!history.additionalTrackDone);
-                const hasError =
-                  !!history.trackError || !!history.additionalTrackError;
-                if (
-                  allDone &&
-                  (hasError || history.status === SwapV2TxStatus.FAILED)
-                ) {
-                  if (history.assetLocationInfo) {
-                    if (
-                      chainStore.hasChain(history.assetLocationInfo.chainId)
-                    ) {
-                      const assetLocationChain = chainStore.getChain(
-                        history.assetLocationInfo.chainId
-                      );
+              // status tracking이 오류로 끝난 경우
+              // SwapV2에서는 assetLocationInfo를 사용하여 환불 정보 표시
+              const allDone =
+                !!history.trackDone &&
+                (!history.additionalTrackingData ||
+                  !!history.additionalTrackDone);
+              const hasError =
+                !!history.trackError || !!history.additionalTrackError;
+              if (
+                allDone &&
+                (hasError || history.status === SwapV2TxStatus.FAILED)
+              ) {
+                if (history.assetLocationInfo) {
+                  if (chainStore.hasChain(history.assetLocationInfo.chainId)) {
+                    const assetLocationChain = chainStore.getChain(
+                      history.assetLocationInfo.chainId
+                    );
 
-                      return intl.formatMessage(
-                        {
-                          id: "page.main.components.ibc-history-view.skip-swap.failed.after-transfer.complete",
-                        },
-                        {
-                          chain: assetLocationChain.chainName,
-                          assets: history.assetLocationInfo.amount
-                            .map((amount) => {
-                              return new CoinPretty(
-                                chainStore
-                                  .getChain(history.assetLocationInfo!.chainId)
-                                  .forceFindCurrency(amount.denom),
-                                amount.amount
-                              )
-                                .hideIBCMetadata(true)
-                                .shrink(true)
-                                .maxDecimals(6)
-                                .inequalitySymbol(true)
-                                .trim(true)
-                                .toString();
-                            })
-                            .join(", "),
-                        }
-                      );
-                    }
+                    return intl.formatMessage(
+                      {
+                        id: "page.main.components.ibc-history-view.skip-swap.failed.after-transfer.complete",
+                      },
+                      {
+                        chain: assetLocationChain.chainName,
+                        assets: history.assetLocationInfo.amount
+                          .map((amount) => {
+                            return new CoinPretty(
+                              chainStore
+                                .getChain(history.assetLocationInfo!.chainId)
+                                .forceFindCurrency(amount.denom),
+                              amount.amount
+                            )
+                              .hideIBCMetadata(true)
+                              .shrink(true)
+                              .maxDecimals(6)
+                              .inequalitySymbol(true)
+                              .trim(true)
+                              .toString();
+                          })
+                          .join(", "),
+                      }
+                    );
                   }
                 }
+              }
 
-                return completedAnyways
-                  ? "page.main.components.ibc-history-view.ibc-swap.failed.complete"
-                  : "page.main.components.ibc-history-view.ibc-swap.failed.in-progress";
-              })()}
-            />
+              return (
+                <FormattedMessage
+                  id={
+                    completedAnyways
+                      ? "page.main.components.ibc-history-view.ibc-swap.failed.complete"
+                      : "page.main.components.ibc-history-view.ibc-swap.failed.in-progress"
+                  }
+                />
+              );
+            })()}
           </Caption1>
         </VerticalCollapseTransition>
         <VerticalCollapseTransition
