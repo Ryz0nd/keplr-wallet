@@ -394,6 +394,14 @@ export class RootStore {
       EthereumQueries.use({
         coingeckoAPIBaseURL: CoinGeckoAPIEndPoint,
         coingeckoAPIURI: CoinGeckoCoinDataByTokenAddress,
+        forceNativeERC20Query: (
+          chainId,
+          _chainGetter,
+          _address,
+          minimalDenom
+        ) => {
+          return this.tokensStore.tokenIsRegistered(chainId, minimalDenom);
+        },
       }),
       NobleQueries.use()
     );
