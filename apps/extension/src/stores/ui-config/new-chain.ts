@@ -100,9 +100,7 @@ export class NewChainSuggestionConfig {
     try {
       const res = await simpleFetch<{
         info: Remote[];
-      }>(
-        "https://gjsttg7mkgtqhjpt3mv5aeuszi0zblbb.lambda-url.us-west-2.on.aws/new-chain/info.json"
-      );
+      }>("https://config-lambda.keplr.app/new-chain/info.json");
 
       const validated = await Schema.validateAsync(res.data);
 

@@ -133,7 +133,7 @@ export const useCosmosClaimRewards = () => {
           average?: number;
           high?: number;
         }>(
-          "https://gjsttg7mkgtqhjpt3mv5aeuszi0zblbb.lambda-url.us-west-2.on.aws/osmosis/osmosis-base-fee-beta.json"
+          "https://config-lambda.keplr.app/osmosis/osmosis-base-fee-beta.json"
         );
 
         await queryBaseFee.waitFreshResponse();
@@ -218,10 +218,7 @@ export const useCosmosClaimRewards = () => {
                         high: number;
                       }
                     | undefined;
-                }>(
-                  "https://gjsttg7mkgtqhjpt3mv5aeuszi0zblbb.lambda-url.us-west-2.on.aws",
-                  "/feemarket/info.json"
-                );
+                }>("https://config-lambda.keplr.app", "/feemarket/info.json");
                 await multificationConfig.waitFreshResponse();
 
                 if (multificationConfig.response) {

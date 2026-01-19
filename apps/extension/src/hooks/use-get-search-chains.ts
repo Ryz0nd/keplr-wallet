@@ -65,10 +65,7 @@ export const useGetSearchChains = ({
     trimSearch.length >= minSearchLength
       ? queriesStore.simpleQuery.queryGet<{
           chains: ChainInfo[];
-        }>(
-          "https://7v6zjsr36fqrqcaeuqbhyrq46a0qndzt.lambda-url.us-west-2.on.aws",
-          `/chains?${params.toString()}`
-        )
+        }>("https://kcr-lambda.keplr.app", `/chains?${params.toString()}`)
       : null;
 
   const [searchedChainInfos, setSearchedChainInfos] = useState<

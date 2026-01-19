@@ -20,10 +20,7 @@ export function useGetStakingApr(chainId: string) {
       apr: number;
     };
     lastUpdated: number;
-  }>(
-    "https://pjld2aanw3elvteui4gwyxgx4m0ceweg.lambda-url.us-west-2.on.aws",
-    `/apr/${chainIdentifier}`
-  );
+  }>("https://apr-lambda.keplr.app", `/apr/${chainIdentifier}`);
 
   if (
     queryApr.response &&
