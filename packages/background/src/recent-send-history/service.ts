@@ -2748,6 +2748,7 @@ export class RecentSendHistoryService {
       ibcHistory,
       sourceChainId: chainId,
       swapReceiver,
+      destinationAsset: history.destinationAsset,
       onHopCompleted: (resAmount) => {
         runInAction(() => {
           if (resAmount) {
@@ -2791,6 +2792,11 @@ export class RecentSendHistoryService {
       onPacketTimeout: () => {
         runInAction(() => {
           trackingData.packetTimeout = true;
+        });
+      },
+      onDynamicHopDetected: () => {
+        runInAction(() => {
+          trackingData.dynamicHopDetected = true;
         });
       },
       onFulfill,
@@ -3063,6 +3069,7 @@ export class RecentSendHistoryService {
     ibcHistory: IbcHop[];
     sourceChainId: string;
     swapReceiver?: string[];
+    destinationAsset?: { chainId: string; denom: string };
     onHopCompleted?: (
       resAmount?: { amount: string; denom: string }[],
       tx?: any
@@ -3071,6 +3078,7 @@ export class RecentSendHistoryService {
     onContinue: () => void;
     onRetry: () => void;
     onPacketTimeout?: () => void;
+    onDynamicHopDetected?: () => void;
     onFulfill: () => void;
     onClose: () => void;
     onError: () => void;
@@ -3079,11 +3087,13 @@ export class RecentSendHistoryService {
       ibcHistory,
       sourceChainId,
       swapReceiver,
+      destinationAsset,
       onHopCompleted,
       onAllCompleted,
       onContinue,
       onRetry,
       onPacketTimeout,
+      onDynamicHopDetected,
       onFulfill,
       onClose,
       onError,
@@ -3153,6 +3163,7 @@ export class RecentSendHistoryService {
       ibcHistory,
       targetChannelIndex,
       swapReceiver,
+      destinationAsset,
       onHopCompleted: (resAmount, tx) => {
         onHopCompleted?.(resAmount, tx);
 
@@ -3230,6 +3241,31 @@ export class RecentSendHistoryService {
       onFulfill: onFulfillOnce,
       onClose: onCloseOnce,
       onError: onErrorOnce,
+      onDynamicHopDetected: (hopInfo) => {
+        if (hopFailed) {
+          return;
+        }
+
+        // 동적으로 감지된 새 홉을 ibcHistory에 추가한다.
+        runInAction(() => {
+          ibcHistory.push({
+            portId: hopInfo.portId,
+            channelId: hopInfo.channelId,
+            counterpartyChainId: hopInfo.counterpartyChainId,
+            sequence: hopInfo.sequence,
+            dstChannelId: hopInfo.dstChannelId,
+            completed: false,
+          });
+
+          if (swapReceiver && hopInfo.packetData.receiver) {
+            swapReceiver.push(hopInfo.packetData.receiver);
+          }
+        });
+
+        onDynamicHopDetected?.();
+        onContinue();
+        onFulfillOnce();
+      },
     });
 
     if (hopTracer) {
@@ -3285,6 +3321,7 @@ export class RecentSendHistoryService {
     ibcHistory: IbcHop[];
     targetChannelIndex: number;
     swapReceiver?: string[];
+    destinationAsset?: { chainId: string; denom: string };
     onHopCompleted: (
       resAmount?: { amount: string; denom: string }[],
       tx?: any
@@ -3294,17 +3331,27 @@ export class RecentSendHistoryService {
     onFulfill: () => void;
     onClose: () => void;
     onError: () => void;
+    onDynamicHopDetected?: (hopInfo: {
+      portId: string;
+      channelId: string;
+      counterpartyChainId: string;
+      sequence: string;
+      dstChannelId: string;
+      packetData: { denom: string; amount: string; receiver: string };
+    }) => void;
   }): TendermintTxTracer | undefined {
     const {
       ibcHistory,
       targetChannelIndex,
       swapReceiver,
+      destinationAsset,
       onHopCompleted,
       onAllCompleted,
       onContinue,
       onFulfill,
       onClose,
       onError,
+      onDynamicHopDetected,
     } = params;
 
     const targetChannel = ibcHistory[targetChannelIndex];
@@ -3382,13 +3429,17 @@ export class RecentSendHistoryService {
           resAmount = this.getIBCSwapResAmountFromTx(
             tx,
             swapReceiver[receiverIndex],
-            index
+            index,
+            undefined
           );
         }
       }
 
       onHopCompleted(resAmount, tx);
 
+      // 1. 다음 채널이 있고, tx가 있는 경우 => 다음 채널로 이동
+      // 2. 마지막 채널이면서, destinationAsset가 있고, onDynamicHopDetected가 있는 경우 => 동적 홉 감지
+      // 3. 그 외의 경우 => 종료(allCompleted)
       if (nextChannel && tx) {
         const index = this.getIBCRecvPacketIndexFromTx(
           tx,
@@ -3413,6 +3464,44 @@ export class RecentSendHistoryService {
         }
 
         onContinue();
+      } else if (tx && destinationAsset && onDynamicHopDetected) {
+        // 마지막 채널에서 recv_packet 이후 새로운 send_packet이 있는 경우를 감지
+        const index = this.getIBCRecvPacketIndexFromTx(
+          tx,
+          targetChannel.portId,
+          targetChannel.channelId,
+          sequence
+        );
+
+        if (index >= 0) {
+          const sendPackets = this.getSendPacketInfoFromTx(tx, index);
+          if (sendPackets.length > 0) {
+            // 마지막 send_packet을 확인
+            const lastSendPacket = sendPackets[sendPackets.length - 1];
+
+            // destination chain에서 IBC wrapped token을 unwrap하는 경우를 가정한다.
+            // 예를 들어, source chain -> osmosis (swap) -> destination chain으로 이동하는 경우,
+            // osmosis에서 IBC wrapped token이 destination chain으로 전송되고,
+            // destination chain에서 IBC wrapped token을 unwrap하는 케이스가 있을 수 있다.
+            const destinationChainInfo = this.chainsService.getChainInfo(
+              destinationAsset.chainId
+            );
+
+            if (destinationChainInfo) {
+              onDynamicHopDetected({
+                portId: "transfer",
+                channelId: lastSendPacket.srcChannel,
+                counterpartyChainId: destinationChainInfo.chainId,
+                sequence: lastSendPacket.sequence,
+                dstChannelId: lastSendPacket.dstChannel,
+                packetData: lastSendPacket.packetData,
+              });
+              return;
+            }
+          }
+        }
+
+        onAllCompleted();
       } else {
         onAllCompleted();
       }
@@ -3609,6 +3698,124 @@ export class RecentSendHistoryService {
     }
 
     return [];
+  }
+
+  /**
+   * TX에서 send_packet 이벤트 정보를 추출하여 추가 IBC 홉을 감지하기 위해 사용됩니다.
+   *
+   * 예를 들어, 마지막 목적지 체인에서 IBC wrapped token을 unwrap하는 경우,
+   * send_packet 이벤트를 통해 추가 IBC 홉을 감지할 수 있습니다.
+   */
+  protected getSendPacketInfoFromTx(
+    tx: any,
+    startEventsIndex: number = 0
+  ): {
+    srcChannel: string;
+    dstChannel: string;
+    sequence: string;
+    packetData: { denom: string; amount: string; receiver: string };
+  }[] {
+    const events = tx.events;
+    if (!events || !Array.isArray(events)) {
+      return [];
+    }
+
+    const compareStringWithBase64OrPlain = (
+      target: string,
+      value: string
+    ): [boolean, boolean] => {
+      if (target === value) {
+        return [true, false];
+      }
+      if (target === Buffer.from(value).toString("base64")) {
+        return [true, true];
+      }
+      return [false, false];
+    };
+
+    const results: {
+      srcChannel: string;
+      dstChannel: string;
+      sequence: string;
+      packetData: { denom: string; amount: string; receiver: string };
+    }[] = [];
+
+    const slicedEvents = events.slice(startEventsIndex);
+
+    for (const event of slicedEvents) {
+      if (event.type !== "send_packet") {
+        continue;
+      }
+
+      let isBase64 = false;
+
+      const srcChannelAttr = event.attributes?.find((attr: { key: string }) => {
+        const c = compareStringWithBase64OrPlain(
+          attr.key,
+          "packet_src_channel"
+        );
+        isBase64 = c[1];
+        return c[0];
+      });
+      if (!srcChannelAttr) {
+        continue;
+      }
+
+      const dstChannelAttr = event.attributes?.find((attr: { key: string }) => {
+        return compareStringWithBase64OrPlain(
+          attr.key,
+          "packet_dst_channel"
+        )[0];
+      });
+      if (!dstChannelAttr) continue;
+
+      const sequenceAttr = event.attributes?.find((attr: { key: string }) => {
+        return compareStringWithBase64OrPlain(attr.key, "packet_sequence")[0];
+      });
+      if (!sequenceAttr) continue;
+
+      const packetDataAttr = event.attributes?.find((attr: { key: string }) => {
+        return compareStringWithBase64OrPlain(attr.key, "packet_data")[0];
+      });
+      if (!packetDataAttr) continue;
+
+      try {
+        const srcChannel = isBase64
+          ? Buffer.from(srcChannelAttr.value, "base64").toString()
+          : srcChannelAttr.value;
+        const dstChannel = isBase64
+          ? Buffer.from(dstChannelAttr.value, "base64").toString()
+          : dstChannelAttr.value;
+        const sequence = isBase64
+          ? Buffer.from(sequenceAttr.value, "base64").toString()
+          : sequenceAttr.value;
+
+        const packetDataValue = isBase64
+          ? Buffer.from(packetDataAttr.value, "base64").toString()
+          : packetDataAttr.value.startsWith("{")
+          ? packetDataAttr.value
+          : Buffer.from(packetDataAttr.value, "base64").toString();
+
+        const packetData = JSON.parse(packetDataValue);
+
+        if (packetData.denom && packetData.amount && packetData.receiver) {
+          results.push({
+            srcChannel,
+            dstChannel,
+            sequence,
+            packetData: {
+              denom: packetData.denom,
+              amount: packetData.amount,
+              receiver: packetData.receiver,
+            },
+          });
+        }
+      } catch {
+        // noop
+      }
+    }
+
+    return results;
   }
 
   protected getIBCAcknowledgementPacketIndexFromTx(

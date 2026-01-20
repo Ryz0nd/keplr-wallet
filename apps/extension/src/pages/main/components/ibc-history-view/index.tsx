@@ -2184,11 +2184,18 @@ const SwapV2HistoryViewItem: FunctionComponent<{
               const destinationAssets = (() => {
                 // NOTE: evm은 resAmount[0]에 들어감
                 if (history.additionalTrackingData?.type === "cosmos-ibc") {
-                  const resAmount =
-                    history.resAmount[
-                      history.additionalTrackingData.ibcHistory.length
-                    ];
-                  if (resAmount) {
+                  const resAmount = history.additionalTrackingData
+                    .dynamicHopDetected
+                    ? // 동적 홉이 감지된 경우 마지막 유효한 항목 사용
+                      history.resAmount
+                        .slice()
+                        .reverse()
+                        .find((r) => r && r.length > 0)
+                    : // 일반 케이스: ibcHistory.length 인덱스 사용
+                      history.resAmount[
+                        history.additionalTrackingData.ibcHistory.length
+                      ];
+                  if (resAmount && resAmount.length > 0) {
                     return resAmount
                       .map((amount) => {
                         return new CoinPretty(
