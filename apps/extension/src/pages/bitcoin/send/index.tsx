@@ -187,6 +187,15 @@ export const BitcoinSendPage: FunctionComponent = observer(() => {
   // bitcoin tx size는 amount, fee rate, recipient address type에 따라 달라진다.
   // 키는 요청의 고유한 값들을 조합하여 이전에 캐시된 psbt를 잘못 불러오는 것을 방지해야 한다.
   const psbtSimulatorKey = useMemo(() => {
+    const simpleHash = (str: string): number => {
+      let hash = 0;
+      for (let i = 0; i < str.length; i++) {
+        hash = (hash << 5) - hash + str.charCodeAt(i);
+        hash = hash & hash;
+      }
+      return Math.abs(hash);
+    };
+
     const recipient = (() => {
       if (!sendConfigs.recipientConfig.uiProperties.error) {
         return sendConfigs.recipientConfig.recipient;
@@ -207,11 +216,22 @@ export const BitcoinSendPage: FunctionComponent = observer(() => {
       return "0";
     })();
 
+    const utxoHash = simpleHash(
+      [...availableUTXOs]
+        .sort((a, b) => {
+          const txidCompare = a.txid.localeCompare(b.txid);
+          if (txidCompare !== 0) return txidCompare;
+          return a.vout - b.vout;
+        })
+        .map((u) => `${u.txid}:${u.vout}`)
+        .join(",")
+    ).toString(16);
+
     return [
       `to-${recipient}`,
       `amt-${amountHex}`,
       `fee-${sendConfigs.feeRateConfig.feeRate.toString()}`,
-      `bal-${availableUTXOs.length.toString()}`,
+      `utxo-${utxoHash}`,
     ].join("-");
   }, [
     sendConfigs.amountConfig.amount,
