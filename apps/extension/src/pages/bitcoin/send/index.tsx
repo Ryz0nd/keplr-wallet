@@ -15,7 +15,7 @@ import { useSearchParams } from "react-router-dom";
 import { useStore } from "../../../stores";
 import { useNavigate } from "react-router";
 import { TokenItem } from "../../main/components";
-import { Body2, Subtitle3 } from "../../../components/typography";
+import { Subtitle3 } from "../../../components/typography";
 import { Box } from "../../../components/box";
 import { YAxis } from "../../../components/axis";
 import { Gutter } from "../../../components/gutter";
@@ -51,9 +51,7 @@ import {
 } from "@keplr-wallet/background";
 import { IPsbtInput, RemainderStatus } from "@keplr-wallet/stores-bitcoin";
 import { BitcoinGuideBox } from "../components/guide-box";
-import { GuideBox } from "../../../components/guide-box";
-import { VerticalCollapseTransition } from "../../../components/transition/vertical-collapse";
-import { Checkbox } from "../../../components/checkbox";
+import { UnfilteredUtxoWarning } from "../components/unfiltered-utxo-warning";
 
 const Styles = {
   Flex1: styled.div`
@@ -604,49 +602,12 @@ export const BitcoinSendPage: FunctionComponent = observer(() => {
             feeRateConfig={sendConfigs.feeRateConfig}
             psbtSimulator={psbtSimulator}
           />
-          <VerticalCollapseTransition
-            collapsed={isFetchingAvailableUTXOs || !availableUTXOsApiError}
-          >
-            <GuideBox
-              color="warning"
-              hideInformationIcon={true}
-              title={intl.formatMessage({
-                id: "page.send.bitcoin.amount.unfiltered-assets-warning.title",
-              })}
-            />
-            <Gutter size="0.5rem" />
-            <Box
-              cursor="pointer"
-              onClick={(e) => {
-                e.preventDefault();
-                setAllowUnfilteredOnApiError(!allowUnfilteredOnApiError);
-              }}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexDirection: "row",
-                gap: "0.625rem",
-                width: "fit-content",
-                marginLeft: "auto",
-                marginRight: "auto",
-              }}
-            >
-              <Checkbox
-                size="small"
-                checked={allowUnfilteredOnApiError}
-                onChange={() => {
-                  // noop
-                }}
-              />
-              <Body2>
-                {intl.formatMessage({
-                  id: "page.send.bitcoin.amount.unfiltered-assets-warning.consent",
-                })}
-              </Body2>
-            </Box>
-            <Gutter size="0.5rem" />
-          </VerticalCollapseTransition>
+          <UnfilteredUtxoWarning
+            isLoading={isFetchingAvailableUTXOs}
+            apiError={availableUTXOsApiError}
+            allowUnfilteredOnApiError={allowUnfilteredOnApiError}
+            setAllowUnfilteredOnApiError={setAllowUnfilteredOnApiError}
+          />
         </Stack>
       </Box>
     </HeaderLayout>

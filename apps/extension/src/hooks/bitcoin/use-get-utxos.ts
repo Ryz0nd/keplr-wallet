@@ -61,20 +61,21 @@ export const useGetUTXOs = (
   // inscriptions/runes 조회는 명시적으로 파이지네이션으로 구현이 되어있지만, 이 훅에서는 파이지네이션을 사용하지 않는다.
   // 따라서, 조회 오류가 있는 경우는 항상 빈 배열을 반환하게 된다.
 
-  const inscribedUTXOs =
-    hasInscriptionsApiError && allowUnfilteredOnApiError
-      ? []
-      : inscriptionsPages
-          ?.filter((page) => !page.error)
-          ?.flatMap((page) => page.response?.data ?? [])
-          .map((inscription) => {
-            const { satpoint } = inscription;
-            const [txid, vout] = satpoint.split(":");
-            return {
-              txid,
-              vout: Number(vout),
-            };
-          });
+  // TODO: 테스트 후 원복 필요
+  const inscribedUTXOs = [] as { txid: string; vout: number }[];
+  // hasInscriptionsApiError && allowUnfilteredOnApiError
+  //   ? []
+  //   : inscriptionsPages
+  //       ?.filter((page) => !page.error)
+  //       ?.flatMap((page) => page.response?.data ?? [])
+  //       .map((inscription) => {
+  //         const { satpoint } = inscription;
+  //         const [txid, vout] = satpoint.split(":");
+  //         return {
+  //           txid,
+  //           vout: Number(vout),
+  //         };
+  //       });
 
   const runesUTXOs =
     hasRunesApiError && allowUnfilteredOnApiError

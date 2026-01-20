@@ -69,9 +69,7 @@ import { Bech32Address } from "@keplr-wallet/cosmos";
 import { InformationPlainIcon } from "../../../../components/icon";
 import { Tooltip } from "../../../../components/tooltip";
 import { BitcoinGuideBox } from "../../components/guide-box";
-import { GuideBox } from "../../../../components/guide-box";
-import { VerticalCollapseTransition } from "../../../../components/transition/vertical-collapse";
-import { Checkbox } from "../../../../components/checkbox";
+import { UnfilteredUtxoWarning } from "../../components/unfiltered-utxo-warning";
 import { HeaderProps } from "../../../../layouts/header/types";
 import { KeplrError } from "@keplr-wallet/router";
 import { ErrModuleLedgerSign } from "../../../sign/utils/ledger-types";
@@ -976,7 +974,6 @@ const PsbtDetailsView: FunctionComponent<{
     setAllowUnfilteredOnApiError,
   }) => {
     const theme = useTheme();
-    const intl = useIntl();
     const {
       sumInputValueByAddress,
       sumOutputValueByAddress,
@@ -1072,50 +1069,14 @@ const PsbtDetailsView: FunctionComponent<{
           isUnableToSendBitcoin={isUnableToSendBitcoin}
           criticalValidationError={criticalValidationError}
         />
-        <VerticalCollapseTransition
-          collapsed={
-            isFetchingUTXOs || !apiError || !setAllowUnfilteredOnApiError
-          }
-        >
-          <GuideBox
-            color="warning"
-            hideInformationIcon={true}
-            title={intl.formatMessage({
-              id: "page.send.bitcoin.amount.unfiltered-assets-warning.title",
-            })}
+        {setAllowUnfilteredOnApiError && (
+          <UnfilteredUtxoWarning
+            isLoading={isFetchingUTXOs}
+            apiError={apiError}
+            allowUnfilteredOnApiError={allowUnfilteredOnApiError ?? false}
+            setAllowUnfilteredOnApiError={setAllowUnfilteredOnApiError}
           />
-          <Gutter size="0.5rem" />
-          <Box
-            cursor="pointer"
-            onClick={(e) => {
-              e.preventDefault();
-              setAllowUnfilteredOnApiError?.(!allowUnfilteredOnApiError);
-            }}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexDirection: "row",
-              gap: "0.625rem",
-              width: "fit-content",
-              marginLeft: "auto",
-              marginRight: "auto",
-            }}
-          >
-            <Checkbox
-              size="small"
-              checked={allowUnfilteredOnApiError ?? false}
-              onChange={() => {
-                // noop
-              }}
-            />
-            <Body2>
-              {intl.formatMessage({
-                id: "page.send.bitcoin.amount.unfiltered-assets-warning.consent",
-              })}
-            </Body2>
-          </Box>
-        </VerticalCollapseTransition>
+        )}
         {ledgerGuideBox}
         {(hasGuideBox || hasLedgerGuideBox) && <Gutter size="0.75rem" />}
         {totalPsbts && totalPsbts > 1 && currentPsbtIndex !== undefined && (
