@@ -162,11 +162,10 @@ export const BitcoinSendPage: FunctionComponent = observer(() => {
     indexerError: availableUTXOsIndexerError,
     apiError: availableUTXOsApiError,
     availableUTXOs,
-    availableBalance,
     isUnfiltered: isAvailableBalanceUnfiltered,
     allowUnfilteredOnApiError,
     setAllowUnfilteredOnApiError,
-    shouldSkipFiltering,
+    setAvailableBalanceOnce,
   } = useGetUTXOs(chainId, sender, paymentType === "taproot", true);
 
   const sendConfigs = useSendTxConfig(
@@ -179,22 +178,13 @@ export const BitcoinSendPage: FunctionComponent = observer(() => {
   sendConfigs.amountConfig.setCurrency(currency);
 
   useEffect(() => {
-    if (isFetchingAvailableUTXOs || availableUTXOsIndexerError) {
-      return;
-    }
-
-    sendConfigs.availableBalanceConfig.setAvailableBalanceByAddress(
-      sender,
-      availableBalance
-    );
-  }, [
-    sender,
-    availableBalance,
-    sendConfigs.availableBalanceConfig,
-    isFetchingAvailableUTXOs,
-    availableUTXOsIndexerError,
-    shouldSkipFiltering,
-  ]);
+    setAvailableBalanceOnce((address, balance) => {
+      sendConfigs.availableBalanceConfig.setAvailableBalanceByAddress(
+        address,
+        balance
+      );
+    });
+  }, [setAvailableBalanceOnce, sendConfigs.availableBalanceConfig]);
 
   // bitcoin tx size는 amount, fee rate, recipient address type에 따라 달라진다.
   // 키는 요청의 고유한 값들을 조합하여 이전에 캐시된 psbt를 잘못 불러오는 것을 방지해야 한다.

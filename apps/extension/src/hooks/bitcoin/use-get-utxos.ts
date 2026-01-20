@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { DUST_THRESHOLD } from "@keplr-wallet/stores-bitcoin";
 import { useStore } from "../../stores";
 import { useGetInscriptionsByAddress } from "./use-get-inscriptions";
@@ -36,9 +36,10 @@ export const useGetUTXOs = (
 
   const confirmedUTXOs = queryUTXOs?.confirmedUTXOs || [];
 
+  // TODO: 테스트 후 원복 필요
   const hasInscriptionsApiError =
     inscriptionProtected &&
-    inscriptionsPages?.some((page) => page.error) &&
+    // inscriptionsPages?.some((page) => page.error) &&
     !isFetchingInscriptions;
   const hasRunesApiError =
     runesProtected &&
@@ -117,20 +118,37 @@ export const useGetUTXOs = (
       availableBalance,
     };
   })();
-
   const isFetching =
     isFetchingInscriptions || isFetchingRunesOutputs || queryUTXOs?.isFetching;
 
   const indexerError = queryUTXOs?.error;
+  // TODO: 테스트 후 원복 필요
   const apiError =
     (hasInscriptionsApiError
-      ? inscriptionsPages.find((page) => page.error)?.error
+      ? inscriptionsPages.find((page) => page.error)?.error ||
+        new Error("Test: Inscriptions API error")
       : undefined) ||
     (hasRunesApiError
       ? runesPages.find((page) => page.error)?.error
       : undefined);
 
   const error = indexerError || apiError;
+
+  const [hasSetAvailableBalance, setHasSetAvailableBalance] = useState(false);
+
+  // allowUnfilteredOnApiError가 변경되면 리셋
+  useEffect(() => {
+    setHasSetAvailableBalance(false);
+  }, [allowUnfilteredOnApiError]);
+
+  const setAvailableBalanceOnce = (
+    setter: (sender: string, balance: CoinPretty) => void
+  ) => {
+    if (!isFetching && !indexerError && !hasSetAvailableBalance) {
+      setHasSetAvailableBalance(true);
+      setter(address, availableBalance);
+    }
+  };
 
   return {
     isFetching,
@@ -146,5 +164,6 @@ export const useGetUTXOs = (
     isUnfiltered,
     allowUnfilteredOnApiError,
     setAllowUnfilteredOnApiError,
+    setAvailableBalanceOnce,
   };
 };
