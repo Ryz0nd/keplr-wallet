@@ -67,10 +67,7 @@ export const useGetAllNonNativeChain = ({
 
   const queryChains = queriesStore.simpleQuery.queryGet<{
     chains: ChainInfo[];
-  }>(
-    "https://7v6zjsr36fqrqcaeuqbhyrq46a0qndzt.lambda-url.us-west-2.on.aws",
-    `/chains`
-  );
+  }>("https://kcr-lambda.keplr.app", `/chains`);
 
   // 체인 데이터 가져오기
   useEffect(() => {

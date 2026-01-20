@@ -7,7 +7,7 @@ export function useGetEarnApy(chainId: string) {
   const queryAPY = queriesStore.simpleQuery.queryGet<{
     earnApy: number;
   }>(
-    "https://pjld2aanw3elvteui4gwyxgx4m0ceweg.lambda-url.us-west-2.on.aws",
+    "https://apr-lambda.keplr.app",
     `/earn-apy/${chainStore.getChain(chainId).chainIdentifier}`
   );
 

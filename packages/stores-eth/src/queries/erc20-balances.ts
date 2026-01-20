@@ -199,7 +199,15 @@ export class ObservableQueryThirdpartyERC20BalanceRegistry
     ObservableQueryThirdpartyERC20BalancesImplParent
   > = new Map();
 
-  constructor(protected readonly sharedContext: QuerySharedContext) {}
+  constructor(
+    protected readonly sharedContext: QuerySharedContext,
+    protected readonly forceNativeERC20Query: (
+      chainId: string,
+      chainGetter: ChainGetter,
+      address: string,
+      minimalDenom: string
+    ) => boolean
+  ) {}
 
   getBalanceImpl(
     chainId: string,
@@ -215,7 +223,8 @@ export class ObservableQueryThirdpartyERC20BalanceRegistry
       !Object.keys(thirdparySupportedChainIdMap).includes(chainId) ||
       denomHelper.type !== "erc20" ||
       !isHexAddress ||
-      !chainInfo.evm
+      !chainInfo.evm ||
+      this.forceNativeERC20Query(chainId, chainGetter, address, minimalDenom)
     ) {
       return;
     }

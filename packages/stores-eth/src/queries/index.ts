@@ -23,6 +23,12 @@ export const EthereumQueries = {
   use(options: {
     coingeckoAPIBaseURL: string;
     coingeckoAPIURI: string;
+    forceNativeERC20Query: (
+      chainId: string,
+      chainGetter: ChainGetter,
+      address: string,
+      minimalDenom: string
+    ) => boolean;
   }): (
     queriesSetBase: QueriesSetBase,
     sharedContext: QuerySharedContext,
@@ -39,6 +45,7 @@ export const EthereumQueries = {
         ethereum: new EthereumQueriesImpl(
           queriesSetBase,
           sharedContext,
+          options.forceNativeERC20Query,
           chainId,
           chainGetter,
           options.coingeckoAPIBaseURL,
@@ -61,6 +68,12 @@ export class EthereumQueriesImpl {
   constructor(
     base: QueriesSetBase,
     sharedContext: QuerySharedContext,
+    protected readonly forceNativeERC20Query: (
+      chainId: string,
+      chainGetter: ChainGetter,
+      address: string,
+      minimalDenom: string
+    ) => boolean,
     protected chainId: string,
     protected chainGetter: ChainGetter,
     protected coingeckoAPIBaseURL: string,
@@ -70,7 +83,10 @@ export class EthereumQueriesImpl {
       new ObservableQueryEthereumERC20BalanceRegistry(sharedContext)
     );
     base.queryBalances.addBalanceRegistry(
-      new ObservableQueryThirdpartyERC20BalanceRegistry(sharedContext)
+      new ObservableQueryThirdpartyERC20BalanceRegistry(
+        sharedContext,
+        forceNativeERC20Query
+      )
     );
     base.queryBalances.addBalanceRegistry(
       new ObservableQueryEthAccountBalanceRegistry(sharedContext)
