@@ -2291,6 +2291,20 @@ export class RecentSendHistoryService {
             targetDenom,
             onFulfill
           );
+        } else if (
+          status === SwapV2TxStatus.SUCCESS &&
+          !skipAssetTracking &&
+          !isAtDestinationChain
+        ) {
+          // response status는 SUCCESS인데 destination chain에 도달하지 않음 → 실패 처리
+          runInAction(() => {
+            history.status = SwapV2TxStatus.FAILED;
+            history.trackDone = true;
+          });
+
+          // TODO: additional tracking for failed case...
+
+          onFulfill();
         } else {
           history.trackDone = true;
           onFulfill();
