@@ -2092,19 +2092,45 @@ export class RecentSendHistoryService {
       steps.find((s) => s.status !== SwapV2RouteStepStatus.SUCCESS) ??
       steps[steps.length - 1];
 
-    // NOTE: The lengths of simpleRoute and steps may differ.
-    let updatedRouteIndex = Math.max(0, history.routeIndex);
-    if (currentStep.chain_id) {
-      const normalizedStepChainId = currentStep.chain_id.toLowerCase();
+    const normalizeChainId = (chainId: string): string => {
+      return chainId.replace("eip155:", "").toLowerCase();
+    };
+
+    const findSimpleRouteIndex = (chainId: string): number => {
+      const normalizedChainId = normalizeChainId(chainId);
       for (let i = 0; i < simpleRoute.length; i++) {
-        const routeChainId = simpleRoute[i].chainId
-          .replace("eip155:", "")
-          .toLowerCase();
-        if (routeChainId === normalizedStepChainId) {
-          updatedRouteIndex = i;
-          break;
+        const routeChainId = normalizeChainId(simpleRoute[i].chainId);
+        if (routeChainId === normalizedChainId) {
+          return i;
         }
       }
+      return -1;
+    };
+
+    // NOTE: The lengths of simpleRoute and steps may differ.
+    let updatedRouteIndex = Math.max(0, history.routeIndex);
+
+    // 1. Find highest completed simpleRoute index from all SUCCESS steps
+    let highestCompletedIndex = -1;
+    for (const step of steps) {
+      if (step.status === SwapV2RouteStepStatus.SUCCESS && step.chain_id) {
+        const routeIdx = findSimpleRouteIndex(step.chain_id);
+        if (routeIdx > highestCompletedIndex) {
+          highestCompletedIndex = routeIdx;
+        }
+      }
+    }
+
+    // 2. Also check if currentStep is in simpleRoute
+    let currentStepIndex = -1;
+    if (currentStep.chain_id) {
+      currentStepIndex = findSimpleRouteIndex(currentStep.chain_id);
+    }
+
+    // 3. Use the higher value as updatedRouteIndex
+    const candidateIndex = Math.max(highestCompletedIndex, currentStepIndex);
+    if (candidateIndex >= 0) {
+      updatedRouteIndex = candidateIndex;
     }
 
     const publishExecutableChains = (chainIds?: string[]) => {
@@ -3489,7 +3515,7 @@ export class RecentSendHistoryService {
 
             if (destinationChainInfo) {
               onDynamicHopDetected({
-                portId: "transfer",
+                portId: "transfer", // CHECK: transfer를 하드코딩해도 되는지 확인
                 channelId: lastSendPacket.srcChannel,
                 counterpartyChainId: destinationChainInfo.chainId,
                 sequence: lastSendPacket.sequence,
