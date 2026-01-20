@@ -4,7 +4,6 @@ export * from "./target-assets";
 export * from "./validate-target-assets";
 export * from "./route";
 export * from "./chains";
-export * from "./transfer-paths";
 export * from "./queries";
 export * from "./swap-helper";
 export * from "./utils";

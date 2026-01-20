@@ -2039,7 +2039,7 @@ export class RecentSendHistoryService {
     };
 
     requestSwapV2TxStatus({
-      endpoint: "https://keplr-api-dev.keplr.app", // TODO: change to production URL
+      endpoint: SWAP_API_ENDPOINT,
       fromChainId: normalizeChainId(fromChainId),
       toChainId: normalizeChainId(toChainId),
       provider,
