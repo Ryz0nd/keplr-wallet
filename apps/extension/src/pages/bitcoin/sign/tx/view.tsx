@@ -69,6 +69,9 @@ import { Bech32Address } from "@keplr-wallet/cosmos";
 import { InformationPlainIcon } from "../../../../components/icon";
 import { Tooltip } from "../../../../components/tooltip";
 import { BitcoinGuideBox } from "../../components/guide-box";
+import { GuideBox } from "../../../../components/guide-box";
+import { VerticalCollapseTransition } from "../../../../components/transition/vertical-collapse";
+import { Checkbox } from "../../../../components/checkbox";
 import { HeaderProps } from "../../../../layouts/header/types";
 import { KeplrError } from "@keplr-wallet/router";
 import { ErrModuleLedgerSign } from "../../../sign/utils/ledger-types";
@@ -161,7 +164,10 @@ export const SignBitcoinTxView: FunctionComponent<{
   const {
     availableUTXOs,
     isFetching: isFetchingUTXOs,
-    error: utxoError,
+    indexerError,
+    apiError,
+    allowUnfilteredOnApiError,
+    setAllowUnfilteredOnApiError,
   } = useGetUTXOs(
     chainId,
     senderConfig.sender,
@@ -210,7 +216,7 @@ export const SignBitcoinTxView: FunctionComponent<{
         throw new Error("Fetching available utxos");
       }
 
-      if (utxoError) {
+      if (indexerError) {
         throw new Error("Can't find available utxos");
       }
 
@@ -333,20 +339,25 @@ export const SignBitcoinTxView: FunctionComponent<{
     (data) => data.inputsToSign.length === 0
   );
   const isUnableToGetUTXOs =
-    hasPsbtCandidate && !isFetchingUTXOs && !!utxoError;
+    hasPsbtCandidate && !isFetchingUTXOs && !!indexerError;
   const isUnableToSendBitcoin =
     hasPsbtCandidate && !isFetchingUTXOs && availableUTXOs.length === 0;
+  const needsUnfilteredConsent =
+    hasPsbtCandidate && !!apiError && !allowUnfilteredOnApiError;
 
   const buttonDisabled =
     txConfigsValidate.interactionBlocked ||
     !isInitialized ||
     !!criticalValidationError ||
     hasUnableToSignPsbt ||
-    isUnableToGetUTXOs;
+    isUnableToGetUTXOs ||
+    needsUnfilteredConsent;
   const isLoading =
     signBitcoinTxInteractionStore.isObsoleteInteractionApproved(
       interactionData.id
-    ) || isLedgerInteracting;
+    ) ||
+    isLedgerInteracting ||
+    (hasPsbtCandidate && isFetchingUTXOs);
   const isExternal =
     interactionInfo.interaction && !interactionInfo.interactionInternal;
 
@@ -651,6 +662,10 @@ export const SignBitcoinTxView: FunctionComponent<{
             validatedPsbt={validatedPsbts?.[0]}
             ledgerGuideBox={ledgerGuideBox}
             criticalValidationError={criticalValidationError}
+            isFetchingUTXOs={isFetchingUTXOs}
+            apiError={apiError}
+            allowUnfilteredOnApiError={allowUnfilteredOnApiError}
+            setAllowUnfilteredOnApiError={setAllowUnfilteredOnApiError}
           />
         )
       ) : (
@@ -939,6 +954,10 @@ const PsbtDetailsView: FunctionComponent<{
   currentPsbtIndex?: number;
   ledgerGuideBox?: React.ReactNode;
   criticalValidationError?: Error;
+  isFetchingUTXOs?: boolean;
+  apiError?: Error;
+  allowUnfilteredOnApiError?: boolean;
+  setAllowUnfilteredOnApiError?: (value: boolean) => void;
 }> = observer(
   ({
     validatedPsbt,
@@ -951,8 +970,13 @@ const PsbtDetailsView: FunctionComponent<{
     currentPsbtIndex,
     ledgerGuideBox,
     criticalValidationError,
+    isFetchingUTXOs,
+    apiError,
+    allowUnfilteredOnApiError,
+    setAllowUnfilteredOnApiError,
   }) => {
     const theme = useTheme();
+    const intl = useIntl();
     const {
       sumInputValueByAddress,
       sumOutputValueByAddress,
@@ -1015,11 +1039,13 @@ const PsbtDetailsView: FunctionComponent<{
       (input) => !input.isMine
     );
     const isUnableToSign = validatedPsbt?.inputsToSign.length === 0;
+    const hasApiErrorWarning = !isFetchingUTXOs && !!apiError;
     const hasGuideBox =
       isUnableToGetUTXOs ||
       isUnableToSendBitcoin ||
       isPartialSign ||
-      isUnableToSign;
+      isUnableToSign ||
+      hasApiErrorWarning;
     const hasLedgerGuideBox =
       totalPsbts && currentPsbtIndex !== undefined
         ? currentPsbtIndex === totalPsbts - 1 && ledgerGuideBox
@@ -1046,6 +1072,50 @@ const PsbtDetailsView: FunctionComponent<{
           isUnableToSendBitcoin={isUnableToSendBitcoin}
           criticalValidationError={criticalValidationError}
         />
+        <VerticalCollapseTransition
+          collapsed={
+            isFetchingUTXOs || !apiError || !setAllowUnfilteredOnApiError
+          }
+        >
+          <GuideBox
+            color="warning"
+            hideInformationIcon={true}
+            title={intl.formatMessage({
+              id: "page.send.bitcoin.amount.unfiltered-assets-warning.title",
+            })}
+          />
+          <Gutter size="0.5rem" />
+          <Box
+            cursor="pointer"
+            onClick={(e) => {
+              e.preventDefault();
+              setAllowUnfilteredOnApiError?.(!allowUnfilteredOnApiError);
+            }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexDirection: "row",
+              gap: "0.625rem",
+              width: "fit-content",
+              marginLeft: "auto",
+              marginRight: "auto",
+            }}
+          >
+            <Checkbox
+              size="small"
+              checked={allowUnfilteredOnApiError ?? false}
+              onChange={() => {
+                // noop
+              }}
+            />
+            <Body2>
+              {intl.formatMessage({
+                id: "page.send.bitcoin.amount.unfiltered-assets-warning.consent",
+              })}
+            </Body2>
+          </Box>
+        </VerticalCollapseTransition>
         {ledgerGuideBox}
         {(hasGuideBox || hasLedgerGuideBox) && <Gutter size="0.75rem" />}
         {totalPsbts && totalPsbts > 1 && currentPsbtIndex !== undefined && (
