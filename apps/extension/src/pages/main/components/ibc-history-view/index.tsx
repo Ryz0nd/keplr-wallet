@@ -1508,6 +1508,11 @@ const SwapV2HistoryViewItem: FunctionComponent<{
     );
   }, [history]);
 
+  // unknown인 경우, trackDone이 false더라도 우선적으로 unknown 상태로 표시
+  const isUnknownStatus = useMemo(() => {
+    return history.status === SwapV2TxStatus.UNKNOWN;
+  }, [history]);
+
   const { failedRouteIndex, failedRoute } = useMemo(() => {
     // Failed if status is FAILED or if there's a trackError/additionalTrackError
     if (
@@ -2048,6 +2053,10 @@ const SwapV2HistoryViewItem: FunctionComponent<{
       <YAxis>
         <XAxis alignY="center">
           {(() => {
+            if (isUnknownStatus) {
+              return null;
+            }
+
             if (failedRouteIndex >= 0) {
               return (
                 <ErrorIcon
@@ -2105,6 +2114,12 @@ const SwapV2HistoryViewItem: FunctionComponent<{
             }
           >
             {(() => {
+              if (isUnknownStatus) {
+                return intl.formatMessage({
+                  id: "page.main.components.ibc-history-view.swap-v2.unknown.title",
+                });
+              }
+
               if (failedRouteIndex >= 0) {
                 if (
                   history.status === SwapV2TxStatus.FAILED &&
@@ -2390,8 +2405,14 @@ const SwapV2HistoryViewItem: FunctionComponent<{
                   <IbcHistoryViewItemChainImage
                     key={i}
                     chainInfo={chainInfo}
-                    completed={!error && !refunded && completed}
+                    completed={
+                      !error && !refunded && (completed || !!isUnknownStatus)
+                    }
                     notCompletedBlink={(() => {
+                      if (isUnknownStatus) {
+                        return false;
+                      }
+
                       if (failedRoute) {
                         // asset이 릴리즈된 체인까지는 blink하지 않음
                         if (
@@ -2540,7 +2561,9 @@ const SwapV2HistoryViewItem: FunctionComponent<{
           </Caption1>
         </VerticalCollapseTransition>
         <VerticalCollapseTransition
-          collapsed={historyCompleted || failedRouteIndex >= 0}
+          collapsed={
+            (historyCompleted && !isUnknownStatus) || failedRouteIndex >= 0
+          }
         >
           <Gutter size="1rem" />
           <Box
@@ -2578,25 +2601,91 @@ const SwapV2HistoryViewItem: FunctionComponent<{
                       : ColorPalette["gray-10"]
                   }
                 >
-                  <FormattedMessage
-                    id="page.main.components.ibc-history-view.estimated-duration.value"
-                    values={{
-                      minutes: (() => {
-                        const minutes = Math.floor(
-                          history.routeDurationSeconds / 60
-                        );
-                        const seconds = history.routeDurationSeconds % 60;
+                  {isUnknownStatus ? (
+                    <FormattedMessage id="page.main.components.ibc-history-view.estimated-duration.not-available" />
+                  ) : (
+                    <FormattedMessage
+                      id="page.main.components.ibc-history-view.estimated-duration.value"
+                      values={{
+                        minutes: (() => {
+                          const minutes = Math.floor(
+                            history.routeDurationSeconds / 60
+                          );
+                          const seconds = history.routeDurationSeconds % 60;
 
-                        return minutes + Math.ceil(seconds / 60);
-                      })(),
-                    }}
-                  />
+                          return minutes + Math.ceil(seconds / 60);
+                        })(),
+                      }}
+                    />
+                  )}
                 </Body2>
               </XAxis>
             </React.Fragment>
           )}
+          {isUnknownStatus && (
+            <React.Fragment>
+              <Gutter size="0.625rem" />
+              <Body2
+                color={
+                  theme.mode === "light"
+                    ? ColorPalette["gray-300"]
+                    : ColorPalette["gray-200"]
+                }
+                style={{
+                  lineHeight: "1.25",
+                }}
+              >
+                <FormattedMessage
+                  id="page.main.components.ibc-history-view.swap-v2.unknown.contact-provider"
+                  values={{
+                    copy: (chunks: React.ReactNode) => (
+                      <InlineCopyText
+                        onCopy={async () => {
+                          const routeChains = history.simpleRoute
+                            .map((r) => r.chainId)
+                            .join(" → ");
+                          const details = [
+                            `Provider: ${history.provider}`,
+                            `From Chain: ${history.fromChainId}`,
+                            `To Chain: ${history.toChainId}`,
+                            `Transaction Hash: ${history.txHash}`,
+                            `Route: ${routeChains}`,
+                          ].join("\n");
+                          await navigator.clipboard.writeText(details);
+                        }}
+                      >
+                        {chunks}
+                      </InlineCopyText>
+                    ),
+                    provider: (chunks: React.ReactNode) => (
+                      <a
+                        href={
+                          history.provider === SwapProvider.SQUID
+                            ? "https://support.squidrouter.com/"
+                            : "https://discord.com/invite/interchain"
+                        }
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          color: "inherit",
+                          textDecoration: "underline",
+                        }}
+                      >
+                        {chunks}
+                      </a>
+                    ),
+                    providerName:
+                      history.provider === SwapProvider.SQUID
+                        ? "Squid"
+                        : "Skip",
+                    minutes: 2,
+                  }}
+                />
+              </Body2>
+            </React.Fragment>
+          )}
           {/* only show close message when there is no tx execution */}
-          {!txExecution && (
+          {!txExecution && !isUnknownStatus && (
             <React.Fragment>
               <Gutter size="1rem" />
               <Caption2
@@ -2686,6 +2775,94 @@ const SwapV2HistoryViewItem: FunctionComponent<{
     </Box>
   );
 });
+
+const InlineCopyText: FunctionComponent<{
+  children: React.ReactNode;
+  onCopy: () => Promise<void>;
+}> = ({ children, onCopy }) => {
+  const [animCheck, setAnimCheck] = useState(false);
+
+  useEffect(() => {
+    if (animCheck) {
+      const timeout = setTimeout(() => {
+        setAnimCheck(false);
+      }, 2500);
+
+      return () => {
+        clearTimeout(timeout);
+      };
+    }
+  }, [animCheck]);
+
+  return (
+    <span
+      style={{
+        cursor: "pointer",
+        color: ColorPalette["blue-400"],
+      }}
+      onClick={async (e) => {
+        e.preventDefault();
+        await onCopy();
+        setAnimCheck(true);
+      }}
+    >
+      <span
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: 16,
+          height: 16,
+          verticalAlign: "text-bottom",
+          marginRight: 2,
+        }}
+      >
+        {!animCheck ? (
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            fill="none"
+            viewBox="0 0 16 16"
+          >
+            <path
+              stroke={ColorPalette["blue-400"]}
+              strokeLinecap="round"
+              strokeWidth="1.5"
+              d="M10.667 2.668h-6.4a1.6 1.6 0 00-1.6 1.6v6.4"
+            />
+            <rect
+              width="7.733"
+              height="7.733"
+              x="5.467"
+              y="5.468"
+              stroke={ColorPalette["blue-400"]}
+              strokeWidth="1.5"
+              rx="0.8"
+            />
+          </svg>
+        ) : (
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke={ColorPalette["blue-400"]}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2.5"
+              d="M5 13l4 4L19 7"
+            />
+          </svg>
+        )}
+      </span>
+      {children}
+    </span>
+  );
+};
 
 const ChainImageFallbackAnimated = animated(ChainImageFallback);
 

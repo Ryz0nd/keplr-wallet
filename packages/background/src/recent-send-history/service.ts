@@ -2071,13 +2071,17 @@ export class RecentSendHistoryService {
     const { simpleRoute } = history;
     const prevRouteIndex = history.routeIndex;
 
+    // 모든 상태 즉시 업데이트 (UNKNOWN 포함)
     history.status = status;
     history.trackError = undefined;
 
     // This might be the state where tracking has just started,
     // so handle the error and retry
     if (!steps || steps.length === 0) {
-      if (status === SwapV2TxStatus.IN_PROGRESS) {
+      if (
+        status === SwapV2TxStatus.IN_PROGRESS ||
+        status === SwapV2TxStatus.UNKNOWN
+      ) {
         onError();
       } else {
         // swap on single evm chain might not have steps
@@ -2146,8 +2150,35 @@ export class RecentSendHistoryService {
       });
     };
 
+    const isUnknownStatus =
+      status === SwapV2TxStatus.UNKNOWN ||
+      steps.some((s) => s.status === SwapV2RouteStepStatus.UNKNOWN);
+
+    // UNKNOWN 상태 타임아웃 처리
+    const UNKNOWN_TIMEOUT_MS = 2 * 60 * 1000; // 2분
+
+    if (isUnknownStatus) {
+      if (!history.unknownStatusFirstSeenAt) {
+        // UNKNOWN 상태 처음 발견 - 타임스탬프 기록
+        history.unknownStatusFirstSeenAt = Date.now();
+      } else {
+        const elapsedMs = Date.now() - history.unknownStatusFirstSeenAt;
+        if (elapsedMs >= UNKNOWN_TIMEOUT_MS) {
+          history.trackDone = true;
+          onFulfill();
+          return;
+        }
+      }
+    } else {
+      // UNKNOWN 상태가 아니면 타임스탬프 초기화
+      if (history.unknownStatusFirstSeenAt !== undefined) {
+        history.unknownStatusFirstSeenAt = undefined;
+      }
+    }
+
     switch (status) {
       case SwapV2TxStatus.IN_PROGRESS:
+      case SwapV2TxStatus.UNKNOWN:
         // publish executable chains if routeIndex increased
         if (updatedRouteIndex > prevRouteIndex) {
           history.routeIndex = updatedRouteIndex;
