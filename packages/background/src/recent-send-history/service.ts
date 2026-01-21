@@ -2175,7 +2175,7 @@ export class RecentSendHistoryService {
 
         let executableChainIdsToPublish: string[] | undefined;
 
-        // NOTE: 현재 asset_location은 skip의 interchain operation인 경우에만 주어지는 값이다.
+        // NOTE: 현재 asset_location은 skip의 multichain operation인 경우에만 주어지는 값이다.
         if (asset_location) {
           const chainId = asset_location.chain_id;
           const evmLikeChainId = Number(chainId);
@@ -2211,8 +2211,8 @@ export class RecentSendHistoryService {
                   (예: base USDC -> osmosis OSMO 스왑 시, noble USDC가 먼저 도착하고
                   이후 noble USDC -> osmosis OSMO로 ibc swap하는 transaction이 필요한 경우)
                   이 경우 추가 transaction을 실행하거나 현재 받은 자산을 그대로 둘 수 있음
-                - "refund": PARTIAL_SUCCESS/FAILED 상태로 자산이 중간에서 릴리즈된 경우
-                  backgroundExecutionId가 있으면 멀티 transaction 케이스이고 추가 transaction이 필요할 수 있음
+                - "refund": 중간에서 또는 destination에서 스왑 실패 등으로 destination asset이 아닌 자산이 릴리즈된 경우
+                  backgroundExecutionId가 있으면 멀티 transaction 케이스이므로 다음 transaction을 실행할 수 있도록 'intermediate'로 설정
             */
             const assetLocationType: "refund" | "intermediate" =
               status === SwapV2TxStatus.SUCCESS && history.backgroundExecutionId
@@ -2229,6 +2229,11 @@ export class RecentSendHistoryService {
               ],
               type: assetLocationType,
             };
+
+            // refund 타입인 경우 status도 FAILED로 변경하여 UI에서 refund 상황을 표시할 수 있도록 함
+            if (assetLocationType === "refund") {
+              history.status = SwapV2TxStatus.FAILED;
+            }
 
             // asset location chain까지 routeIndex가 이동해야 하는지 확인
             const assetLocationChainIndex = simpleRoute.findIndex(
@@ -2284,6 +2289,8 @@ export class RecentSendHistoryService {
 
         // resAmount 또는 assetLocationInfo가 없으면 추가적으로 자산 추적을 해야 한다.
         if (targetTxHash && !skipAssetTracking && isAtDestinationChain) {
+          console.log("trackSwapV2ReleasedAssetAmount", id, targetTxHash);
+
           this.trackSwapV2ReleasedAssetAmount(
             id,
             targetTxHash,
