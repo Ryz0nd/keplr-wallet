@@ -2,19 +2,12 @@ import { UnsignedTransaction } from "@ethersproject/transactions";
 import { StdFee } from "@keplr-wallet/types";
 import { Any } from "@keplr-wallet/proto-types/google/protobuf/any";
 import { Msg } from "@keplr-wallet/types";
-import {
-  IBCTransferHistoryData,
-  IBCSwapHistoryData,
-  SwapV2HistoryData,
-} from "../recent-send-history";
+import { SwapV2HistoryData } from "../recent-send-history";
 
 export {
   SwapProvider,
-  IBCTransferHistoryData,
-  IBCSwapHistoryData,
   SwapV2HistoryData,
   IBCSwapMinimalTrackingData,
-  HistoryData,
 } from "../recent-send-history";
 
 // Transaction status
@@ -88,8 +81,6 @@ export enum TxExecutionStatus {
 
 export enum TxExecutionType {
   UNDEFINED = "undefined",
-  IBC_TRANSFER = "ibc-transfer",
-  IBC_SWAP = "ibc-swap",
   SWAP_V2 = "swap-v2",
 }
 
@@ -125,20 +116,6 @@ export interface UndefinedTxExecution extends TxExecutionBase {
   historyData?: never;
 }
 
-export interface IBCTransferTxExecution extends TxExecutionBase {
-  readonly type: TxExecutionType.IBC_TRANSFER;
-  historyData?: IBCTransferHistoryData;
-
-  historyId?: string;
-}
-
-export interface IBCSwapTxExecution extends TxExecutionBase {
-  readonly type: TxExecutionType.IBC_SWAP;
-  historyData?: IBCSwapHistoryData;
-
-  historyId?: string;
-}
-
 export interface SwapV2TxExecution extends TxExecutionBase {
   readonly type: TxExecutionType.SWAP_V2;
   historyData?: SwapV2HistoryData;
@@ -148,16 +125,10 @@ export interface SwapV2TxExecution extends TxExecutionBase {
 
 export type ExecutionTypeToHistoryData = {
   [TxExecutionType.SWAP_V2]: SwapV2HistoryData;
-  [TxExecutionType.IBC_TRANSFER]: IBCTransferHistoryData;
-  [TxExecutionType.IBC_SWAP]: IBCSwapHistoryData;
   [TxExecutionType.UNDEFINED]: undefined;
 };
 
-export type TxExecution =
-  | UndefinedTxExecution
-  | IBCTransferTxExecution
-  | IBCSwapTxExecution
-  | SwapV2TxExecution;
+export type TxExecution = UndefinedTxExecution | SwapV2TxExecution;
 
 export type TxExecutionEvent =
   | {

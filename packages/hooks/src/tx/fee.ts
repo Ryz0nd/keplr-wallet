@@ -1225,7 +1225,7 @@ export class FeeConfig extends TxChainSetter implements IFeeConfig {
 
       if (!bal) {
         priorWarning = new Error(
-          `Can't parse the balance for ${need.currency.coinMinimalDenom}`
+          `Unable to load your ${need.currency.coinMinimalDenom} balance`
         );
       }
 

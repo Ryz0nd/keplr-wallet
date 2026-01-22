@@ -19,6 +19,7 @@ import {
   SwapV2TxStatus,
   TxExecution,
   TxExecutionStatus,
+  UNKNOWN_TX_STATUS_TIMEOUT_MS,
 } from "@keplr-wallet/background";
 import { SwapProvider } from "@keplr-wallet/types";
 import { InExtensionMessageRequester } from "@keplr-wallet/router-extension";
@@ -291,6 +292,10 @@ export const IbcHistoryView: FunctionComponent<{
     });
 
     const filteredSwapV2Histories = swapV2Histories.filter((history) => {
+      if (history.hidden) {
+        return false;
+      }
+
       const firstRoute = history.simpleRoute[0];
       const account = accountStore.getAccount(firstRoute.chainId);
 
@@ -1431,6 +1436,7 @@ const SwapV2HistoryViewItem: FunctionComponent<{
     accountStore,
     ethereumAccountStore,
     keyRingStore,
+    analyticsStore,
   } = useStore();
 
   const theme = useTheme();
@@ -1478,8 +1484,12 @@ const SwapV2HistoryViewItem: FunctionComponent<{
       return false;
     }
 
-    // If there's a track error, check if assetLocationInfo exists (refund completed)
-    if (history.trackError || history.additionalTrackError) {
+    // If there's a track error or FAILED status, check if assetLocationInfo exists (refund completed)
+    if (
+      history.status === SwapV2TxStatus.FAILED ||
+      history.trackError ||
+      history.additionalTrackError
+    ) {
       return !!history.assetLocationInfo;
     }
 
@@ -1498,6 +1508,11 @@ const SwapV2HistoryViewItem: FunctionComponent<{
         history.status === SwapV2TxStatus.PARTIAL_SUCCESS) &&
       history.routeIndex === history.simpleRoute.length - 1
     );
+  }, [history]);
+
+  // unknown인 경우, trackDone이 false더라도 우선적으로 unknown 상태로 표시
+  const isUnknownStatus = useMemo(() => {
+    return history.status === SwapV2TxStatus.UNKNOWN;
   }, [history]);
 
   const { failedRouteIndex, failedRoute } = useMemo(() => {
@@ -2040,6 +2055,10 @@ const SwapV2HistoryViewItem: FunctionComponent<{
       <YAxis>
         <XAxis alignY="center">
           {(() => {
+            if (isUnknownStatus) {
+              return null;
+            }
+
             if (failedRouteIndex >= 0) {
               return (
                 <ErrorIcon
@@ -2097,6 +2116,12 @@ const SwapV2HistoryViewItem: FunctionComponent<{
             }
           >
             {(() => {
+              if (isUnknownStatus) {
+                return intl.formatMessage({
+                  id: "page.main.components.ibc-history-view.swap-v2.unknown.title",
+                });
+              }
+
               if (failedRouteIndex >= 0) {
                 if (
                   history.status === SwapV2TxStatus.FAILED &&
@@ -2176,11 +2201,18 @@ const SwapV2HistoryViewItem: FunctionComponent<{
               const destinationAssets = (() => {
                 // NOTE: evm은 resAmount[0]에 들어감
                 if (history.additionalTrackingData?.type === "cosmos-ibc") {
-                  const resAmount =
-                    history.resAmount[
-                      history.additionalTrackingData.ibcHistory.length
-                    ];
-                  if (resAmount) {
+                  const resAmount = history.additionalTrackingData
+                    .dynamicHopDetected
+                    ? // 동적 홉이 감지된 경우 마지막 유효한 항목 사용
+                      history.resAmount
+                        .slice()
+                        .reverse()
+                        .find((r) => r && r.length > 0)
+                    : // 일반 케이스: ibcHistory.length 인덱스 사용
+                      history.resAmount[
+                        history.additionalTrackingData.ibcHistory.length
+                      ];
+                  if (resAmount && resAmount.length > 0) {
                     return resAmount
                       .map((amount) => {
                         return new CoinPretty(
@@ -2233,6 +2265,14 @@ const SwapV2HistoryViewItem: FunctionComponent<{
                   assets: destinationAssets,
                 }
               );
+            }
+
+            if (failedRouteIndex >= 0) {
+              return intl.formatMessage({
+                id: historyCompleted
+                  ? "page.main.components.ibc-history-view.ibc-swap.failed.complete"
+                  : "page.main.components.ibc-history-view.ibc-swap.failed.in-progress",
+              });
             }
 
             // swap v2 history의 amount에는 [sourceChain의 amount, destinationChain의 expected amount]가 들어있으므로
@@ -2326,7 +2366,9 @@ const SwapV2HistoryViewItem: FunctionComponent<{
                 (!history.additionalTrackingData ||
                   !!history.additionalTrackDone);
               const hasTrackError =
-                !!history.trackError || !!history.additionalTrackError;
+                history.status === SwapV2TxStatus.FAILED ||
+                !!history.trackError ||
+                !!history.additionalTrackError;
 
               return chainIds.map((chainId, i) => {
                 const chainInfo = chainStore.getChain(chainId);
@@ -2339,26 +2381,40 @@ const SwapV2HistoryViewItem: FunctionComponent<{
                   (assetReleasedRouteIndex >= 0 &&
                     i <= assetReleasedRouteIndex);
 
-                // 에러는 assetReleasedRouteIndex보다 큰 인덱스에서만 표시
+                // 에러는 진행된 route까지만 표시 (routeIndex 이하), 그 이후는 표시 안함
                 const error =
                   hasTrackError &&
                   i >= failedRouteIndex &&
+                  i <= history.routeIndex &&
                   (assetReleasedRouteIndex < 0 || i > assetReleasedRouteIndex);
 
-                // 환불된 체인인지 확인 (에러가 있고, assetLocationInfo가 있고, 해당 체인이 환불 목적지인 경우)
+                // 환불된 체인인지 확인 (에러가 있고, 환불 경로에 있는 모든 체인에 경고 표시)
+                // arrowWarning 로직과 동일하게 type 체크 없이 위치 기반으로 판단
+                // (type이 "refund" 또는 "intermediate" 모두 환불 상황일 수 있음)
                 const refunded =
                   hasTrackError &&
                   assetReleasedRouteIndex >= 0 &&
-                  history.assetLocationInfo?.type === "refund" &&
-                  i === assetReleasedRouteIndex;
+                  // Case 1: 뒤로 환불 - 환불 경로의 모든 체인에 경고 표시
+                  ((assetReleasedRouteIndex < history.routeIndex &&
+                    i >= assetReleasedRouteIndex &&
+                    i < history.routeIndex) ||
+                    // Case 2: 같은 체인 환불 - 환불 목적지 체인에만 경고 표시
+                    (assetReleasedRouteIndex >= history.routeIndex &&
+                      i === assetReleasedRouteIndex));
 
                 return (
                   // 일부분 순환하는 경우도 이론적으로 가능은 하기 때문에 chain id를 key로 사용하지 않음.
                   <IbcHistoryViewItemChainImage
                     key={i}
                     chainInfo={chainInfo}
-                    completed={!error && !refunded && completed}
+                    completed={
+                      !error && !refunded && (completed || !!isUnknownStatus)
+                    }
                     notCompletedBlink={(() => {
+                      if (isUnknownStatus) {
+                        return false;
+                      }
+
                       if (failedRoute) {
                         // asset이 릴리즈된 체인까지는 blink하지 않음
                         if (
@@ -2443,68 +2499,74 @@ const SwapV2HistoryViewItem: FunctionComponent<{
                 : ColorPalette["yellow-400"]
             }
           >
-            <FormattedMessage
-              id={(() => {
-                const completedAnyways =
-                  history.status === SwapV2TxStatus.SUCCESS ||
-                  history.status === SwapV2TxStatus.PARTIAL_SUCCESS;
+            {(() => {
+              const completedAnyways =
+                history.status === SwapV2TxStatus.SUCCESS ||
+                history.status === SwapV2TxStatus.PARTIAL_SUCCESS;
 
-                // status tracking이 오류로 끝난 경우
-                // SwapV2에서는 assetLocationInfo를 사용하여 환불 정보 표시
-                const allDone =
-                  !!history.trackDone &&
-                  (!history.additionalTrackingData ||
-                    !!history.additionalTrackDone);
-                const hasError =
-                  !!history.trackError || !!history.additionalTrackError;
-                if (
-                  allDone &&
-                  (hasError || history.status === SwapV2TxStatus.FAILED)
-                ) {
-                  if (history.assetLocationInfo) {
-                    if (
-                      chainStore.hasChain(history.assetLocationInfo.chainId)
-                    ) {
-                      const assetLocationChain = chainStore.getChain(
-                        history.assetLocationInfo.chainId
-                      );
+              // status tracking이 오류로 끝난 경우
+              // SwapV2에서는 assetLocationInfo를 사용하여 환불 정보 표시
+              const allDone =
+                !!history.trackDone &&
+                (!history.additionalTrackingData ||
+                  !!history.additionalTrackDone);
+              const hasError =
+                !!history.trackError || !!history.additionalTrackError;
+              if (
+                allDone &&
+                (hasError || history.status === SwapV2TxStatus.FAILED)
+              ) {
+                if (history.assetLocationInfo) {
+                  if (chainStore.hasChain(history.assetLocationInfo.chainId)) {
+                    const assetLocationChain = chainStore.getChain(
+                      history.assetLocationInfo.chainId
+                    );
 
-                      return intl.formatMessage(
-                        {
-                          id: "page.main.components.ibc-history-view.skip-swap.failed.after-transfer.complete",
-                        },
-                        {
-                          chain: assetLocationChain.chainName,
-                          assets: history.assetLocationInfo.amount
-                            .map((amount) => {
-                              return new CoinPretty(
-                                chainStore
-                                  .getChain(history.assetLocationInfo!.chainId)
-                                  .forceFindCurrency(amount.denom),
-                                amount.amount
-                              )
-                                .hideIBCMetadata(true)
-                                .shrink(true)
-                                .maxDecimals(6)
-                                .inequalitySymbol(true)
-                                .trim(true)
-                                .toString();
-                            })
-                            .join(", "),
-                        }
-                      );
-                    }
+                    return intl.formatMessage(
+                      {
+                        id: "page.main.components.ibc-history-view.skip-swap.failed.after-transfer.complete",
+                      },
+                      {
+                        chain: assetLocationChain.chainName,
+                        assets: history.assetLocationInfo.amount
+                          .map((amount) => {
+                            return new CoinPretty(
+                              chainStore
+                                .getChain(history.assetLocationInfo!.chainId)
+                                .forceFindCurrency(amount.denom),
+                              amount.amount
+                            )
+                              .hideIBCMetadata(true)
+                              .shrink(true)
+                              .maxDecimals(6)
+                              .inequalitySymbol(true)
+                              .trim(true)
+                              .toString();
+                          })
+                          .join(", "),
+                      }
+                    );
                   }
                 }
+              }
 
-                return completedAnyways
-                  ? "page.main.components.ibc-history-view.ibc-swap.failed.complete"
-                  : "page.main.components.ibc-history-view.ibc-swap.failed.in-progress";
-              })()}
-            />
+              return (
+                <FormattedMessage
+                  id={
+                    completedAnyways
+                      ? "page.main.components.ibc-history-view.ibc-swap.failed.complete"
+                      : "page.main.components.ibc-history-view.ibc-swap.failed.in-progress"
+                  }
+                />
+              );
+            })()}
           </Caption1>
         </VerticalCollapseTransition>
-        <VerticalCollapseTransition collapsed={historyCompleted}>
+        <VerticalCollapseTransition
+          collapsed={
+            (historyCompleted && !isUnknownStatus) || failedRouteIndex >= 0
+          }
+        >
           <Gutter size="1rem" />
           <Box
             height="1px"
@@ -2514,8 +2576,8 @@ const SwapV2HistoryViewItem: FunctionComponent<{
                 : ColorPalette["gray-500"]
             }
           />
-          {/* only show estimated duration when there is no executable tx */}
-          {!hasExecutableTx && (
+          {/* only show estimated duration when there is no executable tx, not failed, and no additional tracking */}
+          {!hasExecutableTx && !history.additionalTrackingData && (
             <React.Fragment>
               <Gutter size="1rem" />
 
@@ -2541,25 +2603,101 @@ const SwapV2HistoryViewItem: FunctionComponent<{
                       : ColorPalette["gray-10"]
                   }
                 >
-                  <FormattedMessage
-                    id="page.main.components.ibc-history-view.estimated-duration.value"
-                    values={{
-                      minutes: (() => {
-                        const minutes = Math.floor(
-                          history.routeDurationSeconds / 60
-                        );
-                        const seconds = history.routeDurationSeconds % 60;
+                  {isUnknownStatus ? (
+                    <FormattedMessage id="page.main.components.ibc-history-view.estimated-duration.not-available" />
+                  ) : (
+                    <FormattedMessage
+                      id="page.main.components.ibc-history-view.estimated-duration.value"
+                      values={{
+                        minutes: (() => {
+                          const minutes = Math.floor(
+                            history.routeDurationSeconds / 60
+                          );
+                          const seconds = history.routeDurationSeconds % 60;
 
-                        return minutes + Math.ceil(seconds / 60);
-                      })(),
-                    }}
-                  />
+                          return minutes + Math.ceil(seconds / 60);
+                        })(),
+                      }}
+                    />
+                  )}
                 </Body2>
               </XAxis>
             </React.Fragment>
           )}
+          {isUnknownStatus && (
+            <React.Fragment>
+              <Gutter size="0.625rem" />
+              <Body2
+                color={
+                  theme.mode === "light"
+                    ? ColorPalette["gray-300"]
+                    : ColorPalette["gray-200"]
+                }
+                style={{
+                  lineHeight: "1.25",
+                }}
+              >
+                <FormattedMessage
+                  id="page.main.components.ibc-history-view.swap-v2.unknown.contact-provider"
+                  values={{
+                    copy: (chunks: React.ReactNode) => (
+                      <InlineCopyText
+                        onCopy={async () => {
+                          const details = {
+                            fromChainId: history.fromChainId,
+                            toChainId: history.toChainId,
+                            txHash: history.txHash,
+                            executedAt: history.timestamp,
+                          };
+
+                          analyticsStore.logEvent(
+                            "click_swapV2UnknownStatusCopy",
+                            {
+                              provider: history.provider,
+                              fromChainId: history.fromChainId,
+                              toChainId: history.toChainId,
+                            }
+                          );
+
+                          await navigator.clipboard.writeText(
+                            JSON.stringify(details, null, 2)
+                          );
+                        }}
+                      >
+                        {chunks}
+                      </InlineCopyText>
+                    ),
+                    provider: (chunks: React.ReactNode) => (
+                      <a
+                        href={
+                          history.provider === SwapProvider.SQUID
+                            ? "https://support.squidrouter.com/"
+                            : "https://discord.com/invite/interchain"
+                        }
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          color: "inherit",
+                          textDecoration: "underline",
+                        }}
+                      >
+                        {chunks}
+                      </a>
+                    ),
+                    providerName:
+                      history.provider === SwapProvider.SQUID
+                        ? "Squid"
+                        : "Skip",
+                    minutes: Math.floor(
+                      UNKNOWN_TX_STATUS_TIMEOUT_MS / 60 / 1000
+                    ),
+                  }}
+                />
+              </Body2>
+            </React.Fragment>
+          )}
           {/* only show close message when there is no tx execution */}
-          {!txExecution && (
+          {!txExecution && !isUnknownStatus && (
             <React.Fragment>
               <Gutter size="1rem" />
               <Caption2
@@ -2649,6 +2787,94 @@ const SwapV2HistoryViewItem: FunctionComponent<{
     </Box>
   );
 });
+
+const InlineCopyText: FunctionComponent<{
+  children: React.ReactNode;
+  onCopy: () => Promise<void>;
+}> = ({ children, onCopy }) => {
+  const [animCheck, setAnimCheck] = useState(false);
+
+  useEffect(() => {
+    if (animCheck) {
+      const timeout = setTimeout(() => {
+        setAnimCheck(false);
+      }, 2500);
+
+      return () => {
+        clearTimeout(timeout);
+      };
+    }
+  }, [animCheck]);
+
+  return (
+    <span
+      style={{
+        cursor: "pointer",
+        color: ColorPalette["blue-400"],
+      }}
+      onClick={async (e) => {
+        e.preventDefault();
+        await onCopy();
+        setAnimCheck(true);
+      }}
+    >
+      <span
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: 16,
+          height: 16,
+          verticalAlign: "text-bottom",
+          marginRight: 2,
+        }}
+      >
+        {!animCheck ? (
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            fill="none"
+            viewBox="0 0 16 16"
+          >
+            <path
+              stroke={ColorPalette["blue-400"]}
+              strokeLinecap="round"
+              strokeWidth="1.5"
+              d="M10.667 2.668h-6.4a1.6 1.6 0 00-1.6 1.6v6.4"
+            />
+            <rect
+              width="7.733"
+              height="7.733"
+              x="5.467"
+              y="5.468"
+              stroke={ColorPalette["blue-400"]}
+              strokeWidth="1.5"
+              rx="0.8"
+            />
+          </svg>
+        ) : (
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke={ColorPalette["blue-400"]}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2.5"
+              d="M5 13l4 4L19 7"
+            />
+          </svg>
+        )}
+      </span>
+      {children}
+    </span>
+  );
+};
 
 const ChainImageFallbackAnimated = animated(ChainImageFallback);
 

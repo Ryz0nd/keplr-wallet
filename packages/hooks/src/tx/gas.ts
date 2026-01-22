@@ -65,33 +65,33 @@ export class GasConfig extends TxChainSetter implements IGasConfig {
   get uiProperties(): UIProperties {
     if (this.value.trim() === "") {
       return {
-        error: new Error("Gas not set"),
+        error: new Error("Please enter a gas amount"),
       };
     }
 
     const parsed = Number.parseFloat(this.value);
     if (Number.isNaN(parsed)) {
       return {
-        error: new Error("Gas is not valid number"),
+        error: new Error("Enter a valid number for gas"),
       };
     }
 
     if (this.value.includes(".") || !Number.isInteger(parsed)) {
       return {
-        error: new Error("Gas is not integer"),
+        error: new Error("Gas must be a whole number"),
       };
     }
 
     if (!this._allowZeroGas) {
       if (this.gas <= 0) {
         return {
-          error: new Error("Gas should be greater than 0"),
+          error: new Error("Gas must be greater than 0"),
         };
       }
     } else {
       if (this.gas < 0) {
         return {
-          error: new Error("Gas should be greater or equal than 0"),
+          error: new Error("Enter a positive number for gas"),
         };
       }
     }

@@ -1,4 +1,5 @@
 import { ChainsService } from "../chains";
+import { AnalyticsService } from "../analytics";
 import {
   Bech32Address,
   ChainIdHelper,
@@ -46,6 +47,8 @@ import {
   requestEthTxTrace,
 } from "./api";
 
+export const UNKNOWN_TX_STATUS_TIMEOUT_MS = 5 * 60 * 1000; // 5분
+
 const SWAP_API_ENDPOINT = process.env["KEPLR_API_ENDPOINT"] ?? "";
 
 export class RecentSendHistoryService {
@@ -77,6 +80,7 @@ export class RecentSendHistoryService {
     protected readonly kvStore: KVStore,
     protected readonly chainsService: ChainsService,
     protected readonly txService: BackgroundTxService,
+    protected readonly analyticsService: AnalyticsService,
     protected readonly notification: Notification,
     protected readonly publisher: EventBusPublisher<TxExecutionEvent>
   ) {
@@ -531,8 +535,7 @@ export class RecentSendHistoryService {
     notificationInfo: {
       currencies: AppCurrency[];
     },
-    txHash: Uint8Array,
-    backgroundExecutionId?: string
+    txHash: Uint8Array
   ): string {
     const id = (this.recentIBCHistorySeq++).toString();
 
@@ -557,57 +560,9 @@ export class RecentSendHistoryService {
       }),
       notificationInfo,
       txHash: Buffer.from(txHash).toString("hex"),
-      backgroundExecutionId: backgroundExecutionId,
     };
 
     this.recentIBCHistoryMap.set(id, history);
-
-    return id;
-  }
-
-  addRecentIBCTransferHistoryWithTracking(
-    chainId: string,
-    destinationChainId: string,
-    sender: string,
-    recipient: string,
-    amount: {
-      amount: string;
-      denom: string;
-    }[],
-    memo: string,
-    ibcChannels:
-      | {
-          portId: string;
-          channelId: string;
-          counterpartyChainId: string;
-        }[],
-    notificationInfo: {
-      currencies: AppCurrency[];
-    },
-    txHash: Uint8Array,
-    backgroundExecutionId?: string
-  ): string {
-    const id = this.addRecentIBCTransferHistory(
-      chainId,
-      destinationChainId,
-      sender,
-      recipient,
-      amount,
-      memo,
-      ibcChannels,
-      notificationInfo,
-      txHash,
-      backgroundExecutionId
-    );
-
-    this.trackIBCPacketForwardingRecursive((onFulfill, onClose, onError) => {
-      this.trackIBCPacketForwardingRecursiveInternal(
-        id,
-        onFulfill,
-        onClose,
-        onError
-      );
-    });
 
     return id;
   }
@@ -638,8 +593,7 @@ export class RecentSendHistoryService {
     notificationInfo: {
       currencies: AppCurrency[];
     },
-    txHash: Uint8Array,
-    backgroundExecutionId?: string
+    txHash: Uint8Array
   ): string {
     const id = (this.recentIBCHistorySeq++).toString();
 
@@ -668,66 +622,9 @@ export class RecentSendHistoryService {
       resAmount: [],
       notificationInfo,
       txHash: Buffer.from(txHash).toString("hex"),
-      backgroundExecutionId: backgroundExecutionId,
     };
 
     this.recentIBCHistoryMap.set(id, history);
-
-    return id;
-  }
-
-  addRecentIBCSwapHistoryWithTracking(
-    swapType: "amount-in" | "amount-out",
-    chainId: string,
-    destinationChainId: string,
-    sender: string,
-    amount: {
-      amount: string;
-      denom: string;
-    }[],
-    memo: string,
-    ibcChannels:
-      | {
-          portId: string;
-          channelId: string;
-          counterpartyChainId: string;
-        }[],
-    destinationAsset: {
-      chainId: string;
-      denom: string;
-    },
-    swapChannelIndex: number,
-    swapReceiver: string[],
-    notificationInfo: {
-      currencies: AppCurrency[];
-    },
-    txHash: Uint8Array,
-    backgroundExecutionId?: string
-  ): string {
-    const id = this.addRecentIBCSwapHistory(
-      swapType,
-      chainId,
-      destinationChainId,
-      sender,
-      amount,
-      memo,
-      ibcChannels,
-      destinationAsset,
-      swapChannelIndex,
-      swapReceiver,
-      notificationInfo,
-      txHash,
-      backgroundExecutionId
-    );
-
-    this.trackIBCPacketForwardingRecursive((onFulfill, onClose, onError) => {
-      this.trackIBCPacketForwardingRecursiveInternal(
-        id,
-        onFulfill,
-        onClose,
-        onError
-      );
-    });
 
     return id;
   }
@@ -2146,7 +2043,7 @@ export class RecentSendHistoryService {
     };
 
     requestSwapV2TxStatus({
-      endpoint: "https://keplr-api-dev.keplr.app", // TODO: change to production URL
+      endpoint: SWAP_API_ENDPOINT,
       fromChainId: normalizeChainId(fromChainId),
       toChainId: normalizeChainId(toChainId),
       provider,
@@ -2178,13 +2075,17 @@ export class RecentSendHistoryService {
     const { simpleRoute } = history;
     const prevRouteIndex = history.routeIndex;
 
+    // 모든 상태 즉시 업데이트 (UNKNOWN 포함)
     history.status = status;
     history.trackError = undefined;
 
     // This might be the state where tracking has just started,
     // so handle the error and retry
     if (!steps || steps.length === 0) {
-      if (status === SwapV2TxStatus.IN_PROGRESS) {
+      if (
+        status === SwapV2TxStatus.IN_PROGRESS ||
+        status === SwapV2TxStatus.UNKNOWN
+      ) {
         onError();
       } else {
         // swap on single evm chain might not have steps
@@ -2199,19 +2100,45 @@ export class RecentSendHistoryService {
       steps.find((s) => s.status !== SwapV2RouteStepStatus.SUCCESS) ??
       steps[steps.length - 1];
 
-    // NOTE: The lengths of simpleRoute and steps may differ.
-    let updatedRouteIndex = Math.max(0, history.routeIndex);
-    if (currentStep.chain_id) {
-      const normalizedStepChainId = currentStep.chain_id.toLowerCase();
+    const normalizeChainId = (chainId: string): string => {
+      return chainId.replace("eip155:", "").toLowerCase();
+    };
+
+    const findSimpleRouteIndex = (chainId: string): number => {
+      const normalizedChainId = normalizeChainId(chainId);
       for (let i = 0; i < simpleRoute.length; i++) {
-        const routeChainId = simpleRoute[i].chainId
-          .replace("eip155:", "")
-          .toLowerCase();
-        if (routeChainId === normalizedStepChainId) {
-          updatedRouteIndex = i;
-          break;
+        const routeChainId = normalizeChainId(simpleRoute[i].chainId);
+        if (routeChainId === normalizedChainId) {
+          return i;
         }
       }
+      return -1;
+    };
+
+    // NOTE: The lengths of simpleRoute and steps may differ.
+    let updatedRouteIndex = Math.max(0, history.routeIndex);
+
+    // 1. Find highest completed simpleRoute index from all SUCCESS steps
+    let highestCompletedIndex = -1;
+    for (const step of steps) {
+      if (step.status === SwapV2RouteStepStatus.SUCCESS && step.chain_id) {
+        const routeIdx = findSimpleRouteIndex(step.chain_id);
+        if (routeIdx > highestCompletedIndex) {
+          highestCompletedIndex = routeIdx;
+        }
+      }
+    }
+
+    // 2. Also check if currentStep is in simpleRoute
+    let currentStepIndex = -1;
+    if (currentStep.chain_id) {
+      currentStepIndex = findSimpleRouteIndex(currentStep.chain_id);
+    }
+
+    // 3. Use the higher value as updatedRouteIndex
+    const candidateIndex = Math.max(highestCompletedIndex, currentStepIndex);
+    if (candidateIndex >= 0) {
+      updatedRouteIndex = candidateIndex;
     }
 
     const publishExecutableChains = (chainIds?: string[]) => {
@@ -2227,8 +2154,43 @@ export class RecentSendHistoryService {
       });
     };
 
+    const isUnknownStatus =
+      status === SwapV2TxStatus.UNKNOWN ||
+      steps.some((s) => s.status === SwapV2RouteStepStatus.UNKNOWN);
+
+    if (isUnknownStatus) {
+      if (!history.unknownStatusFirstSeenAt) {
+        // UNKNOWN 상태 처음 발견 - 타임스탬프 기록
+        history.unknownStatusFirstSeenAt = Date.now();
+      } else {
+        const elapsedMs = Date.now() - history.unknownStatusFirstSeenAt;
+        if (elapsedMs >= UNKNOWN_TX_STATUS_TIMEOUT_MS) {
+          this.analyticsService.logEventIgnoreError(
+            "swapV2UnknownTxStatusWithTimeout",
+            {
+              provider: history.provider,
+              fromChainId: history.fromChainId,
+              toChainId: history.toChainId,
+              txHash: history.txHash,
+              executedAt: history.timestamp,
+            }
+          );
+
+          history.trackDone = true;
+          onFulfill();
+          return;
+        }
+      }
+    } else {
+      // UNKNOWN 상태가 아니면 타임스탬프 초기화
+      if (history.unknownStatusFirstSeenAt !== undefined) {
+        history.unknownStatusFirstSeenAt = undefined;
+      }
+    }
+
     switch (status) {
       case SwapV2TxStatus.IN_PROGRESS:
+      case SwapV2TxStatus.UNKNOWN:
         // publish executable chains if routeIndex increased
         if (updatedRouteIndex > prevRouteIndex) {
           history.routeIndex = updatedRouteIndex;
@@ -2256,7 +2218,7 @@ export class RecentSendHistoryService {
 
         let executableChainIdsToPublish: string[] | undefined;
 
-        // NOTE: 현재 asset_location은 skip의 interchain operation인 경우에만 주어지는 값이다.
+        // NOTE: 현재 asset_location은 skip의 multichain operation인 경우에만 주어지는 값이다.
         if (asset_location) {
           const chainId = asset_location.chain_id;
           const evmLikeChainId = Number(chainId);
@@ -2292,8 +2254,8 @@ export class RecentSendHistoryService {
                   (예: base USDC -> osmosis OSMO 스왑 시, noble USDC가 먼저 도착하고
                   이후 noble USDC -> osmosis OSMO로 ibc swap하는 transaction이 필요한 경우)
                   이 경우 추가 transaction을 실행하거나 현재 받은 자산을 그대로 둘 수 있음
-                - "refund": PARTIAL_SUCCESS/FAILED 상태로 자산이 중간에서 릴리즈된 경우
-                  backgroundExecutionId가 있으면 멀티 transaction 케이스이고 추가 transaction이 필요할 수 있음
+                - "refund": 중간에서 또는 destination에서 스왑 실패 등으로 destination asset이 아닌 자산이 릴리즈된 경우
+                  backgroundExecutionId가 있으면 멀티 transaction 케이스이므로 다음 transaction을 실행할 수 있도록 'intermediate'로 설정
             */
             const assetLocationType: "refund" | "intermediate" =
               status === SwapV2TxStatus.SUCCESS && history.backgroundExecutionId
@@ -2310,6 +2272,11 @@ export class RecentSendHistoryService {
               ],
               type: assetLocationType,
             };
+
+            // refund 타입인 경우 status도 FAILED로 변경하여 UI에서 refund 상황을 표시할 수 있도록 함
+            if (assetLocationType === "refund") {
+              history.status = SwapV2TxStatus.FAILED;
+            }
 
             // asset location chain까지 routeIndex가 이동해야 하는지 확인
             const assetLocationChainIndex = simpleRoute.findIndex(
@@ -2365,6 +2332,8 @@ export class RecentSendHistoryService {
 
         // resAmount 또는 assetLocationInfo가 없으면 추가적으로 자산 추적을 해야 한다.
         if (targetTxHash && !skipAssetTracking && isAtDestinationChain) {
+          console.log("trackSwapV2ReleasedAssetAmount", id, targetTxHash);
+
           this.trackSwapV2ReleasedAssetAmount(
             id,
             targetTxHash,
@@ -2372,6 +2341,20 @@ export class RecentSendHistoryService {
             targetDenom,
             onFulfill
           );
+        } else if (
+          status === SwapV2TxStatus.SUCCESS &&
+          !skipAssetTracking &&
+          !isAtDestinationChain
+        ) {
+          // response status는 SUCCESS인데 destination chain에 도달하지 않음 → 실패 처리
+          runInAction(() => {
+            history.status = SwapV2TxStatus.FAILED;
+            history.trackDone = true;
+          });
+
+          // TODO: additional tracking for failed case...
+
+          onFulfill();
         } else {
           history.trackDone = true;
           onFulfill();
@@ -2855,6 +2838,7 @@ export class RecentSendHistoryService {
       ibcHistory,
       sourceChainId: chainId,
       swapReceiver,
+      destinationAsset: history.destinationAsset,
       onHopCompleted: (resAmount) => {
         runInAction(() => {
           if (resAmount) {
@@ -2898,6 +2882,11 @@ export class RecentSendHistoryService {
       onPacketTimeout: () => {
         runInAction(() => {
           trackingData.packetTimeout = true;
+        });
+      },
+      onDynamicHopDetected: () => {
+        runInAction(() => {
+          trackingData.dynamicHopDetected = true;
         });
       },
       onFulfill,
@@ -3170,6 +3159,7 @@ export class RecentSendHistoryService {
     ibcHistory: IbcHop[];
     sourceChainId: string;
     swapReceiver?: string[];
+    destinationAsset?: { chainId: string; denom: string };
     onHopCompleted?: (
       resAmount?: { amount: string; denom: string }[],
       tx?: any
@@ -3178,6 +3168,7 @@ export class RecentSendHistoryService {
     onContinue: () => void;
     onRetry: () => void;
     onPacketTimeout?: () => void;
+    onDynamicHopDetected?: () => void;
     onFulfill: () => void;
     onClose: () => void;
     onError: () => void;
@@ -3186,11 +3177,13 @@ export class RecentSendHistoryService {
       ibcHistory,
       sourceChainId,
       swapReceiver,
+      destinationAsset,
       onHopCompleted,
       onAllCompleted,
       onContinue,
       onRetry,
       onPacketTimeout,
+      onDynamicHopDetected,
       onFulfill,
       onClose,
       onError,
@@ -3260,6 +3253,7 @@ export class RecentSendHistoryService {
       ibcHistory,
       targetChannelIndex,
       swapReceiver,
+      destinationAsset,
       onHopCompleted: (resAmount, tx) => {
         onHopCompleted?.(resAmount, tx);
 
@@ -3337,6 +3331,31 @@ export class RecentSendHistoryService {
       onFulfill: onFulfillOnce,
       onClose: onCloseOnce,
       onError: onErrorOnce,
+      onDynamicHopDetected: (hopInfo) => {
+        if (hopFailed) {
+          return;
+        }
+
+        // 동적으로 감지된 새 홉을 ibcHistory에 추가한다.
+        runInAction(() => {
+          ibcHistory.push({
+            portId: hopInfo.portId,
+            channelId: hopInfo.channelId,
+            counterpartyChainId: hopInfo.counterpartyChainId,
+            sequence: hopInfo.sequence,
+            dstChannelId: hopInfo.dstChannelId,
+            completed: false,
+          });
+
+          if (swapReceiver && hopInfo.packetData.receiver) {
+            swapReceiver.push(hopInfo.packetData.receiver);
+          }
+        });
+
+        onDynamicHopDetected?.();
+        onContinue();
+        onFulfillOnce();
+      },
     });
 
     if (hopTracer) {
@@ -3392,6 +3411,7 @@ export class RecentSendHistoryService {
     ibcHistory: IbcHop[];
     targetChannelIndex: number;
     swapReceiver?: string[];
+    destinationAsset?: { chainId: string; denom: string };
     onHopCompleted: (
       resAmount?: { amount: string; denom: string }[],
       tx?: any
@@ -3401,17 +3421,27 @@ export class RecentSendHistoryService {
     onFulfill: () => void;
     onClose: () => void;
     onError: () => void;
+    onDynamicHopDetected?: (hopInfo: {
+      portId: string;
+      channelId: string;
+      counterpartyChainId: string;
+      sequence: string;
+      dstChannelId: string;
+      packetData: { denom: string; amount: string; receiver: string };
+    }) => void;
   }): TendermintTxTracer | undefined {
     const {
       ibcHistory,
       targetChannelIndex,
       swapReceiver,
+      destinationAsset,
       onHopCompleted,
       onAllCompleted,
       onContinue,
       onFulfill,
       onClose,
       onError,
+      onDynamicHopDetected,
     } = params;
 
     const targetChannel = ibcHistory[targetChannelIndex];
@@ -3489,13 +3519,17 @@ export class RecentSendHistoryService {
           resAmount = this.getIBCSwapResAmountFromTx(
             tx,
             swapReceiver[receiverIndex],
-            index
+            index,
+            undefined
           );
         }
       }
 
       onHopCompleted(resAmount, tx);
 
+      // 1. 다음 채널이 있고, tx가 있는 경우 => 다음 채널로 이동
+      // 2. 마지막 채널이면서, destinationAsset가 있고, onDynamicHopDetected가 있는 경우 => 동적 홉 감지
+      // 3. 그 외의 경우 => 종료(allCompleted)
       if (nextChannel && tx) {
         const index = this.getIBCRecvPacketIndexFromTx(
           tx,
@@ -3520,6 +3554,44 @@ export class RecentSendHistoryService {
         }
 
         onContinue();
+      } else if (tx && destinationAsset && onDynamicHopDetected) {
+        // 마지막 채널에서 recv_packet 이후 새로운 send_packet이 있는 경우를 감지
+        const index = this.getIBCRecvPacketIndexFromTx(
+          tx,
+          targetChannel.portId,
+          targetChannel.channelId,
+          sequence
+        );
+
+        if (index >= 0) {
+          const sendPackets = this.getSendPacketInfoFromTx(tx, index);
+          if (sendPackets.length > 0) {
+            // 마지막 send_packet을 확인
+            const lastSendPacket = sendPackets[sendPackets.length - 1];
+
+            // destination chain에서 IBC wrapped token을 unwrap하는 경우를 가정한다.
+            // 예를 들어, source chain -> osmosis (swap) -> destination chain으로 이동하는 경우,
+            // osmosis에서 IBC wrapped token이 destination chain으로 전송되고,
+            // destination chain에서 IBC wrapped token을 unwrap하는 케이스가 있을 수 있다.
+            const destinationChainInfo = this.chainsService.getChainInfo(
+              destinationAsset.chainId
+            );
+
+            if (destinationChainInfo) {
+              onDynamicHopDetected({
+                portId: "transfer", // CHECK: transfer를 하드코딩해도 되는지 확인
+                channelId: lastSendPacket.srcChannel,
+                counterpartyChainId: destinationChainInfo.chainId,
+                sequence: lastSendPacket.sequence,
+                dstChannelId: lastSendPacket.dstChannel,
+                packetData: lastSendPacket.packetData,
+              });
+              return;
+            }
+          }
+        }
+
+        onAllCompleted();
       } else {
         onAllCompleted();
       }
@@ -3716,6 +3788,124 @@ export class RecentSendHistoryService {
     }
 
     return [];
+  }
+
+  /**
+   * TX에서 send_packet 이벤트 정보를 추출하여 추가 IBC 홉을 감지하기 위해 사용됩니다.
+   *
+   * 예를 들어, 마지막 목적지 체인에서 IBC wrapped token을 unwrap하는 경우,
+   * send_packet 이벤트를 통해 추가 IBC 홉을 감지할 수 있습니다.
+   */
+  protected getSendPacketInfoFromTx(
+    tx: any,
+    startEventsIndex: number = 0
+  ): {
+    srcChannel: string;
+    dstChannel: string;
+    sequence: string;
+    packetData: { denom: string; amount: string; receiver: string };
+  }[] {
+    const events = tx.events;
+    if (!events || !Array.isArray(events)) {
+      return [];
+    }
+
+    const compareStringWithBase64OrPlain = (
+      target: string,
+      value: string
+    ): [boolean, boolean] => {
+      if (target === value) {
+        return [true, false];
+      }
+      if (target === Buffer.from(value).toString("base64")) {
+        return [true, true];
+      }
+      return [false, false];
+    };
+
+    const results: {
+      srcChannel: string;
+      dstChannel: string;
+      sequence: string;
+      packetData: { denom: string; amount: string; receiver: string };
+    }[] = [];
+
+    const slicedEvents = events.slice(startEventsIndex);
+
+    for (const event of slicedEvents) {
+      if (event.type !== "send_packet") {
+        continue;
+      }
+
+      let isBase64 = false;
+
+      const srcChannelAttr = event.attributes?.find((attr: { key: string }) => {
+        const c = compareStringWithBase64OrPlain(
+          attr.key,
+          "packet_src_channel"
+        );
+        isBase64 = c[1];
+        return c[0];
+      });
+      if (!srcChannelAttr) {
+        continue;
+      }
+
+      const dstChannelAttr = event.attributes?.find((attr: { key: string }) => {
+        return compareStringWithBase64OrPlain(
+          attr.key,
+          "packet_dst_channel"
+        )[0];
+      });
+      if (!dstChannelAttr) continue;
+
+      const sequenceAttr = event.attributes?.find((attr: { key: string }) => {
+        return compareStringWithBase64OrPlain(attr.key, "packet_sequence")[0];
+      });
+      if (!sequenceAttr) continue;
+
+      const packetDataAttr = event.attributes?.find((attr: { key: string }) => {
+        return compareStringWithBase64OrPlain(attr.key, "packet_data")[0];
+      });
+      if (!packetDataAttr) continue;
+
+      try {
+        const srcChannel = isBase64
+          ? Buffer.from(srcChannelAttr.value, "base64").toString()
+          : srcChannelAttr.value;
+        const dstChannel = isBase64
+          ? Buffer.from(dstChannelAttr.value, "base64").toString()
+          : dstChannelAttr.value;
+        const sequence = isBase64
+          ? Buffer.from(sequenceAttr.value, "base64").toString()
+          : sequenceAttr.value;
+
+        const packetDataValue = isBase64
+          ? Buffer.from(packetDataAttr.value, "base64").toString()
+          : packetDataAttr.value.startsWith("{")
+          ? packetDataAttr.value
+          : Buffer.from(packetDataAttr.value, "base64").toString();
+
+        const packetData = JSON.parse(packetDataValue);
+
+        if (packetData.denom && packetData.amount && packetData.receiver) {
+          results.push({
+            srcChannel,
+            dstChannel,
+            sequence,
+            packetData: {
+              denom: packetData.denom,
+              amount: packetData.amount,
+              receiver: packetData.receiver,
+            },
+          });
+        }
+      } catch {
+        // noop
+      }
+    }
+
+    return results;
   }
 
   protected getIBCAcknowledgementPacketIndexFromTx(

@@ -217,7 +217,7 @@ export class StakedAmountConfig extends TxChainSetter implements IAmountConfig {
       }
     } catch {
       return {
-        error: new InvalidNumberAmountError("Invalid form of number"),
+        error: new InvalidNumberAmountError("Enter a valid number"),
       };
     }
 
@@ -238,7 +238,7 @@ export class StakedAmountConfig extends TxChainSetter implements IAmountConfig {
       if (!bal) {
         return {
           warning: new Error(
-            `Can't parse the balance for ${currency.coinMinimalDenom}`
+            `Unable to load your ${currency.coinMinimalDenom} balance`
           ),
         };
       }

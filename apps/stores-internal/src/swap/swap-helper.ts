@@ -2,7 +2,6 @@ import { HasMapStore, IChainInfoImpl } from "@keplr-wallet/stores";
 import { AppCurrency } from "@keplr-wallet/types";
 import { ObservableQuerySwappable } from "./swappable";
 import { ObservableQueryRelatedAssets } from "./related-assets";
-import { ObservableQueryTransferPaths } from "./transfer-paths";
 import { ObservableQueryChainsV2 } from "./chains";
 import { InternalChainStore } from "../internal";
 import { computedFn } from "mobx-utils";
@@ -93,7 +92,6 @@ export class ObservableQuerySwapHelper extends HasMapStore<ObservableQuerySwapHe
     protected readonly querySwappable: ObservableQuerySwappable,
     protected readonly queryValidateTargetAssets: ObservableQueryValidateTargetAssets,
     protected readonly queryRelatedAssets: ObservableQueryRelatedAssets,
-    protected readonly queryTransferPaths: ObservableQueryTransferPaths,
     protected readonly queryChains: ObservableQueryChainsV2,
     protected readonly queryRoute: ObservableQueryRouteV2,
     protected readonly queryTx: ObservableQueryTxV2

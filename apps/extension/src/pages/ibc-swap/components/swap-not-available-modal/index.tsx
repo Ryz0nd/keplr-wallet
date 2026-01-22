@@ -71,7 +71,7 @@ export const SwapNotAvailableModal: FunctionComponent<{
           size="large"
           onClick={close}
           text={intl.formatMessage({
-            id: "button.confirm",
+            id: "button.go-back",
           })}
         />
         <Gutter size="3rem" />

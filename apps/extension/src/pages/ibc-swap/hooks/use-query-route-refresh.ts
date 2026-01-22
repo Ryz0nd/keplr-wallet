@@ -1,3 +1,4 @@
+import { SwapAmountConfig } from "@keplr-wallet/hooks-internal";
 import { ObservableQueryRouteInnerV2 } from "@keplr-wallet/stores-internal";
 import { useEffect, useRef } from "react";
 
@@ -43,7 +44,7 @@ export function useQueryRouteRefresh(
     prevIsButtonHoldingRef.current = currentIsButtonHolding;
   }, [queryRoute, queryRoute?.isFetching, isSwapExecuting, isButtonHolding]);
 
-  // 10초마다 route query 자동 refresh
+  // QueryRouteRefreshInterval 마다 route query 자동 refresh
   useEffect(() => {
     if (
       queryRoute &&
@@ -55,7 +56,7 @@ export function useQueryRouteRefresh(
         if (!queryRoute.isFetching && !isSwapExecuting && !isButtonHolding) {
           queryRoute.fetch();
         }
-      }, 10000);
+      }, SwapAmountConfig.QueryRouteRefreshInterval);
       return () => {
         clearTimeout(timeoutId);
       };

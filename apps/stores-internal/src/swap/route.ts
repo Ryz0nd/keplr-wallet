@@ -62,6 +62,7 @@ const RouteResponseV2Schema = Joi.object<RouteResponseV2>({
   fees: Joi.array().items(FeeSchema).required(),
   steps: Joi.array().items(RouteStepSchema).required(),
   required_chain_ids: Joi.array().items(Joi.string()).required(),
+  required_fallback_chain_ids: Joi.array().items(Joi.string()).optional(),
   skip_operations: Joi.when("provider", {
     is: SwapProvider.SKIP,
     then: Joi.array().items(SkipOperationSchema).required(),
@@ -157,10 +158,17 @@ export class ObservableQueryRouteInnerV2 extends ObservableQuery<RouteResponseV2
       })();
 
       const coinPretty = this.chainStore.hasChain(chainId)
-        ? new CoinPretty(
-            this.chainStore.getChain(chainId).forceFindCurrency(denom),
-            fee.amount
-          )
+        ? (() => {
+            const chainInfo = this.chainStore.getChain(chainId);
+            const currency = chainInfo.findCurrency(denom) || {
+              coinMinimalDenom: denom,
+              coinDenom: fee.fee_token.symbol,
+              coinDecimals: fee.fee_token.decimals,
+              coinGeckoId: fee.fee_token.coingecko_id || undefined,
+              coinImageUrl: fee.fee_token.image_url || undefined,
+            };
+            return new CoinPretty(currency, fee.amount);
+          })()
         : undefined;
       if (coinPretty) {
         if (feeMap.has(denom)) {

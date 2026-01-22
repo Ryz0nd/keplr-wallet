@@ -137,6 +137,7 @@ interface RouteResponseV2Base {
   fees: SwapFee[];
   steps: RouteStep[];
   required_chain_ids: string[];
+  required_fallback_chain_ids?: string[];
 }
 
 export type RouteResponseV2 =

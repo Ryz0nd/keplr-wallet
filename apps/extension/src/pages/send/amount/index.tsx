@@ -967,7 +967,9 @@ export const SendAmountPage: FunctionComponent = observer(() => {
                 }
 
                 if (!queryRoute.response) {
-                  throw new Error("queryRoute.response is undefined");
+                  throw new Error(
+                    "Failed to get response for the selected route"
+                  );
                 }
 
                 routeDurationSeconds =

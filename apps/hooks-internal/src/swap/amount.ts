@@ -40,7 +40,7 @@ import {
 const DEFAULT_PROVIDERS = [SwapProvider.SQUID, SwapProvider.SKIP];
 
 export class SwapAmountConfig extends AmountConfig {
-  static readonly QueryMsgsDirectRefreshInterval = 10000;
+  static readonly QueryRouteRefreshInterval = 20000;
   private static readonly ZERO_DEC = new Dec(0);
 
   @observable
@@ -99,7 +99,7 @@ export class SwapAmountConfig extends AmountConfig {
      *    일시적으로 빈 배열이 반환되면서 버튼 유형이 플리커링 되는 현상이 UI에서 발생할 수 있음
      * 2. 이를 방지하기 위해 swap txs의 마지막 계산 결과(requiresMultipleTxBundles 여부)를 저장하고 있다가,
      *    getTxsIfReady에서 결과가 반환되는 동안 UI 상태 일관성을 보장
-     * 3. one-click swap 버튼 활성화(hold 가능)는 'isQuoteReady'와 조합하여, 조건이 모두 만족될 때에만 허용되도록 함
+     * 3. hold to swap 버튼 활성화(hold 가능)는 'isQuoteReady'와 조합하여, 조건이 모두 만족될 때에만 허용되도록 함
      */
     autorun(() => {
       const txs = this.getTxsIfReady();
@@ -113,8 +113,6 @@ export class SwapAmountConfig extends AmountConfig {
         }, 0);
       }
     });
-
-    // CHECK: autorun으로 in, out chain id가 변경되면 계정 초기화 하기 필요?
   }
 
   @computed
@@ -282,11 +280,8 @@ export class SwapAmountConfig extends AmountConfig {
   }
 
   get otherFees(): CoinPretty[] {
-    return (
-      this.getQueryRoute()?.bridgeFees ?? [
-        new CoinPretty(this.outCurrency, "0"),
-      ]
-    );
+    const bridgeFees = this.getQueryRoute()?.bridgeFees;
+    return bridgeFees && bridgeFees.length > 0 ? bridgeFees : [];
   }
 
   async fetch(): Promise<void> {
@@ -386,13 +381,16 @@ export class SwapAmountConfig extends AmountConfig {
       const diff = Date.now() - routeResponse.timestamp;
       // 오래전에 캐싱된 쿼리 응답으로 tx를 만들 경우 quote가 크게 변경될 수 있으므로 에러를 발생시킨다.
       // 쿼리 응답 오는데에 시간이 좀 드니, RefreshInterval에 5초를 더 추가한다.
-      if (diff > SwapAmountConfig.QueryMsgsDirectRefreshInterval + 5000) {
+      if (diff > SwapAmountConfig.QueryRouteRefreshInterval + 5000) {
         throw new Error("The quote is expired. Please try again.");
       }
     }
 
     // Normalize order so the tx query cache key stays stable across refetches.
-    const requiredChainIds = [...routeResponse.data.required_chain_ids].sort();
+    const requiredChainIds = [
+      ...routeResponse.data.required_chain_ids,
+      ...(routeResponse.data.required_fallback_chain_ids ?? []),
+    ].sort();
 
     const chainIdsToAddresses: Record<string, string> = {};
 
@@ -444,7 +442,7 @@ export class SwapAmountConfig extends AmountConfig {
       customRecipient
     );
     if (!txs || txs.length === 0) {
-      throw new Error("Txs are not ready");
+      throw new Error("Failed to prepare the transaction. Please try again");
     }
 
     if (priorOutAmount) {
@@ -520,7 +518,10 @@ export class SwapAmountConfig extends AmountConfig {
       return;
     }
 
-    const requiredChainIds = routeResponse.data.required_chain_ids;
+    const requiredChainIds = [
+      ...routeResponse.data.required_chain_ids,
+      ...(routeResponse.data.required_fallback_chain_ids ?? []),
+    ].sort();
 
     const chainIdsToAddresses: Record<string, string> = {};
 
@@ -794,39 +795,22 @@ export class SwapAmountConfig extends AmountConfig {
       };
     }
 
-    // CHECK: select assets 페이지 또는 asset details 페이지에서 이미 swappable인 자산들만 swap 페이지로 이동할 수 있도록
-    // 굳이 다시 체크할 필요가 있을지 확인 필요. 다만 to amount는 체크가 필요함.
-    // if (this.amount.length > 0) {
-    //   if (
-    //     !this.swapQueries.querySwapHelper.isSwappableCurrency(
-    //       this.chainId,
-    //       this.amount[0].currency
-    //     )
-    //   ) {
-    //     return {
-    //       ...prev,
-    //       error: new Error(
-    //         "The currency you are swapping from is currently not supported"
-    //       ),
-    //     };
-    //   }
-    // }
-
-    if (
-      this.amount.length > 0 &&
-      !this.swapQueries.querySwapHelper.isSwapDestinationOrAlternatives(
-        this.chainId,
-        this.amount[0].currency.coinMinimalDenom,
-        this.outChainId,
-        this.outCurrency.coinMinimalDenom
-      )
-    ) {
-      return {
-        ...prev,
-        error: new Error(
-          "The currency you are swapping to is currently not supported"
-        ),
-      };
+    if (this.amount.length > 0) {
+      const isDestinationSupported =
+        this.swapQueries.querySwapHelper.isSwapDestinationOrAlternatives(
+          this.chainId,
+          this.amount[0].currency.coinMinimalDenom,
+          this.outChainId,
+          this.outCurrency.coinMinimalDenom
+        );
+      if (!isDestinationSupported) {
+        return {
+          ...prev,
+          error: new Error(
+            "The currency you are swapping to is currently not supported"
+          ),
+        };
+      }
     }
 
     // max amount인 경우엔 route를 두 번 쿼리하기 때문에 첫 번째 쿼리도 체크한다.
@@ -852,7 +836,6 @@ export class SwapAmountConfig extends AmountConfig {
         };
       }
 
-      // CHECK: 현재 에러 메시지를 프로바이더에서 발생한 오류를 그대로 던져주는지 체크 필요
       const routeError = routeQuery.error;
       if (routeError) {
         const CCTP_BRIDGE_FEE_ERROR_MESSAGE =
@@ -931,7 +914,6 @@ export class SwapAmountConfig extends AmountConfig {
       };
     }
 
-    // CHECK: 현재 에러 메시지를 프로바이더에서 발생한 오류를 그대로 던져주는지 체크 필요
     const routeError = routeQuery.error;
     if (routeError) {
       const CCTP_BRIDGE_FEE_ERROR_MESSAGE =
@@ -1009,6 +991,17 @@ export class SwapAmountConfig extends AmountConfig {
       return;
     }
 
+    const isDestinationSupported =
+      this.swapQueries.querySwapHelper.isSwapDestinationOrAlternatives(
+        this.chainId,
+        amountIn.currency.coinMinimalDenom,
+        this.outChainId,
+        this.outCurrency.coinMinimalDenom
+      );
+    if (!isDestinationSupported) {
+      return;
+    }
+
     return this.swapQueries.querySwapHelper.getSwapHelper(
       this.chainId,
       amountIn.currency.coinMinimalDenom,
@@ -1028,33 +1021,18 @@ export class SwapAmountConfig extends AmountConfig {
       return;
     }
 
-    const amountIn = amount ?? this.amount[0];
-
-    if (
-      this.isSameInOutCurrency(this.chainId, amountIn.currency.coinMinimalDenom)
-    ) {
+    const querySwapHelper = this.getQuerySwapHelper(amount);
+    if (!querySwapHelper) {
       return;
     }
 
-    const fromAddress = this.getAddressSync(this.chainId);
-    const toAddress = this.getAddressSync(this.outChainId);
-    if (!fromAddress || !toAddress) {
-      return;
-    }
     const slippageTolerancePercentToUse =
       slippageTolerancePercent ?? this._getSlippageTolerancePercent();
 
-    return this.swapQueries.querySwapHelper
-      .getSwapHelper(
-        this.chainId,
-        amountIn.currency.coinMinimalDenom,
-        amountIn.toCoin().amount,
-        this.outChainId,
-        this.outCurrency.coinMinimalDenom,
-        fromAddress,
-        toAddress
-      )
-      .getRoute(slippageTolerancePercentToUse, DEFAULT_PROVIDERS);
+    return querySwapHelper.getRoute(
+      slippageTolerancePercentToUse,
+      DEFAULT_PROVIDERS
+    );
   }
 }
 

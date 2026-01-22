@@ -154,11 +154,6 @@ export const useSwapPriceImpact = (
                 .quo(inPrice.toDec())
                 .mul(new Dec(100));
 
-              console.log(
-                "priceImpact w price comparison",
-                priceImpact.toString()
-              );
-
               // price impact가 2.5% 이상이면 경고
               if (priceImpact.gt(new Dec(2.5))) {
                 setIsHighPriceImpact(true);

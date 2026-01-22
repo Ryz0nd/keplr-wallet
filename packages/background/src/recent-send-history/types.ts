@@ -156,8 +156,6 @@ export type IBCHistory = {
 
   txHash: string;
 
-  backgroundExecutionId?: string;
-
   txFulfilled?: boolean;
   txError?: string;
   packetTimeout?: boolean;
@@ -179,6 +177,7 @@ export enum SwapV2RouteStepStatus {
   IN_PROGRESS = "in_progress",
   SUCCESS = "success",
   FAILED = "failed",
+  UNKNOWN = "unknown",
 }
 
 export enum SwapV2TxStatus {
@@ -186,6 +185,7 @@ export enum SwapV2TxStatus {
   SUCCESS = "success",
   PARTIAL_SUCCESS = "partial_success",
   FAILED = "failed",
+  UNKNOWN = "unknown",
 }
 
 export interface SwapV2TxStatusStep {
@@ -297,6 +297,7 @@ export interface SwapV2History extends SwapV2HistoryBase {
         txHash: string; // 시작 트랜잭션 해시
         txFulfilled?: boolean; // 시작 트랜잭션 완료 여부
         packetTimeout?: boolean;
+        dynamicHopDetected?: boolean; // 동적 홉이 감지되었는지 여부
         // 각 IBC hop의 tracking 상태 (필요 최소 데이터만 저장)
         ibcHistory: IbcHop[];
       };
@@ -306,6 +307,7 @@ export interface SwapV2History extends SwapV2HistoryBase {
   trackDone?: boolean; // status tracking이 완료되었는지 여부
   trackError?: string; // status tracking 중 에러가 발생했는지 여부
   finalizationRetryCount?: number; // success/partial_success/failed 상태에서 currentStep이 진행 중일 때 추가 polling 횟수
+  unknownStatusFirstSeenAt?: number; // UNKNOWN 상태가 처음 발견된 timestamp (ms)
 
   notified?: boolean;
 
