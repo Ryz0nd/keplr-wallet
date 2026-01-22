@@ -301,6 +301,7 @@ export function init(
       storeCreator("recent-send-history"),
       chainsService,
       backgroundTxService,
+      analyticsService,
       notification,
       txExecutableMQ.publisher
     );

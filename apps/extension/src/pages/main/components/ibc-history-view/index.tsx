@@ -19,6 +19,7 @@ import {
   SwapV2TxStatus,
   TxExecution,
   TxExecutionStatus,
+  UNKNOWN_TX_STATUS_TIMEOUT_MS,
 } from "@keplr-wallet/background";
 import { SwapProvider } from "@keplr-wallet/types";
 import { InExtensionMessageRequester } from "@keplr-wallet/router-extension";
@@ -1435,6 +1436,7 @@ const SwapV2HistoryViewItem: FunctionComponent<{
     accountStore,
     ethereumAccountStore,
     keyRingStore,
+    analyticsStore,
   } = useStore();
 
   const theme = useTheme();
@@ -2641,17 +2643,25 @@ const SwapV2HistoryViewItem: FunctionComponent<{
                     copy: (chunks: React.ReactNode) => (
                       <InlineCopyText
                         onCopy={async () => {
-                          const routeChains = history.simpleRoute
-                            .map((r) => r.chainId)
-                            .join(" → ");
-                          const details = [
-                            `Provider: ${history.provider}`,
-                            `From Chain: ${history.fromChainId}`,
-                            `To Chain: ${history.toChainId}`,
-                            `Transaction Hash: ${history.txHash}`,
-                            `Route: ${routeChains}`,
-                          ].join("\n");
-                          await navigator.clipboard.writeText(details);
+                          const details = {
+                            fromChainId: history.fromChainId,
+                            toChainId: history.toChainId,
+                            txHash: history.txHash,
+                            executedAt: history.timestamp,
+                          };
+
+                          analyticsStore.logEvent(
+                            "click_swapV2UnknownStatusCopy",
+                            {
+                              provider: history.provider,
+                              fromChainId: history.fromChainId,
+                              toChainId: history.toChainId,
+                            }
+                          );
+
+                          await navigator.clipboard.writeText(
+                            JSON.stringify(details, null, 2)
+                          );
                         }}
                       >
                         {chunks}
@@ -2678,7 +2688,9 @@ const SwapV2HistoryViewItem: FunctionComponent<{
                       history.provider === SwapProvider.SQUID
                         ? "Squid"
                         : "Skip",
-                    minutes: 2,
+                    minutes: Math.floor(
+                      UNKNOWN_TX_STATUS_TIMEOUT_MS / 60 / 1000
+                    ),
                   }}
                 />
               </Body2>

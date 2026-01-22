@@ -1,4 +1,5 @@
 import { ChainsService } from "../chains";
+import { AnalyticsService } from "../analytics";
 import {
   Bech32Address,
   ChainIdHelper,
@@ -46,6 +47,8 @@ import {
   requestEthTxTrace,
 } from "./api";
 
+export const UNKNOWN_TX_STATUS_TIMEOUT_MS = 5 * 60 * 1000; // 5분
+
 const SWAP_API_ENDPOINT = process.env["KEPLR_API_ENDPOINT"] ?? "";
 
 export class RecentSendHistoryService {
@@ -77,6 +80,7 @@ export class RecentSendHistoryService {
     protected readonly kvStore: KVStore,
     protected readonly chainsService: ChainsService,
     protected readonly txService: BackgroundTxService,
+    protected readonly analyticsService: AnalyticsService,
     protected readonly notification: Notification,
     protected readonly publisher: EventBusPublisher<TxExecutionEvent>
   ) {
@@ -2154,16 +2158,24 @@ export class RecentSendHistoryService {
       status === SwapV2TxStatus.UNKNOWN ||
       steps.some((s) => s.status === SwapV2RouteStepStatus.UNKNOWN);
 
-    // UNKNOWN 상태 타임아웃 처리
-    const UNKNOWN_TIMEOUT_MS = 2 * 60 * 1000; // 2분
-
     if (isUnknownStatus) {
       if (!history.unknownStatusFirstSeenAt) {
         // UNKNOWN 상태 처음 발견 - 타임스탬프 기록
         history.unknownStatusFirstSeenAt = Date.now();
       } else {
         const elapsedMs = Date.now() - history.unknownStatusFirstSeenAt;
-        if (elapsedMs >= UNKNOWN_TIMEOUT_MS) {
+        if (elapsedMs >= UNKNOWN_TX_STATUS_TIMEOUT_MS) {
+          this.analyticsService.logEventIgnoreError(
+            "swapV2UnknownTxStatusWithTimeout",
+            {
+              provider: history.provider,
+              fromChainId: history.fromChainId,
+              toChainId: history.toChainId,
+              txHash: history.txHash,
+              executedAt: history.timestamp,
+            }
+          );
+
           history.trackDone = true;
           onFulfill();
           return;
