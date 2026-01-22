@@ -280,11 +280,8 @@ export class SwapAmountConfig extends AmountConfig {
   }
 
   get otherFees(): CoinPretty[] {
-    return (
-      this.getQueryRoute()?.bridgeFees ?? [
-        new CoinPretty(this.outCurrency, "0"),
-      ]
-    );
+    const bridgeFees = this.getQueryRoute()?.bridgeFees;
+    return bridgeFees && bridgeFees.length > 0 ? bridgeFees : [];
   }
 
   async fetch(): Promise<void> {
@@ -798,39 +795,22 @@ export class SwapAmountConfig extends AmountConfig {
       };
     }
 
-    // CHECK: select assets 페이지 또는 asset details 페이지에서 이미 swappable인 자산들만 swap 페이지로 이동할 수 있도록
-    // 굳이 다시 체크할 필요가 있을지 확인 필요. 다만 to amount는 체크가 필요함.
-    // if (this.amount.length > 0) {
-    //   if (
-    //     !this.swapQueries.querySwapHelper.isSwappableCurrency(
-    //       this.chainId,
-    //       this.amount[0].currency
-    //     )
-    //   ) {
-    //     return {
-    //       ...prev,
-    //       error: new Error(
-    //         "The currency you are swapping from is currently not supported"
-    //       ),
-    //     };
-    //   }
-    // }
-
-    if (
-      this.amount.length > 0 &&
-      !this.swapQueries.querySwapHelper.isSwapDestinationOrAlternatives(
-        this.chainId,
-        this.amount[0].currency.coinMinimalDenom,
-        this.outChainId,
-        this.outCurrency.coinMinimalDenom
-      )
-    ) {
-      return {
-        ...prev,
-        error: new Error(
-          "The currency you are swapping to is currently not supported"
-        ),
-      };
+    if (this.amount.length > 0) {
+      const isDestinationSupported =
+        this.swapQueries.querySwapHelper.isSwapDestinationOrAlternatives(
+          this.chainId,
+          this.amount[0].currency.coinMinimalDenom,
+          this.outChainId,
+          this.outCurrency.coinMinimalDenom
+        );
+      if (!isDestinationSupported) {
+        return {
+          ...prev,
+          error: new Error(
+            "The currency you are swapping to is currently not supported"
+          ),
+        };
+      }
     }
 
     // max amount인 경우엔 route를 두 번 쿼리하기 때문에 첫 번째 쿼리도 체크한다.
@@ -1011,6 +991,17 @@ export class SwapAmountConfig extends AmountConfig {
       return;
     }
 
+    const isDestinationSupported =
+      this.swapQueries.querySwapHelper.isSwapDestinationOrAlternatives(
+        this.chainId,
+        amountIn.currency.coinMinimalDenom,
+        this.outChainId,
+        this.outCurrency.coinMinimalDenom
+      );
+    if (!isDestinationSupported) {
+      return;
+    }
+
     return this.swapQueries.querySwapHelper.getSwapHelper(
       this.chainId,
       amountIn.currency.coinMinimalDenom,
@@ -1030,33 +1021,18 @@ export class SwapAmountConfig extends AmountConfig {
       return;
     }
 
-    const amountIn = amount ?? this.amount[0];
-
-    if (
-      this.isSameInOutCurrency(this.chainId, amountIn.currency.coinMinimalDenom)
-    ) {
+    const querySwapHelper = this.getQuerySwapHelper(amount);
+    if (!querySwapHelper) {
       return;
     }
 
-    const fromAddress = this.getAddressSync(this.chainId);
-    const toAddress = this.getAddressSync(this.outChainId);
-    if (!fromAddress || !toAddress) {
-      return;
-    }
     const slippageTolerancePercentToUse =
       slippageTolerancePercent ?? this._getSlippageTolerancePercent();
 
-    return this.swapQueries.querySwapHelper
-      .getSwapHelper(
-        this.chainId,
-        amountIn.currency.coinMinimalDenom,
-        amountIn.toCoin().amount,
-        this.outChainId,
-        this.outCurrency.coinMinimalDenom,
-        fromAddress,
-        toAddress
-      )
-      .getRoute(slippageTolerancePercentToUse, DEFAULT_PROVIDERS);
+    return querySwapHelper.getRoute(
+      slippageTolerancePercentToUse,
+      DEFAULT_PROVIDERS
+    );
   }
 }
 
