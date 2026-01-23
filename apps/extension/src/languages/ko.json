@@ -653,7 +653,7 @@
   "page.main.components.ibc-history-view.swap-v2.continue-signing": "서명 계속하기",
   "page.main.components.ibc-history-view.swap-v2.approvals": "{executed}/{total} 승인됨",
   "page.main.components.ibc-history-view.swap-v2.wait-for-confirmation": "확인 대기중..",
-  "page.main.components.ibc-history-view.swap-v2.unknown.title": "스왑 요청됨",
+  "page.main.components.ibc-history-view.swap-v2.unknown.title": "교환 요청됨",
   "page.main.components.ibc-history-view.swap-v2.unknown.contact-provider": "{minutes}분 이내에 자산이 도착하지 않으면 <copy>복사</copy>하여 <provider>{providerName}</provider>에 문의해 주세요",
   "page.main.components.ibc-history-view.send-bridge.item.pending": "토큰 전송 진행중",
   "page.main.components.ibc-history-view.send-bridge.item.succeed": "토큰 전송 성공",

@@ -404,7 +404,7 @@
   "page.ibc-transfer.add-channel-modal.channel-id-placeholder": "源通道ID",
 
   "page.ibc-swap.title.swap": "兑换",
-  "page.ibc-swap.info.required-approvals": "{total}个批准",
+  "page.ibc-swap.info.required-approvals": "需要 {total} 个批准",
   "page.ibc-swap.button.next": "交换",
   "page.ibc-swap.button.hold-to-swap": "按住以交换",
   "page.ibc-swap.button.hold-to-approve-and-swap": "按住以批准并交换",
@@ -625,7 +625,7 @@
   "page.main.components.ibc-history-view.ibc-swap.succeed.paragraph": "你收到了{assets}",
   "page.main.components.ibc-history-view.send-bridge.paragraph": "从 {sourceChain} 转 {assets} 到 {destinationChain}",
   "page.main.components.ibc-history-view.estimated-duration": "预计持续时间",
-  "page.main.components.ibc-history-view.estimated-duration.value": "~{minutes}秒",
+  "page.main.components.ibc-history-view.estimated-duration.value": "~{minutes}分钟",
   "page.main.components.ibc-history-view.estimated-duration.not-available": "不可用",
   "page.main.components.ibc-history-view.help.can-close-extension": "你可以在交易过程中关闭扩展。",
   "page.main.components.ibc-history-view.ibc-swap.help.can-close-extension": "你可以在兑换过程中关闭扩展。",
