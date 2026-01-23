@@ -2104,6 +2104,22 @@ export class RecentSendHistoryService {
       return chainId.replace("eip155:", "").toLowerCase();
     };
 
+    // Find the LAST step that matches the actual destination chain (history.toChainId)
+    // Use reverse + find to handle routes that visit the destination chain multiple times
+    // This handles cases where intermediate steps fail but the final destination is reached
+    const destinationStep = [...steps].reverse().find((s) => {
+      if (!s.chain_id) {
+        return false;
+      }
+      return (
+        normalizeChainId(s.chain_id) === normalizeChainId(history.toChainId)
+      );
+    });
+    const isDestinationStepSuccessful =
+      destinationStep &&
+      destinationStep.status === SwapV2RouteStepStatus.SUCCESS &&
+      !!destinationStep.tx_hash;
+
     const findSimpleRouteIndex = (chainId: string): number => {
       const normalizedChainId = normalizeChainId(chainId);
       for (let i = 0; i < simpleRoute.length; i++) {
@@ -2308,23 +2324,29 @@ export class RecentSendHistoryService {
         const targetDenom = history.destinationAsset.denom;
 
         // 해당 위치의 tx_hash를 찾아서 자산 추적, 없을 수도 있다.
-        const targetTxHash = (() => {
-          const targetChainIdNormalized = targetChainId
-            .replace("eip155:", "")
-            .toLowerCase();
-          const targetStep = steps.find((s) => {
-            const stepChainId = s.chain_id?.toLowerCase();
-            return stepChainId === targetChainIdNormalized && s.tx_hash;
-          });
-          return targetStep?.tx_hash ?? currentStep.tx_hash;
-        })();
+        const targetTxHash = destinationStep?.tx_hash ?? currentStep.tx_hash;
 
         const isAtDestinationChain = (() => {
+          // Top-level SUCCESS + destination step successful → check against destination step
+          if (
+            status === SwapV2TxStatus.SUCCESS &&
+            isDestinationStepSuccessful &&
+            destinationStep?.chain_id
+          ) {
+            return (
+              normalizeChainId(destinationStep.chain_id) ===
+              normalizeChainId(targetChainId)
+            );
+          }
+
+          // Default logic (other cases)
           if (!currentStep.chain_id) {
             return false;
           }
-          const dest = targetChainId.replace("eip155:", "").toLowerCase();
-          return currentStep.chain_id.toLowerCase() === dest;
+          return (
+            normalizeChainId(currentStep.chain_id) ===
+            normalizeChainId(targetChainId)
+          );
         })();
 
         const skipAssetTracking =
