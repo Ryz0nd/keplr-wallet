@@ -10,6 +10,25 @@ export function useQueryRouteRefresh(
   const prevIsSwapLoadingRef = useRef(isSwapExecuting);
   const prevIsButtonHoldingRef = useRef(isButtonHolding);
 
+  // 컴포넌트 마운트 시 캐시된 route가 만료 임박 상태면 즉시 refresh
+  // 페이지를 떠났다가 돌아왔을 때 오래된 캐시로 인한 quote expired 오류 방지
+  useEffect(() => {
+    if (
+      queryRoute &&
+      !queryRoute.isFetching &&
+      !isSwapExecuting &&
+      !isButtonHolding &&
+      queryRoute.response?.timestamp
+    ) {
+      const diff = Date.now() - queryRoute.response.timestamp;
+      // 만료 임계값(25초)의 절반(10초) 이상 지났으면 즉시 refresh
+      if (diff > SwapAmountConfig.QueryRouteRefreshInterval / 2) {
+        queryRoute.fetch();
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queryRoute]); // queryRoute reference 변경 시에만 실행 (마운트 또는 파라미터 변경)
+
   // 사용자가 스왑 버튼을 홀딩하다가 중간에 손을 떼었을 때 (isButtonHolding이 true에서 false로 변경되었을 때)
   // 또는 tx 처리 중에 오류가 발생했을 때 (isSwapExecuting이 true에서 false로 변경되었을 때)
   // quote expired가 발생할 수 있으므로 3초 후 쿼리 리프레시
