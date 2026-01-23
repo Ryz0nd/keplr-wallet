@@ -152,7 +152,6 @@ export const SwapVenues: {
   name: string;
   chainId: string;
 }[] = [
-  { name: "terra-phoenix", chainId: "phoenix-1" },
   { name: "chihuahua-white-whale", chainId: "chihuahua-1" },
   { name: "injective-dojoswap", chainId: "injective-1" },
   { name: "injective-white-whale", chainId: "injective-1" },
