@@ -396,10 +396,20 @@ export class RootStore {
         coingeckoAPIURI: CoinGeckoCoinDataByTokenAddress,
         forceNativeERC20Query: (
           chainId,
-          _chainGetter,
+          chainGetter,
           _address,
           minimalDenom
         ) => {
+          // chain info에는 등록되어 있지만, alchemy에서 지원하지 않는 token
+          // 또는 custom token balance를 조회해야 함
+          const chainInfo = chainGetter.getChain(chainId);
+          const currency = chainInfo.currencies.find(
+            (c) => c.coinMinimalDenom === minimalDenom
+          );
+          if (currency) {
+            return true;
+          }
+
           return this.tokensStore.tokenIsRegistered(chainId, minimalDenom);
         },
       }),
