@@ -2318,6 +2318,18 @@ const SwapV2HistoryViewItem: FunctionComponent<{
               );
             }
 
+            if (isUnknownStatus) {
+              return intl.formatMessage(
+                {
+                  id: "page.main.components.ibc-history-view.ibc-swap.unknown.paragraph",
+                },
+                {
+                  assets,
+                  destinationDenom,
+                }
+              );
+            }
+
             return intl.formatMessage(
               {
                 id: "page.main.components.ibc-history-view.ibc-swap.paragraph",

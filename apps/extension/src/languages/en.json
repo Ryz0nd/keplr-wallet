@@ -677,6 +677,7 @@
   "page.main.components.ibc-history-view.send-bridge.item.succeed": "Transfer Successful",
   "page.main.components.ibc-history-view.paragraph": "Transfer {assets} from {sourceChain} to {destinationChain}",
   "page.main.components.ibc-history-view.ibc-swap.paragraph": "Swapping {assets} to {destinationDenom}",
+  "page.main.components.ibc-history-view.ibc-swap.unknown.paragraph": "Swap {assets} to {destinationDenom}",
   "page.main.components.ibc-history-view.ibc-swap.succeed.paragraph": "You received {assets}",
   "page.main.components.ibc-history-view.send-bridge.paragraph": "Transfer {assets} from {sourceChain} to {destinationChain}",
   "page.main.components.ibc-history-view.estimated-duration": "Estimated Duration",

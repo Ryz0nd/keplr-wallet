@@ -621,6 +621,7 @@
   "page.main.components.ibc-history-view.send-bridge.item.succeed": "转账成功。",
   "page.main.components.ibc-history-view.paragraph": "从 {sourceChain} 转 {assets} 到 {destinationChain}",
   "page.main.components.ibc-history-view.ibc-swap.paragraph": "正在兑换 {assets} 到 {destinationDenom}",
+  "page.main.components.ibc-history-view.ibc-swap.unknown.paragraph": "兑换 {assets} 到 {destinationDenom}",
   "page.main.components.ibc-history-view.ibc-swap.succeed.paragraph": "你收到了{assets}",
   "page.main.components.ibc-history-view.send-bridge.paragraph": "从 {sourceChain} 转 {assets} 到 {destinationChain}",
   "page.main.components.ibc-history-view.estimated-duration": "预计持续时间",

@@ -659,6 +659,7 @@
   "page.main.components.ibc-history-view.send-bridge.item.succeed": "토큰 전송 성공",
   "page.main.components.ibc-history-view.paragraph": "{sourceChain}에서 {destinationChain}(으)로 {assets} 보내기",
   "page.main.components.ibc-history-view.ibc-swap.paragraph": "{assets}을 {destinationDenom}로 교환 중",
+  "page.main.components.ibc-history-view.ibc-swap.unknown.paragraph": "{assets}을 {destinationDenom}로 교환",
   "page.main.components.ibc-history-view.ibc-swap.succeed.paragraph": "{assets}을 받았습니다",
   "page.main.components.ibc-history-view.send-bridge.paragraph": "{assets}을 {sourceChain}에서 {destinationChain}로 보내기",
   "page.main.components.ibc-history-view.estimated-duration": "예상 소요 시간",
