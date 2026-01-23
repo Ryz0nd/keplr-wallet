@@ -475,6 +475,9 @@ export const IBCSwapPage: FunctionComponent = observer(() => {
     evmOutcome === EvmGasSimulationOutcome.TX_SIMULATED ||
     evmOutcome === EvmGasSimulationOutcome.TX_BUNDLE_SIMULATED;
 
+  const hideStepIndicatorForEvmPendingSimulation =
+    isInChainEVMOnly && evmOutcome == null;
+
   const holdToSwapEnabled =
     swapConfigs.amountConfig.isQuoteReady &&
     !swapConfigs.amountConfig.requiresMultipleTxBundles &&
@@ -1593,7 +1596,8 @@ export const IBCSwapPage: FunctionComponent = observer(() => {
             swapConfigs.amountConfig.isFetchingInAmount ||
             swapConfigs.amountConfig.isFetchingOutAmount ||
             gasSimulator.isSimulating ||
-            isSwapExecuting
+            isSwapExecuting ||
+            hideStepIndicatorForEvmPendingSimulation
           }
         >
           <Box
