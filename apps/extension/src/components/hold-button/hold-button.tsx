@@ -115,6 +115,7 @@ export const HoldButton: FunctionComponent<HoldButtonProps> = ({
     setIsHolding(false);
     setProgress(0);
     holdStartTimeRef.current = null;
+    confirmedRef.current = false;
     onHoldEnd?.();
   }, [clearHoldInterval, onHoldEnd]);
 
