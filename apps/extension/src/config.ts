@@ -3962,6 +3962,41 @@ export const EmbedChainInfos: (ChainInfo | ModularChainInfo)[] = [
     },
     features: ["cosmwasm"],
   },
+  {
+    rpc: "https://rpc.mainnet.citrea.xyz",
+    rest: "https://rpc.mainnet.citrea.xyz",
+    evm: {
+      chainId: 4114,
+      rpc: "https://rpc.mainnet.citrea.xyz",
+      websocket: "wss://rpc.mainnet.citrea.xyz",
+    },
+    chainId: "eip155:4114",
+    chainName: "Citrea",
+    chainSymbolImageUrl:
+      "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/eip155:4114/citrea-black.png",
+    bip44: {
+      coinType: 60,
+    },
+    currencies: [
+      {
+        coinDenom: "cBTC",
+        coinMinimalDenom: "cbtc",
+        coinDecimals: 18,
+        coinImageUrl:
+          "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/eip155:4114/cbtc.png",
+      },
+    ],
+    feeCurrencies: [
+      {
+        coinDenom: "cBTC",
+        coinMinimalDenom: "cbtc",
+        coinDecimals: 18,
+        coinImageUrl:
+          "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/eip155:4114/cbtc.png",
+      },
+    ],
+    features: [],
+  },
 ];
 
 // The origins that are able to pass any permission that external webpages can have.
