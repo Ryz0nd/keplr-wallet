@@ -2260,10 +2260,14 @@ export class CosmosAccountImpl {
         from,
         burn_token: burnToken,
         amount,
-        destination_domain: destinationDomain,
+        destination_domain: destinationDomain as number | undefined,
         mint_recipient: mintRecipient,
       },
     };
+
+    if (!cctpMsg.value.destination_domain) {
+      delete cctpMsg.value.destination_domain;
+    }
 
     return this.makeTx(
       "cctp",
