@@ -32,26 +32,22 @@ export const useSwapV2HistoryAnalytics = (histories: SwapV2History[]) => {
             .identifier,
           route_count: history.simpleRoute.length,
           time_since_start_ms: Date.now() - history.timestamp,
+          in_coin_denom: history.amount[0]?.denom,
+          out_coin_denom: history.destinationAsset.denom,
+          route_duration_estimate_sec: history.routeDurationSeconds,
+          is_only_bridge: history.isOnlyUseBridge,
         };
 
         switch (history.status) {
           case SwapV2TxStatus.SUCCESS: {
             analyticsAmplitudeStore.logEvent("swap_v2_history_completed", {
               ...baseEventData,
-              in_coin_denom: history.amount[0]?.denom,
-              out_coin_denom: history.destinationAsset.denom,
-              route_duration_estimate_sec: history.routeDurationSeconds,
-              is_only_bridge: history.isOnlyUseBridge,
             });
             break;
           }
           case SwapV2TxStatus.FAILED: {
             analyticsAmplitudeStore.logEvent("swap_v2_history_failed", {
               ...baseEventData,
-              in_coin_denom: history.amount[0]?.denom,
-              out_coin_denom: history.destinationAsset.denom,
-              route_duration_estimate_sec: history.routeDurationSeconds,
-              is_only_bridge: history.isOnlyUseBridge,
               failed_at_route_index: history.routeIndex,
               error_type: history.additionalTrackError
                 ? "additional_track_error"
@@ -80,10 +76,6 @@ export const useSwapV2HistoryAnalytics = (histories: SwapV2History[]) => {
               "swap_v2_history_partial_success",
               {
                 ...baseEventData,
-                in_coin_denom: history.amount[0]?.denom,
-                out_coin_denom: history.destinationAsset.denom,
-                route_duration_estimate_sec: history.routeDurationSeconds,
-                is_only_bridge: history.isOnlyUseBridge,
                 stopped_at_route_index: history.routeIndex,
                 intermediate_chain_identifier: history.assetLocationInfo
                   ?.chainId
