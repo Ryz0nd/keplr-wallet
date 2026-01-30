@@ -12,7 +12,6 @@ export const useSwapV2HistoryAnalytics = (histories: SwapV2History[]) => {
 
   useEffect(() => {
     if (isFirstRender.current) {
-      console.log("first render");
       histories.forEach((history) => {
         prevStatusMap.current.set(history.id, history.status);
       });
@@ -34,8 +33,6 @@ export const useSwapV2HistoryAnalytics = (histories: SwapV2History[]) => {
           route_count: history.simpleRoute.length,
           time_since_start_ms: Date.now() - history.timestamp,
         };
-
-        console.log(history.status);
 
         switch (history.status) {
           case SwapV2TxStatus.SUCCESS: {
