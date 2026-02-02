@@ -521,7 +521,8 @@ const handleRequestSignFigureMarketsAuthMsg: (
       env,
       msg.origin,
       msg.chainId,
-      msg.signer
+      msg.signer,
+      msg.message
     );
   };
 };

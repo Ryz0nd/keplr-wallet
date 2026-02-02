@@ -182,7 +182,8 @@ export class MockKeplr implements Keplr {
 
   signFigureMarketsAuth(
     _chainId: string,
-    _signer: string
+    _signer: string,
+    _message: string
   ): Promise<{
     signedMessage: string;
     signature: StdSignature;

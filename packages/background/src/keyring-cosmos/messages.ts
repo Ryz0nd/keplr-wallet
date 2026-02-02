@@ -859,7 +859,11 @@ export class RequestSignFigureMarketsAuthMsg extends Message<{
     return "request-sign-figure-markets-auth";
   }
 
-  constructor(public readonly chainId: string, public readonly signer: string) {
+  constructor(
+    public readonly chainId: string,
+    public readonly signer: string,
+    public readonly message: string
+  ) {
     super();
   }
 
@@ -874,6 +878,10 @@ export class RequestSignFigureMarketsAuthMsg extends Message<{
 
     // Validate bech32 address.
     Bech32Address.validate(this.signer);
+
+    if (!this.message) {
+      throw new KeplrError("keyring", 231, "message not set");
+    }
   }
 
   override approveExternal(): boolean {

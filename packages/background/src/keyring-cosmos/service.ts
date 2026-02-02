@@ -44,7 +44,6 @@ import { AnalyticsService } from "../analytics";
 import { ChainsUIService } from "../chains-ui";
 import { Dec, Int } from "@keplr-wallet/unit";
 import bigInteger from "big-integer";
-import { v4 as uuidv4 } from "uuid";
 import { PubKey } from "@keplr-wallet/proto-types/cosmos/crypto/secp256k1/keys";
 import { SignMode } from "@keplr-wallet/proto-types/cosmos/tx/signing/v1beta1/signing";
 import { Any } from "@keplr-wallet/proto-types/google/protobuf/any";
@@ -1746,37 +1745,22 @@ export class KeyRingCosmosService {
     _env: Env,
     origin: string,
     chainId: string,
-    signer: string
+    signer: string,
+    // base64 encoded.
+    message: string
   ): Promise<{
     signedMessage: string;
     signature: StdSignature;
   }> {
-    const now = new Date();
-    const originURL = new URL(origin);
-    // https://www.figuremarkets.dev/service-wallet-auth/api/v1/login
-    const message = JSON.stringify({
-      scheme: originURL.protocol.replace(":", ""),
-      domain: originURL.host,
-      address: signer,
-      uri: `${origin}//service-wallet-auth/login`,
-      version: "1",
-      chainId,
-      // generate random 8 length string
-      nonce: Math.random().toString(36).slice(2, 10),
-      issuedAt: toIsoWithNanos(now),
-      expirationTime: toIsoWithNanos(
-        (() => {
-          const d = new Date(now);
-          // after 12 hours
-          d.setTime(d.getTime() + 12 * 60 * 60 * 1000);
-          return d;
-        })()
-      ),
-      notBefore: toIsoWithNanos(now),
-      // uuid
-      requestId: uuidv4(),
-      resources: [],
-    });
+    const parsed = JSON.parse(Buffer.from(message, "base64").toString());
+    if (
+      parsed.chainId !== this.chainsService.getChainInfoOrThrow(chainId).chainId
+    ) {
+      throw new Error("chain id unmatched");
+    }
+    if (new URL(parsed.domain).origin !== new URL(origin).origin) {
+      throw new Error("domain and origin unmatched");
+    }
 
     const vaultId = this.keyRingService.selectedVaultId;
 
@@ -1802,19 +1786,18 @@ export class KeyRingCosmosService {
       this.chainsService.getChainInfoOrThrow(chainId).bech32Config
         ?.bech32PrefixAccAddr ?? "";
     const bech32Address = new Bech32Address(key.address).toBech32(bech32Prefix);
-    if (signer !== bech32Address) {
+    if (signer !== bech32Address || parsed.address !== bech32Address) {
       throw new Error("Signer mismatched");
     }
 
-    const base64Message = Buffer.from(message).toString("base64");
     const signature = await this.keyRingService.sign(
       chainId,
       vaultId,
-      Buffer.from(message),
+      Buffer.from(message, "base64"),
       isEthermintLike ? "keccak256" : "sha256"
     );
     return {
-      signedMessage: base64Message,
+      signedMessage: message,
       signature: encodeSecp256k1Signature(
         key.pubKey,
         new Uint8Array([...signature.r, ...signature.s])
@@ -2206,12 +2189,4 @@ Salt: ${salt}`;
       );
     }
   }
-}
-
-function toIsoWithNanos(date: Date) {
-  const iso = date.toISOString(); // ... .sssZ
-  const ms = iso.slice(0, -1).split(".")[1]; // "sss"
-  const base = iso.slice(0, iso.indexOf(".")); // "YYYY-MM-DDTHH:mm:ss"
-  const nanos = String(Number(ms) * 1_000_000).padStart(9, "0");
-  return `${base}.${nanos}Z`;
 }

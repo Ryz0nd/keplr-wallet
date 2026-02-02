@@ -181,7 +181,9 @@ export interface Keplr {
 
   signFigureMarketsAuth(
     chainId: string,
-    signer: string
+    signer: string,
+    // base64 encoded
+    message: string
   ): Promise<{
     signedMessage: string;
     signature: StdSignature;

@@ -825,12 +825,17 @@ export class InjectedKeplr implements IKeplr, KeplrCoreTypes {
 
   async signFigureMarketsAuth(
     chainId: string,
-    signer: string
+    signer: string,
+    message: string
   ): Promise<{
     signedMessage: string;
     signature: StdSignature;
   }> {
-    return await this.requestMethod("signFigureMarketsAuth", [chainId, signer]);
+    return await this.requestMethod("signFigureMarketsAuth", [
+      chainId,
+      signer,
+      message,
+    ]);
   }
 
   async signDirectWithMessages(

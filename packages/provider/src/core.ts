@@ -573,7 +573,8 @@ export class Keplr implements IKeplr, KeplrCoreTypes {
 
   async signFigureMarketsAuth(
     chainId: string,
-    signer: string
+    signer: string,
+    message: string
   ): Promise<{
     signedMessage: string;
     signature: StdSignature;
@@ -588,6 +589,7 @@ export class Keplr implements IKeplr, KeplrCoreTypes {
         {
           chainId,
           signer,
+          message,
         }
       )
         .then(resolve)
