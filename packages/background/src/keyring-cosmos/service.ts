@@ -7,11 +7,13 @@ import {
   DirectSignResponse,
   KeplrSignOptions,
   Key,
+  StdFee,
   StdSignature,
   StdSignDoc,
 } from "@keplr-wallet/types";
 import { APP_PORT, Env, KeplrError } from "@keplr-wallet/router";
 import {
+  BaseAccount,
   Bech32Address,
   ChainIdHelper,
   checkAndValidateADR36AminoSignDoc,
@@ -29,16 +31,24 @@ import { InteractionService } from "../interaction";
 import { Buffer } from "buffer/";
 import {
   AuthInfo,
+  Fee,
   SignDoc,
   SignDocDirectAux,
+  SignerInfo,
   TxBody,
+  TxRaw,
 } from "@keplr-wallet/proto-types/cosmos/tx/v1beta1/tx";
 import Long from "long";
 import { PubKeySecp256k1 } from "@keplr-wallet/crypto";
 import { AnalyticsService } from "../analytics";
 import { ChainsUIService } from "../chains-ui";
-import { Int } from "@keplr-wallet/unit";
+import { Dec, Int } from "@keplr-wallet/unit";
 import bigInteger from "big-integer";
+import { PubKey } from "@keplr-wallet/proto-types/cosmos/crypto/secp256k1/keys";
+import { SignMode } from "@keplr-wallet/proto-types/cosmos/tx/signing/v1beta1/signing";
+import { Any } from "@keplr-wallet/proto-types/google/protobuf/any";
+import { simpleFetch } from "@keplr-wallet/simple-fetch";
+import { BackgroundTxService } from "src/tx";
 
 export class KeyRingCosmosService {
   constructor(
@@ -47,6 +57,7 @@ export class KeyRingCosmosService {
     protected readonly interactionService: InteractionService,
     protected readonly chainsUIService: ChainsUIService,
     protected readonly analyticsService: AnalyticsService,
+    protected readonly backgroundTxService: BackgroundTxService,
     protected readonly msgPrivilegedOrigins: string[],
     protected readonly msgPrivilegedCosmwasmContractMap: Record<
       string,
@@ -1050,6 +1061,277 @@ export class KeyRingCosmosService {
     );
   }
 
+  async signDirectWithMessagesSelected(
+    env: Env,
+    origin: string,
+    chainId: string,
+    signer: string,
+    // base64 encoded protobuf messages.
+    messages: string[],
+    signDirectWithMessagesOptions: {
+      memo?: string;
+      sync?: boolean;
+      timeoutHeight?: number;
+      gasAdjustment?: number;
+    }
+  ): Promise<{
+    txHash: string;
+  }> {
+    return await this.signDirectWithMessages(
+      env,
+      origin,
+      this.keyRingService.selectedVaultId,
+      chainId,
+      signer,
+      messages,
+      signDirectWithMessagesOptions
+    );
+  }
+
+  async signDirectWithMessages(
+    env: Env,
+    origin: string,
+    vaultId: string,
+    chainId: string,
+    signer: string,
+    // base64 encoded protobuf messages.
+    messages: string[],
+    signDirectWithMessagesOptions: {
+      memo?: string;
+      sync?: boolean;
+      timeoutHeight?: number;
+      gasAdjustment?: number;
+    }
+  ): Promise<{
+    txHash: string;
+  }> {
+    const useEthereumSign =
+      this.chainsService
+        .getChainInfoOrThrow(chainId)
+        .features?.includes("eth-key-sign") === true;
+
+    const chainIsInjective = chainId.startsWith("injective");
+    const chainIsStratos = chainId.startsWith("stratos");
+    const chainIsCysic = chainId.startsWith("cysic");
+
+    const key = await this.getKey(vaultId, chainId);
+    const bech32Address = key.bech32Address;
+
+    const account = await BaseAccount.fetchFromRest(
+      this.chainsService.getChainInfoOrThrow(chainId).rest,
+      bech32Address,
+      true
+    );
+
+    const anyMessages: Any[] = messages.map((message) => {
+      const bz = Buffer.from(message, "base64");
+      const any = Any.decode(bz);
+      return {
+        typeUrl: any.typeUrl,
+        value: any.value,
+      };
+    });
+
+    const feeCurrency =
+      this.chainsService.getChainInfoOrThrow(chainId).feeCurrencies[0];
+
+    const { gasUsed } = await this.simulateTx(
+      vaultId,
+      chainId,
+      anyMessages,
+      {
+        amount: [
+          {
+            denom: feeCurrency.coinMinimalDenom,
+            amount: "1",
+          },
+        ],
+      },
+      signDirectWithMessagesOptions.memo
+    );
+    const gasAdjustment = signDirectWithMessagesOptions.gasAdjustment || 1.5;
+
+    const gasLimitDec = new Dec(gasUsed).mulTruncate(new Dec(gasAdjustment));
+
+    const signDoc = {
+      bodyBytes: TxBody.encode(
+        TxBody.fromPartial({
+          messages: anyMessages,
+          memo: signDirectWithMessagesOptions.memo,
+        })
+      ).finish(),
+      authInfoBytes: AuthInfo.encode({
+        signerInfos: [
+          {
+            publicKey: {
+              typeUrl: (() => {
+                if (!useEthereumSign) {
+                  return "/cosmos.crypto.secp256k1.PubKey";
+                }
+
+                if (chainIsInjective) {
+                  return "/injective.crypto.v1beta1.ethsecp256k1.PubKey";
+                }
+
+                if (chainIsStratos) {
+                  return "/stratos.crypto.v1.ethsecp256k1.PubKey";
+                }
+
+                if (
+                  this.chainsService
+                    .getChainInfoOrThrow(chainId)
+                    .features?.includes("eth-secp256k1-cosmos")
+                ) {
+                  return "/cosmos.evm.crypto.v1.ethsecp256k1.PubKey";
+                }
+                if (
+                  this.chainsService
+                    .getChainInfoOrThrow(chainId)
+                    .features?.includes("eth-secp256k1-initia")
+                ) {
+                  return "/initia.crypto.v1beta1.ethsecp256k1.PubKey";
+                }
+
+                if (chainIsCysic) {
+                  return "/cysicmint.crypto.v1.ethsecp256k1.PubKey";
+                }
+
+                return "/ethermint.crypto.v1.ethsecp256k1.PubKey";
+              })(),
+              value: PubKey.encode({
+                key: key.pubKey,
+              }).finish(),
+            },
+            modeInfo: {
+              single: {
+                mode: SignMode.SIGN_MODE_DIRECT,
+              },
+              multi: undefined,
+            },
+            sequence: account.getSequence().toString(),
+          },
+        ],
+        fee: Fee.fromPartial({
+          amount: [
+            {
+              denom: feeCurrency.coinMinimalDenom,
+              amount: new Dec(feeCurrency.gasPriceStep?.average ?? 0.025)
+                .mul(gasLimitDec)
+                .roundUp()
+                .toString(),
+            },
+          ],
+          gasLimit: gasLimitDec.roundUp().toString(),
+        }),
+      }).finish(),
+      chainId: chainId,
+      accountNumber: account.getAccountNumber().toString(),
+    };
+
+    const signed = await this.signDirect(
+      env,
+      origin,
+      vaultId,
+      chainId,
+      signer,
+      signDoc,
+      {
+        preferNoSetMemo: !!signDirectWithMessagesOptions.memo,
+        preferNoSetFee: true,
+      }
+    );
+
+    const tx = TxRaw.encode({
+      bodyBytes: signed.signed.bodyBytes,
+      authInfoBytes: signed.signed.authInfoBytes,
+      signatures: [Buffer.from(signed.signature.signature, "base64")],
+    }).finish();
+
+    const txHash = await this.backgroundTxService.sendTx(chainId, tx, "sync", {
+      skipTracingTxResult: true,
+    });
+
+    return {
+      txHash: Buffer.from(txHash).toString("hex"),
+    };
+  }
+
+  async simulateTx(
+    vaultId: string,
+    chainId: string,
+    msgs: Any[],
+    fee: Omit<StdFee, "gas">,
+    memo: string = ""
+  ): Promise<{
+    gasUsed: number;
+  }> {
+    const key = await this.getKey(vaultId, chainId);
+    const bech32Address = key.bech32Address;
+
+    const account = await BaseAccount.fetchFromRest(
+      this.chainsService.getChainInfoOrThrow(chainId).rest,
+      bech32Address,
+      true
+    );
+
+    const unsignedTx = TxRaw.encode({
+      bodyBytes: TxBody.encode(
+        TxBody.fromPartial({
+          messages: msgs,
+          memo: memo,
+        })
+      ).finish(),
+      authInfoBytes: AuthInfo.encode({
+        signerInfos: [
+          SignerInfo.fromPartial({
+            // Pub key is ignored.
+            // It is fine to ignore the pub key when simulating tx.
+            // However, the estimated gas would be slightly smaller because tx size doesn't include pub key.
+            modeInfo: {
+              single: {
+                mode: SignMode.SIGN_MODE_LEGACY_AMINO_JSON,
+              },
+              multi: undefined,
+            },
+            sequence: account.getSequence().toString(),
+          }),
+        ],
+        fee: Fee.fromPartial({
+          amount: fee.amount.map((amount) => {
+            return { amount: amount.amount, denom: amount.denom };
+          }),
+        }),
+      }).finish(),
+      // Because of the validation of tx itself, the signature must exist.
+      // However, since they do not actually verify the signature, it is okay to use any value.
+      signatures: [new Uint8Array(64)],
+    }).finish();
+
+    // TODO: Add response type
+    const result = await simpleFetch<any>(
+      this.chainsService.getChainInfoOrThrow(chainId).rest,
+      "/cosmos/tx/v1beta1/simulate",
+      {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          tx_bytes: Buffer.from(unsignedTx).toString("base64"),
+        }),
+      }
+    );
+
+    const gasUsed = parseInt(result.data.gas_info.gas_used);
+    if (Number.isNaN(gasUsed)) {
+      throw new Error(`Invalid integer gas: ${result.data.gas_info.gas_used}`);
+    }
+
+    return {
+      gasUsed,
+    };
+  }
+
   /**
    * Sign a direct-encoded transaction with pre-authorization
    * @dev only sign the transaction, not simulate or broadcast
@@ -1457,6 +1739,70 @@ export class KeyRingCosmosService {
         };
       }
     );
+  }
+
+  async signFigureMarketsAuth(
+    _env: Env,
+    origin: string,
+    chainId: string,
+    signer: string,
+    // base64 encoded.
+    message: string
+  ): Promise<{
+    signedMessage: string;
+    signature: StdSignature;
+  }> {
+    const parsed = JSON.parse(Buffer.from(message, "base64").toString());
+    if (
+      parsed.chainId !== this.chainsService.getChainInfoOrThrow(chainId).chainId
+    ) {
+      throw new Error("chain id unmatched");
+    }
+    if (new URL(parsed.domain).origin !== new URL(origin).origin) {
+      throw new Error("domain and origin unmatched");
+    }
+
+    const vaultId = this.keyRingService.selectedVaultId;
+
+    const chainInfo = this.chainsService.getChainInfoOrThrow(chainId);
+    const isEthermintLike = KeyRingService.isEthermintLike(chainInfo);
+    const forceEVMLedger = chainInfo.features?.includes(
+      "force-enable-evm-ledger"
+    );
+
+    const keyInfo = this.keyRingService.getKeyInfo(vaultId);
+    if (!keyInfo) {
+      throw new Error("Null key info");
+    }
+
+    if (isEthermintLike && keyInfo.type === "ledger" && !forceEVMLedger) {
+      KeyRingCosmosService.throwErrorIfEthermintWithLedgerButNotSupported(
+        chainId
+      );
+    }
+
+    const key = await this.getKey(vaultId, chainId);
+    const bech32Prefix =
+      this.chainsService.getChainInfoOrThrow(chainId).bech32Config
+        ?.bech32PrefixAccAddr ?? "";
+    const bech32Address = new Bech32Address(key.address).toBech32(bech32Prefix);
+    if (signer !== bech32Address || parsed.address !== bech32Address) {
+      throw new Error("Signer mismatched");
+    }
+
+    const signature = await this.keyRingService.sign(
+      chainId,
+      vaultId,
+      Buffer.from(message, "base64"),
+      isEthermintLike ? "keccak256" : "sha256"
+    );
+    return {
+      signedMessage: message,
+      signature: encodeSecp256k1Signature(
+        key.pubKey,
+        new Uint8Array([...signature.r, ...signature.s])
+      ),
+    };
   }
 
   async requestICNSAdr36SignaturesSelected(

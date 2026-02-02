@@ -22,6 +22,8 @@ import {
   RequestCosmosSignDirectAuxMsg,
   GetCosmosKeysForEachVaultWithSearchSettledMsg,
   PrivilegeCosmosSignAminoExecuteCosmWasmMsg,
+  RequestSignFigureMarketsAuthMsg,
+  RequestCosmosSignDirectWithMessagesMsg,
 } from "./messages";
 import { KeyRingCosmosService } from "./service";
 import { PermissionInteractiveService } from "../permission-interactive";
@@ -119,6 +121,16 @@ export const getHandler: (
           env,
           msg as PrivilegeCosmosSignAminoExecuteCosmWasmMsg
         );
+      case RequestSignFigureMarketsAuthMsg:
+        return handleRequestSignFigureMarketsAuthMsg(
+          service,
+          permissionInteractionService
+        )(env, msg as RequestSignFigureMarketsAuthMsg);
+      case RequestCosmosSignDirectWithMessagesMsg:
+        return handleRequestCosmosSignDirectWithMessagesMsg(
+          service,
+          permissionInteractionService
+        )(env, msg as RequestCosmosSignDirectWithMessagesMsg);
       default:
         throw new KeplrError("keyring", 221, "Unknown msg type");
     }
@@ -488,5 +500,54 @@ const handleRequestCosmosSignDirectAuxMsg: (
       },
       signature: response.signature,
     };
+  };
+};
+
+const handleRequestSignFigureMarketsAuthMsg: (
+  service: KeyRingCosmosService,
+  permissionInteractionService: PermissionInteractiveService
+) => InternalHandler<RequestSignFigureMarketsAuthMsg> = (
+  service,
+  permissionInteractionService
+) => {
+  return async (env, msg) => {
+    await permissionInteractionService.ensureEnabled(
+      env,
+      [msg.chainId],
+      msg.origin
+    );
+
+    return await service.signFigureMarketsAuth(
+      env,
+      msg.origin,
+      msg.chainId,
+      msg.signer,
+      msg.message
+    );
+  };
+};
+
+const handleRequestCosmosSignDirectWithMessagesMsg: (
+  service: KeyRingCosmosService,
+  permissionInteractionService: PermissionInteractiveService
+) => InternalHandler<RequestCosmosSignDirectWithMessagesMsg> = (
+  service,
+  permissionInteractionService
+) => {
+  return async (env, msg) => {
+    await permissionInteractionService.ensureEnabled(
+      env,
+      [msg.chainId],
+      msg.origin
+    );
+
+    return await service.signDirectWithMessagesSelected(
+      env,
+      msg.origin,
+      msg.chainId,
+      msg.signer,
+      msg.messages,
+      msg.signDirectWithMessagesOptions
+    );
   };
 };

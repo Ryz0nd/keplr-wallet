@@ -781,6 +781,23 @@ export class KeplrWalletConnectV2 implements Keplr {
     throw new Error("Not yet implemented");
   }
 
+  signDirectWithMessages(
+    _chainId: string,
+    _signer: string,
+    // base64 encoded protobuf messages.
+    _messages: string[],
+    _signDirectWithMessagesOptions: {
+      memo?: string;
+      sync?: boolean;
+      timeoutHeight?: number;
+      gasAdjustment?: number;
+    }
+  ): Promise<{
+    txHash: string;
+  }> {
+    throw new Error("Not yet implemented");
+  }
+
   async signEthereum(
     chainId: string,
     signer: string,
@@ -855,6 +872,17 @@ export class KeplrWalletConnectV2 implements Keplr {
     _data: string | Uint8Array,
     _signature: StdSignature
   ): Promise<boolean> {
+    throw new Error("Not yet implemented");
+  }
+
+  signFigureMarketsAuth(
+    _chainId: string,
+    _signer: string,
+    _message: string
+  ): Promise<{
+    signedMessage: string;
+    signature: StdSignature;
+  }> {
     throw new Error("Not yet implemented");
   }
 

@@ -850,3 +850,97 @@ export class EnableVaultsWithCosmosAddressMsg extends Message<
     return EnableVaultsWithCosmosAddressMsg.type();
   }
 }
+
+export class RequestSignFigureMarketsAuthMsg extends Message<{
+  signedMessage: string;
+  signature: StdSignature;
+}> {
+  public static type() {
+    return "request-sign-figure-markets-auth";
+  }
+
+  constructor(
+    public readonly chainId: string,
+    public readonly signer: string,
+    public readonly message: string
+  ) {
+    super();
+  }
+
+  validateBasic(): void {
+    if (!this.chainId) {
+      throw new KeplrError("keyring", 270, "chain id not set");
+    }
+
+    if (!this.signer) {
+      throw new KeplrError("keyring", 230, "signer not set");
+    }
+
+    // Validate bech32 address.
+    Bech32Address.validate(this.signer);
+
+    if (!this.message) {
+      throw new KeplrError("keyring", 231, "message not set");
+    }
+  }
+
+  override approveExternal(): boolean {
+    return true;
+  }
+
+  route(): string {
+    return ROUTE;
+  }
+
+  type(): string {
+    return RequestSignFigureMarketsAuthMsg.type();
+  }
+}
+
+export class RequestCosmosSignDirectWithMessagesMsg extends Message<{
+  readonly txHash: string;
+}> {
+  public static type() {
+    return "request-cosmos-sign-direct-with-messages";
+  }
+
+  constructor(
+    public readonly chainId: string,
+    public readonly signer: string,
+    // base64 encoded protobuf messages.
+    public readonly messages: string[],
+    public readonly signDirectWithMessagesOptions: {
+      memo?: string;
+      sync?: boolean;
+      timeoutHeight?: number;
+      gasAdjustment?: number;
+    }
+  ) {
+    super();
+  }
+
+  validateBasic(): void {
+    if (!this.chainId) {
+      throw new KeplrError("keyring", 270, "chain id not set");
+    }
+
+    if (!this.signer) {
+      throw new KeplrError("keyring", 230, "signer not set");
+    }
+
+    // Validate bech32 address.
+    Bech32Address.validate(this.signer);
+  }
+
+  override approveExternal(): boolean {
+    return true;
+  }
+
+  route(): string {
+    return ROUTE;
+  }
+
+  type(): string {
+    return RequestCosmosSignDirectWithMessagesMsg.type();
+  }
+}
