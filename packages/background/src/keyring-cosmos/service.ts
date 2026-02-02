@@ -48,7 +48,7 @@ import { PubKey } from "@keplr-wallet/proto-types/cosmos/crypto/secp256k1/keys";
 import { SignMode } from "@keplr-wallet/proto-types/cosmos/tx/signing/v1beta1/signing";
 import { Any } from "@keplr-wallet/proto-types/google/protobuf/any";
 import { simpleFetch } from "@keplr-wallet/simple-fetch";
-import { BackgroundTxService } from "src/tx";
+import { BackgroundTxService } from "../tx";
 
 export class KeyRingCosmosService {
   constructor(
