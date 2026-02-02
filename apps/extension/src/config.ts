@@ -1314,48 +1314,6 @@ export const EmbedChainInfos: (ChainInfo | ModularChainInfo)[] = [
     features: [],
   },
   {
-    rpc: "https://rpc-omniflixhub.keplr.app",
-    rest: "https://lcd-omniflixhub.keplr.app",
-    chainId: "omniflixhub-1",
-    chainName: "OmniFlix",
-    stakeCurrency: {
-      coinDenom: "FLIX",
-      coinMinimalDenom: "uflix",
-      coinDecimals: 6,
-    },
-    bip44: {
-      coinType: 118,
-    },
-    bech32Config: {
-      bech32PrefixAccAddr: "omniflix",
-      bech32PrefixAccPub: "omniflixpub",
-      bech32PrefixValAddr: "omniflixvaloper",
-      bech32PrefixValPub: "omniflixvaloperpub",
-      bech32PrefixConsAddr: "omniflixvalcons",
-      bech32PrefixConsPub: "omniflixvalconspub",
-    },
-    currencies: [
-      {
-        coinDenom: "FLIX",
-        coinMinimalDenom: "uflix",
-        coinDecimals: 6,
-      },
-    ],
-    feeCurrencies: [
-      {
-        coinDenom: "FLIX",
-        coinMinimalDenom: "uflix",
-        coinDecimals: 6,
-        gasPriceStep: {
-          low: 0.001,
-          average: 0.0025,
-          high: 0.025,
-        },
-      },
-    ],
-    features: [],
-  },
-  {
     rpc: "https://rpc-kyve.keplr.app",
     rest: "https://lcd-kyve.keplr.app",
     chainId: "kyve-1",
