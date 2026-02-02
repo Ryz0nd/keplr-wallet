@@ -1238,6 +1238,7 @@ export class KeyRingCosmosService {
       signDoc,
       {
         preferNoSetMemo: !!signDirectWithMessagesOptions.memo,
+        preferNoSetFee: true,
       }
     );
 
