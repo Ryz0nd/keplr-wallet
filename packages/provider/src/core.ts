@@ -571,6 +571,77 @@ export class Keplr implements IKeplr, KeplrCoreTypes {
     });
   }
 
+  async signFigureMarketsAuth(
+    chainId: string,
+    signer: string
+  ): Promise<{
+    signedMessage: string;
+    signature: StdSignature;
+  }> {
+    return new Promise((resolve, reject) => {
+      let f = false;
+      sendSimpleMessage(
+        this.requester,
+        BACKGROUND_PORT,
+        "keyring-cosmos",
+        "request-sign-figure-markets-auth",
+        {
+          chainId,
+          signer,
+        }
+      )
+        .then(resolve)
+        .catch(reject)
+        .finally(() => (f = true));
+
+      setTimeout(() => {
+        if (!f) {
+          this.protectedTryOpenSidePanelIfEnabled();
+        }
+      }, 300);
+    });
+  }
+
+  async signDirectWithMessages(
+    chainId: string,
+    signer: string,
+    // base64 encoded protobuf messages.
+    messages: string[],
+    signDirectWithMessagesOptions: {
+      memo?: string;
+      sync?: boolean;
+      timeoutHeight?: number;
+      gasAdjustment?: number;
+    }
+  ): Promise<{
+    txHash: string;
+  }> {
+    return new Promise((resolve, reject) => {
+      let f = false;
+      sendSimpleMessage(
+        this.requester,
+        BACKGROUND_PORT,
+        "keyring-cosmos",
+        "request-cosmos-sign-direct-with-messages",
+        {
+          chainId,
+          signer,
+          messages,
+          signDirectWithMessagesOptions,
+        }
+      )
+        .then(resolve)
+        .catch(reject)
+        .finally(() => (f = true));
+
+      setTimeout(() => {
+        if (!f) {
+          this.protectedTryOpenSidePanelIfEnabled();
+        }
+      }, 300);
+    });
+  }
+
   async signEthereum(
     chainId: string,
     signer: string,

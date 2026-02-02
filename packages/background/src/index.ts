@@ -219,6 +219,7 @@ export function init(
     interactionService,
     chainsUIService,
     analyticsService,
+    backgroundTxService,
     msgPrivilegedOrigins,
     msgPrivilegedCosmwasmContractMap
   );

@@ -180,6 +180,33 @@ export class MockKeplr implements Keplr {
     throw new Error("Not implemented");
   }
 
+  signFigureMarketsAuth(
+    _chainId: string,
+    _signer: string
+  ): Promise<{
+    signedMessage: string;
+    signature: StdSignature;
+  }> {
+    throw new Error("Not implemented");
+  }
+
+  signDirectWithMessages(
+    _chainId: string,
+    _signer: string,
+    // base64 encoded protobuf messages.
+    _messages: string[],
+    _signDirectWithMessagesOptions: {
+      memo?: string;
+      sync?: boolean;
+      timeoutHeight?: number;
+      gasAdjustment?: number;
+    }
+  ): Promise<{
+    txHash: string;
+  }> {
+    throw new Error("Not yet implemented");
+  }
+
   signEthereum(
     _chainId: string,
     _signer: string,

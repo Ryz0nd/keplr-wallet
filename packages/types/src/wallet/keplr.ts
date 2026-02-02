@@ -144,6 +144,21 @@ export interface Keplr {
     mode: BroadcastMode
   ): Promise<Uint8Array>;
 
+  signDirectWithMessages(
+    chainId: string,
+    signer: string,
+    // base64 encoded protobuf messages.
+    messages: string[],
+    signDirectWithMessagesOptions: {
+      memo?: string;
+      sync?: boolean;
+      timeoutHeight?: number;
+      gasAdjustment?: number;
+    }
+  ): Promise<{
+    txHash: string;
+  }>;
+
   signICNSAdr36(
     chainId: string,
     contractAddress: string,
@@ -163,6 +178,14 @@ export interface Keplr {
     data: string | Uint8Array,
     signature: StdSignature
   ): Promise<boolean>;
+
+  signFigureMarketsAuth(
+    chainId: string,
+    signer: string
+  ): Promise<{
+    signedMessage: string;
+    signature: StdSignature;
+  }>;
 
   signEthereum(
     chainId: string,

@@ -436,6 +436,38 @@ export class Keplr implements IKeplr {
     ]);
   }
 
+  async signFigureMarketsAuth(
+    chainId: string,
+    signer: string
+  ): Promise<{
+    signedMessage: string;
+    signature: StdSignature;
+  }> {
+    return await this.requestMethod("signFigureMarketsAuth", [chainId, signer]);
+  }
+
+  async signDirectWithMessages(
+    chainId: string,
+    signer: string,
+    // base64 encoded protobuf messages.
+    messages: string[],
+    signDirectWithMessagesOptions: {
+      memo?: string;
+      sync?: boolean;
+      timeoutHeight?: number;
+      gasAdjustment?: number;
+    }
+  ): Promise<{
+    txHash: string;
+  }> {
+    return await this.requestMethod("signDirectWithMessages", [
+      chainId,
+      signer,
+      messages,
+      signDirectWithMessagesOptions,
+    ]);
+  }
+
   async signEthereum(
     chainId: string,
     signer: string,

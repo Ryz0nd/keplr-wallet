@@ -6105,6 +6105,7 @@ __metadata:
     miscreant: 0.3.2
     pbkdf2: ^3.1.2
     utility-types: ^3.10.0
+    uuid: ^11.1.0
   peerDependencies:
     bitcoinjs-lib: ^6
     mobx: ^6
