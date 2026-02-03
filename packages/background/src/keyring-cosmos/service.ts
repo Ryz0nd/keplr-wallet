@@ -1247,10 +1247,14 @@ export class KeyRingCosmosService {
       signatures: [Buffer.from(signed.signature.signature, "base64")],
     }).finish();
 
+    const waitFulfillment = signDirectWithMessagesOptions.sync !== false;
     const txHash = await this.backgroundTxService.sendTx(chainId, tx, "sync", {
-      skipTracingTxResult: true,
+      waitFulfillment,
     });
 
+    if (waitFulfillment) {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
     return {
       txHash: Buffer.from(txHash).toString("hex"),
     };
