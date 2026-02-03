@@ -24,6 +24,7 @@ export const useSwapV2HistoryAnalytics = (histories: SwapV2History[]) => {
 
       if (prevStatus !== undefined && prevStatus !== history.status) {
         const baseEventData = {
+          prev_status: prevStatus,
           history_id: history.id,
           provider: history.provider,
           in_chain_identifier: ChainIdHelper.parse(history.fromChainId)
@@ -48,7 +49,7 @@ export const useSwapV2HistoryAnalytics = (histories: SwapV2History[]) => {
           case SwapV2TxStatus.FAILED: {
             analyticsAmplitudeStore.logEvent("swap_v2_history_failed", {
               ...baseEventData,
-              failed_at_route_index: history.routeIndex,
+              route_index: history.routeIndex,
               error_type: history.additionalTrackError
                 ? "additional_track_error"
                 : history.trackError
@@ -76,7 +77,7 @@ export const useSwapV2HistoryAnalytics = (histories: SwapV2History[]) => {
               "swap_v2_history_partial_success",
               {
                 ...baseEventData,
-                stopped_at_route_index: history.routeIndex,
+                route_index: history.routeIndex,
                 intermediate_chain_identifier: history.assetLocationInfo
                   ?.chainId
                   ? ChainIdHelper.parse(history.assetLocationInfo.chainId)

@@ -45,7 +45,7 @@ export const useSwapV2HistoryItemAnalytics = ({
       in_chain_identifier: inChainIdentifier,
       out_chain_identifier: outChainIdentifier,
       route_count: history.simpleRoute.length,
-      current_route_index: history.routeIndex,
+      route_index: history.routeIndex,
     }),
     [
       history.id,
