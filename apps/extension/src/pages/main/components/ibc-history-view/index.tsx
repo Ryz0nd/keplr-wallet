@@ -58,6 +58,8 @@ import { StepIndicator } from "../../../../components/step-indicator";
 import { FormattedMessage, useIntl } from "react-intl";
 import { useNavigate } from "react-router";
 import { useNotification } from "../../../../hooks/notification";
+import { useSwapV2HistoryAnalytics } from "./hooks/use-swap-v2-history-analytics";
+import { useSwapV2HistoryItemAnalytics } from "./hooks/use-swap-v2-history-item-analytics";
 
 export const IbcHistoryView: FunctionComponent<{
   isNotReady: boolean;
@@ -67,6 +69,8 @@ export const IbcHistoryView: FunctionComponent<{
   const [histories, setHistories] = useState<IBCHistory[]>([]);
   const [skipHistories, setSkipHistories] = useState<SkipHistory[]>([]);
   const [swapV2Histories, setSwapV2Histories] = useState<SwapV2History[]>([]);
+
+  useSwapV2HistoryAnalytics(swapV2Histories);
 
   useLayoutEffectOnce(() => {
     let count = 0;
@@ -1544,6 +1548,17 @@ const SwapV2HistoryViewItem: FunctionComponent<{
     );
   }, [txExecution, history.backgroundExecutionId]);
 
+  const {
+    logResumeClicked,
+    logResumeSubmitted,
+    logResumeSignCanceled,
+    logResumeFailed,
+  } = useSwapV2HistoryItemAnalytics({
+    history,
+    hasExecutableTx,
+    txExecution,
+  });
+
   const txExecutionProgress: {
     executedTxCount: number;
     totalTxCount: number;
@@ -1608,6 +1623,8 @@ const SwapV2HistoryViewItem: FunctionComponent<{
     if (!tx) {
       return;
     }
+
+    logResumeClicked(tx);
 
     const totalTxCount = txExecution.txs.length;
     const executedTxCount = txExecution.txs.filter(
@@ -2008,6 +2025,8 @@ const SwapV2HistoryViewItem: FunctionComponent<{
         throw new Error(executeResult.error ?? "Transaction execution failed");
       }
 
+      logResumeSubmitted(tx);
+
       notification.show(
         "success",
         intl.formatMessage({ id: "notification.transaction-success" }),
@@ -2015,9 +2034,14 @@ const SwapV2HistoryViewItem: FunctionComponent<{
       );
     } catch (error) {
       console.error("Failed to execute tx:", error);
-      if (error?.message === "Request rejected") {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      if (errorMessage === "Request rejected") {
+        logResumeSignCanceled(tx);
         return;
       }
+
+      logResumeFailed(tx, errorMessage);
 
       notification.show(
         "failed",
