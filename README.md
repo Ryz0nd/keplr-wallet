@@ -77,8 +77,4 @@ Also, this repo contains submodules that are not open sourced and are only avail
 
 ### Browser Extension
 
-Apache 2.0
-
-### iOS / Android App
-
-Copyright (c) 2021 Chainapsis Inc. All rights reserved.
+Apache 2.0 License, Attribution Required
