@@ -109,7 +109,10 @@ export const CosmosTxView: FunctionComponent<{
       forceUseAtoneTokenAsFee:
         interactionData.data.mode === "amino"
           ? interactionData.data.signDocWrapper.aminoSignDoc.msgs.some((msg) =>
-              msg.type.includes("MsgMintPhoton")
+              // type은 있어야 정상이지만 가끔씩 체인 단에서 amino codec에 message를 등록하지 않는 실수를 한 경우,
+              // type이 없기 때문에 type이 없는 경우도 처리해준다.
+              // (솔직히 우리쪽 버그라고 생각하진 않지만 어려운 문제는 아니라서 처리 해줌...)
+              msg.type?.includes("MsgMintPhoton")
             )
           : interactionData.data.signDocWrapper.protoSignDoc.txMsgs.some(
               (msg) => msg.typeUrl.includes("MsgMintPhoton")
