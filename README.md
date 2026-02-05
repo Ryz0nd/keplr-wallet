@@ -11,8 +11,8 @@
 
 You can find the latest versions of the official managed releases on these links:
 
-- [Browser Extension](https://chrome.google.com/webstore/detail/keplr/dmkamcknogkgcdfhhbddcghachkejeap)
-  - Keplr officially supports Chrome, Firefox.
+- Browser Extension
+  - Keplr officially supports [Chrome](https://chrome.google.com/webstore/detail/keplr/dmkamcknogkgcdfhhbddcghachkejeap), [Firefox](https://addons.mozilla.org/en-US/firefox/addon/keplr/), and [Microsoft Edge](https://microsoftedge.microsoft.com/addons/detail/keplr/ocodgmmffbkkeecmadcijjhkmeohinei).
 - [iOS App](https://apps.apple.com/us/app/keplr-wallet/id1567851089)
 - [Android App](https://play.google.com/store/apps/details?id=com.chainapsis.keplr)
 
@@ -41,10 +41,6 @@ yarn && yarn build
 ```
 
 You can find the build output of Keplr Extension in apps/extension/build/manifest-v3. This output only works on Chrome now, so we recommend using other build outputs (in apps/extension/build/manifest-v2 or apps/extension/build/firefox) for other browsers. You can visit [this page](https://developer.chrome.com/docs/extensions/mv3/getstarted/development-basics/#load-unpacked) for instructions on loading the build output on Chrome.
-
-## Building mobile app locally
-
-WIP
 
 ## Packages
 
