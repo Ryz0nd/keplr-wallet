@@ -618,6 +618,9 @@ const TokenListItem = ({
   if (data.hasSearch) {
     // 검색어가 있을 때: 서버 순서 그대로, ownedTokensMap으로 보유 여부 확인
     const entry = data.filteredTargetEntries[index];
+    if (!entry) {
+      return null;
+    }
     const key = `${ChainIdHelper.parse(entry.chainInfo.chainId).identifier}/${
       entry.currency.coinMinimalDenom
     }`;
@@ -633,9 +636,13 @@ const TokenListItem = ({
   } else {
     // 검색어가 없을 때: 보유 자산 먼저, 그 다음 나머지
     isOwned = index < data.filteredTokens.length;
-    item = isOwned
+    const resolved = isOwned
       ? data.filteredTokens[index]
       : data.filteredRemaining[index - data.filteredTokens.length];
+    if (!resolved) {
+      return null;
+    }
+    item = resolved;
   }
 
   const isFindingCurrency =
