@@ -724,37 +724,40 @@ export const SpendableAssetView: FunctionComponent<{
               </VerticalCollapseTransition>
 
               {numFoundToken > 0 && (
-                <NewTokenFoundButtonContainer
-                  onClick={() => {
-                    setIsFoundTokenModalOpen(true);
-                  }}
-                >
-                  <XAxis alignY="center">
-                    <Subtitle3>
-                      {intl.formatMessage(
-                        { id: "page.main.spendable.new-token-found" },
-                        {
-                          numFoundToken: (
-                            <span
-                              style={{
-                                paddingRight: "0.25rem",
-                                color: ColorPalette["blue-300"],
-                              }}
-                            >
-                              {numFoundToken}
-                            </span>
-                          ),
-                        }
-                      )}
-                    </Subtitle3>
-                    <div style={{ flex: 1 }} />
-                    <ArrowRightIcon
-                      width="1.25rem"
-                      height="1.25rem"
-                      color={ColorPalette["gray-300"]}
-                    />
-                  </XAxis>
-                </NewTokenFoundButtonContainer>
+                <React.Fragment>
+                  <NewTokenFoundButtonContainer
+                    onClick={() => {
+                      setIsFoundTokenModalOpen(true);
+                    }}
+                  >
+                    <XAxis alignY="center">
+                      <Subtitle3>
+                        {intl.formatMessage(
+                          { id: "page.main.spendable.new-token-found" },
+                          {
+                            numFoundToken: (
+                              <span
+                                style={{
+                                  paddingRight: "0.25rem",
+                                  color: ColorPalette["blue-300"],
+                                }}
+                              >
+                                {numFoundToken}
+                              </span>
+                            ),
+                          }
+                        )}
+                      </Subtitle3>
+                      <div style={{ flex: 1 }} />
+                      <ArrowRightIcon
+                        width="1.25rem"
+                        height="1.25rem"
+                        color={ColorPalette["gray-300"]}
+                      />
+                    </XAxis>
+                  </NewTokenFoundButtonContainer>
+                  <Gutter size="1.375rem" />
+                </React.Fragment>
               )}
 
               <SceneTransition
