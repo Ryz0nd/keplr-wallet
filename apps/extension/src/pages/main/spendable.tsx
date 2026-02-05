@@ -756,7 +756,7 @@ export const SpendableAssetView: FunctionComponent<{
                       />
                     </XAxis>
                   </NewTokenFoundButtonContainer>
-                  <Gutter size="1.375rem" />
+                  <Gutter size="0.5rem" />
                 </React.Fragment>
               )}
 
@@ -772,6 +772,10 @@ export const SpendableAssetView: FunctionComponent<{
                 {allBalancesSearchFiltered.length > 0 && (
                   <Gutter size="1rem" direction="vertical" />
                 )}
+                {allBalancesSearchFiltered.length === 0 &&
+                  numFoundToken > 0 && (
+                    <Gutter size="0.5rem" direction="vertical" />
+                  )}
                 <LookingForChains
                   lookingForChains={searchedLookingForChains}
                   search={search}
