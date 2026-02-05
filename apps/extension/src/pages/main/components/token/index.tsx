@@ -281,7 +281,7 @@ interface TokenItemContentProps {
   stakingApr?: string;
 }
 
-const TokenItemContent: FunctionComponent<TokenItemContentProps> = ({
+const TokenItemContent: FunctionComponent<TokenItemContentProps> = observer(({
   viewToken,
   forChange,
   isError,
@@ -578,7 +578,7 @@ const TokenItemContent: FunctionComponent<TokenItemContentProps> = ({
       {right}
     </Columns>
   </Styles.Container>
-);
+));
 
 const Styles = {
   Container: styled.div<{
