@@ -45,7 +45,7 @@ export const CopyAddressItemList = ({
   containerStyle,
   copyItemAddressHoverColor,
 }: CopyAddressItemListProps) => {
-  const [focusedIndex, setFocusedIndex] = useState<number | null>(0);
+  const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const itemContainerRefs = useRef<(HTMLDivElement | null)[]>([]);
   const itemHandlesRef = useRef<(CopyAddressItemHandle | null)[]>([]);
