@@ -343,14 +343,15 @@ export class SwapAmountConfig extends AmountConfig {
       chainId: string;
       recipient: string;
     }
-  ): Promise<
-    (
+  ): Promise<{
+    txs: (
       | (MakeTxResponse & {
           chainId: string;
         })
       | UnsignedEVMTransactionWithErc20Approvals
-    )[]
-  > {
+    )[];
+    squidQuoteId?: string;
+  }> {
     const querySwapHelper = this.getQuerySwapHelper();
     if (!querySwapHelper) {
       throw new Error("Query Swap Helper is not initialized");
@@ -463,7 +464,10 @@ export class SwapAmountConfig extends AmountConfig {
       }
     }
 
-    return txs;
+    return {
+      txs,
+      squidQuoteId: txsResponse.data.squid_quote_id,
+    };
   }
 
   /**

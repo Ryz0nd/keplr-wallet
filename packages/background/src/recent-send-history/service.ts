@@ -1937,6 +1937,7 @@ export class RecentSendHistoryService {
     routeDurationSeconds: number = 0,
     txHash: string,
     isOnlyUseBridge?: boolean,
+    squidQuoteId?: string,
     backgroundExecutionId?: string
   ): string {
     const id = (this.recentSwapV2HistorySeq++).toString();
@@ -1961,6 +1962,7 @@ export class RecentSendHistoryService {
       resAmount: [],
       assetLocationInfo: undefined,
       notified: undefined,
+      squidQuoteId,
       backgroundExecutionId,
     };
 
@@ -2036,7 +2038,7 @@ export class RecentSendHistoryService {
       return;
     }
 
-    const { txHash, fromChainId, toChainId, provider } = history;
+    const { txHash, fromChainId, toChainId, provider, squidQuoteId } = history;
 
     const normalizeChainId = (chainId: string): string => {
       return chainId.replace("eip155:", "");
@@ -2048,6 +2050,7 @@ export class RecentSendHistoryService {
       toChainId: normalizeChainId(toChainId),
       provider,
       txHash,
+      squidQuoteId,
     })
       .then((res) => {
         this.processSwapV2StatusResponse(id, res.data, onFulfill, onError);

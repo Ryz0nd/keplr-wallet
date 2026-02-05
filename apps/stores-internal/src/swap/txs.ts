@@ -164,6 +164,7 @@ const TxResponseSchema = Joi.object<TxResponse>({
       }).unknown(true)
     )
     .required(),
+  squid_quote_id: Joi.string().optional(),
 }).unknown(true);
 
 export class ObservableQueryTxInnerV2 extends ObservableQuery<TxResponse> {

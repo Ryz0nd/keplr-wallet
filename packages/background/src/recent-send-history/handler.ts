@@ -300,7 +300,8 @@ const handleRecordTxWithSwapV2Msg: (
       msg.notificationInfo,
       msg.routeDurationSeconds,
       msg.txHash,
-      msg.isOnlyUseBridge
+      msg.isOnlyUseBridge,
+      msg.squidQuoteId
     );
   };
 };

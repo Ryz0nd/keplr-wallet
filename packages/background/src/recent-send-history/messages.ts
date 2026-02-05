@@ -576,7 +576,8 @@ export class RecordTxWithSwapV2Msg extends Message<string> {
     },
     public readonly routeDurationSeconds: number,
     public readonly txHash: string,
-    public readonly isOnlyUseBridge?: boolean
+    public readonly isOnlyUseBridge?: boolean,
+    public readonly squidQuoteId?: string
   ) {
     super();
   }

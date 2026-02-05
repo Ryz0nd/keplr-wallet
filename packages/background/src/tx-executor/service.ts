@@ -939,6 +939,7 @@ export class BackgroundTxExecutorService {
           historyData.routeDurationSeconds,
           tx.txHash,
           historyData.isOnlyUseBridge,
+          historyData.squidQuoteId,
           backgroundExecutionId
         );
 
