@@ -71,6 +71,7 @@ const Styles = {
     font-weight: 500;
     font-size: 1.75rem;
     line-height: 2.125rem;
+    text-align: center;
   `,
 };
 
