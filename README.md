@@ -77,4 +77,4 @@ Also, this repo contains submodules that are not open sourced and are only avail
 
 ### Browser Extension
 
-Apache 2.0 License, Attribution Required
+Apache 2.0 License
