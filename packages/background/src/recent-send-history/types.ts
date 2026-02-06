@@ -206,6 +206,7 @@ export interface SwapV2TxStatusRequest {
   from_chain: string;
   to_chain?: string; // optional, used by Squid
   tx_hash: string;
+  squid_quote_id?: string;
 }
 
 export interface SwapV2TxStatusResponse {
@@ -244,6 +245,7 @@ export interface SwapV2HistoryBase {
     currencies: AppCurrency[];
   };
   isOnlyUseBridge?: boolean;
+  squidQuoteId?: string;
 }
 
 /**

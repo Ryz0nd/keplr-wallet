@@ -69,6 +69,7 @@ const RouteResponseV2Schema = Joi.object<RouteResponseV2>({
     otherwise: Joi.array().items(SkipOperationSchema).optional(),
   }),
   price_impact_percent: Joi.number().required(),
+  squid_quote_id: Joi.string().optional(),
 }).unknown(true);
 
 export class ObservableQueryRouteInnerV2 extends ObservableQuery<RouteResponseV2> {

@@ -55,14 +55,17 @@ export async function requestSwapV2TxStatus(params: {
   toChainId: string;
   provider: SwapProvider;
   txHash: string;
+  squidQuoteId?: string;
 }) {
-  const { endpoint, fromChainId, toChainId, provider, txHash } = params;
+  const { endpoint, fromChainId, toChainId, provider, txHash, squidQuoteId } =
+    params;
 
   const request: SwapV2TxStatusRequest = {
     provider,
     from_chain: fromChainId,
     to_chain: toChainId,
     tx_hash: txHash,
+    ...(squidQuoteId && { squid_quote_id: squidQuoteId }),
   };
 
   return simpleFetch<SwapV2TxStatusResponse>(endpoint, "v2/swap/tx_status", {

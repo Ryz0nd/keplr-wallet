@@ -539,6 +539,7 @@ export const IBCSwapPage: FunctionComponent = observer(() => {
         }[] = [];
         let provider: SwapProvider | undefined;
         let routeDurationSeconds: number | undefined;
+        let squidQuoteId: string | undefined;
         let requiresMultipleTxBundles: boolean = false;
 
         uiConfigStore.ibcSwapConfig.setIsSwapExecuting(true, swapLoadingKey);
@@ -657,17 +658,18 @@ export const IBCSwapPage: FunctionComponent = observer(() => {
           // txs를 새로 가져오기 때문에 ui에서 보여주는 hold to swap 가능 여부라던가
           // total signature count도 새로 계산되므로, 기대되는 결과와 다르게 로직이 실행될 가능성이 있다.
           // 그러나 우선 낙관적으로 처리하고, 추후에 변동성이 커질 경우에 이를 처리하도록 한다.
-          const [_txs] = await Promise.all([
+          const [txsResult] = await Promise.all([
             swapConfigs.amountConfig.getTxs(undefined, priorOutAmount),
           ]);
 
-          if (_txs.length === 0) {
+          if (txsResult.txs.length === 0) {
             throw new Error(
               "Failed to prepare the transaction. Please try again"
             );
           }
 
-          txs = _txs;
+          txs = txsResult.txs;
+          squidQuoteId = txsResult.squidQuoteId;
           requiresMultipleTxBundles = txs.length > 1;
         } catch (e) {
           setCalculatingTxError(e);
@@ -718,6 +720,7 @@ export const IBCSwapPage: FunctionComponent = observer(() => {
             currencies: chainStore.getChain(outChainId).currencies,
           },
           routeDurationSeconds: routeDurationSeconds ?? 0,
+          squidQuoteId,
         };
 
         //================================================================================

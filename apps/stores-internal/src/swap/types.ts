@@ -138,6 +138,7 @@ interface RouteResponseV2Base {
   steps: RouteStep[];
   required_chain_ids: string[];
   required_fallback_chain_ids?: string[];
+  squid_quote_id?: string;
 }
 
 export type RouteResponseV2 =
@@ -266,6 +267,7 @@ export interface TxResponse {
   provider: SwapProvider;
   amount_out: string;
   transactions: SwapTransaction[];
+  squid_quote_id?: string;
 }
 
 export interface ChainsResponseV2 {
