@@ -179,16 +179,14 @@ const HistoryPageInner: FunctionComponent = observer(() => {
       if (scrollElement) {
         // scroll to refresh
         const onScroll = () => {
-          const el = pageSimpleBar.ref.current?.getContentElement();
           const scrollEl = pageSimpleBar.ref.current?.getScrollElement();
-          if (el && scrollEl) {
-            const rect = el.getBoundingClientRect();
-            const scrollRect = scrollEl.getBoundingClientRect();
-
+          if (scrollEl) {
             const remainingBottomY =
-              rect.y + rect.height - scrollRect.y - scrollRect.height;
+              scrollEl.scrollHeight -
+              scrollEl.scrollTop -
+              scrollEl.clientHeight;
 
-            if (remainingBottomY < scrollRect.height / 10) {
+            if (remainingBottomY < scrollEl.clientHeight / 10) {
               msgHistory.next();
             }
           }
