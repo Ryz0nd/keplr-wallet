@@ -4,6 +4,7 @@
     "baseUrl": ".",
     "rootDir": "../..",
     "noEmit": true,
+    "skipLibCheck": true,
     "paths": {
       "@keplr-wallet/analytics": ["../analytics/src"],
       "@keplr-wallet/analytics/build/*": ["../analytics/src/*"],

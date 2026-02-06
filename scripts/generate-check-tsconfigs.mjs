@@ -72,12 +72,15 @@ function getWorkspacePackages() {
       .split(path.sep)
       .join("/");
 
+    // tsconfig.check.json은 빌드 없이 빠른 타입체크만을 위한 설정이므로
+    // skipLibCheck를 켜서 node_modules 내 .d.ts 검사를 생략하고 속도를 높인다.
     const tsconfig = {
       extends: "./tsconfig.json",
       compilerOptions: {
         baseUrl: ".",
         rootDir,
         noEmit: true,
+        skipLibCheck: true,
         paths,
       },
       // 다른 패키지의 ambient .d.ts 선언을 포함 (globalThis 확장 등)
