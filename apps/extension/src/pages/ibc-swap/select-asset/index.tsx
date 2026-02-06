@@ -30,7 +30,6 @@ import { Currency } from "@keplr-wallet/types";
 import { IChainInfoImpl } from "@keplr-wallet/stores";
 import { FixedSizeList } from "react-window";
 import AutoSizer from "react-virtualized-auto-sizer";
-import { useSearch } from "../../../hooks/use-search";
 import { DenomHelper } from "@keplr-wallet/common";
 import { SwapNotAvailableModal } from "../components/swap-not-available-modal";
 import { MsgItemSkeleton } from "../../main/token-detail/msg-items/skeleton";
@@ -85,6 +84,16 @@ class IBCSwapDestinationState {
       }
 
       runInAction(() => {
+        // 기존 엔트리 키 셋 생성
+        const existingKeys = new Set(
+          this.targetEntriesInternal.map(
+            (e) =>
+              `${ChainIdHelper.parse(e.chainInfo.chainId).identifier}/${
+                e.currency.coinMinimalDenom
+              }`
+          )
+        );
+
         for (const [, value] of query.currenciesMap) {
           for (const currency of value.currencies) {
             const denomHelper = new DenomHelper(currency.coinMinimalDenom);
@@ -92,7 +101,15 @@ class IBCSwapDestinationState {
               continue;
             }
 
-            // CHECK: duplicated entries are possible
+            // 중복 검사
+            const key = `${
+              ChainIdHelper.parse(value.chainInfo.chainId).identifier
+            }/${currency.coinMinimalDenom}`;
+            if (existingKeys.has(key)) {
+              continue;
+            }
+            existingKeys.add(key);
+
             this.targetEntriesInternal.push({
               currency,
               chainInfo: value.chainInfo,
@@ -179,6 +196,12 @@ class IBCSwapDestinationState {
   }
 
   @computed
+  get isFetchingItems(): boolean {
+    const q = this.currentQuery;
+    return this.isFetching || q?.isFetching === true;
+  }
+
+  @computed
   get ownedTokens(): ViewToken[] {
     if (!this.sourceChainId || !this.sourceDenom) {
       return [];
@@ -207,6 +230,18 @@ class IBCSwapDestinationState {
           token.token.currency.coinMinimalDenom
         );
       });
+  }
+
+  @computed
+  get ownedTokensMap(): Map<string, ViewToken> {
+    const map = new Map<string, ViewToken>();
+    for (const token of this.ownedTokens) {
+      const key = `${ChainIdHelper.parse(token.chainInfo.chainId).identifier}/${
+        token.token.currency.coinMinimalDenom
+      }`;
+      map.set(key, token);
+    }
+    return map;
   }
 
   @computed
@@ -250,12 +285,6 @@ class IBCSwapDestinationState {
       isFetchingItems: this.isFetchingItems,
     };
   }
-
-  @computed
-  get isFetchingItems(): boolean {
-    const q = this.currentQuery;
-    return this.isFetching || q?.isFetching === true;
-  }
 }
 
 const Styles = {
@@ -264,32 +293,6 @@ const Styles = {
     padding: 0.75rem;
   `,
 };
-
-const searchFields = [
-  {
-    key: "originCurrency.coinDenom",
-    function: (item: ViewToken) => {
-      const currency = item.token.currency;
-      if ("originCurrency" in currency) {
-        return CoinPretty.makeCoinDenomPretty(
-          currency.originCurrency?.coinDenom || ""
-        );
-      }
-      return CoinPretty.makeCoinDenomPretty(currency.coinDenom);
-    },
-  },
-  "chainInfo.chainName",
-];
-
-const remainingSearchFields = [
-  {
-    key: "currency.coinDenom",
-    function: (item: { currency: Currency; chainInfo: IChainInfoImpl }) => {
-      return CoinPretty.makeCoinDenomPretty(item.currency.coinDenom);
-    },
-  },
-  "chainInfo.chainName",
-];
 
 // /send/select-asset와 기본 로직은 거의 유사한데...
 // 뷰 쪽이 생각보다 이질적이라서 그냥 분리 시킴...
@@ -383,12 +386,30 @@ export const IBCSwapDestinationSelectAssetPage: FunctionComponent = observer(
       return filtered;
     }, [excludeKey, remaining]);
 
-    const searchedTokens = useSearch(filteredTokens, search, searchFields);
-    const searchedRemaining = useSearch(
-      filteredRemaining,
-      search,
-      remainingSearchFields
-    );
+    // 검색어가 있을 때는 서버 순서 그대로, 없을 때는 보유 자산 우선
+    // state.search 기준으로 해야 targetEntries와 동기화됨 (300ms 디바운스)
+    const hasSearch = state.search.trim().length > 0;
+
+    // useMemo 밖에서 targetEntries 접근해야 mobx가 추적함
+    const targetEntries = state.targetEntries;
+
+    // 검색어가 있을 때 사용할 targetEntries (서버 순서 유지)
+    // useMemo 제거: mobx 배열은 내용 변경 시 참조가 유지되어 의존성 감지 안 됨
+    const filteredTargetEntries = hasSearch
+      ? targetEntries.filter((entry) => {
+          const denomHelper = new DenomHelper(entry.currency.coinMinimalDenom);
+          if (denomHelper.type === "lp") {
+            return false;
+          }
+
+          return (
+            !excludeKey ||
+            `${ChainIdHelper.parse(entry.chainInfo.chainId).identifier}/${
+              entry.currency.coinMinimalDenom
+            }` !== excludeKey
+          );
+        })
+      : [];
 
     const [selectedCoinMinimalDenom, setSelectedCoinMinimalDenom] =
       useState<string>();
@@ -420,8 +441,11 @@ export const IBCSwapDestinationSelectAssetPage: FunctionComponent = observer(
             {({ height, width }: { height: number; width: number }) => (
               <FixedSizeList
                 itemData={{
-                  searchedTokens,
-                  searchedRemaining,
+                  hasSearch,
+                  filteredTokens,
+                  filteredRemaining,
+                  filteredTargetEntries,
+                  ownedTokensMap: state.ownedTokensMap,
                   selectedCoinMinimalDenom,
                   unsupportedCoinMinimalDenoms,
                   isFetchingItems,
@@ -499,25 +523,27 @@ export const IBCSwapDestinationSelectAssetPage: FunctionComponent = observer(
                 width={width}
                 height={height}
                 itemCount={
-                  searchedTokens.length +
-                  searchedRemaining.length +
+                  (hasSearch
+                    ? filteredTargetEntries.length
+                    : filteredTokens.length + filteredRemaining.length) +
                   (isFetchingItems ? 1 : 0)
                 }
                 itemSize={66}
-                onItemsRendered={({ visibleStopIndex }) => {
-                  if (isFetchingItems) {
+                onItemsRendered={({ visibleStartIndex, visibleStopIndex }) => {
+                  if (isFetchingItems || !state.hasNextPage) {
                     return;
                   }
-                  const threshold = 3;
-                  const totalCount =
-                    searchedTokens.length +
-                    searchedRemaining.length +
-                    (isFetchingItems ? 1 : 0);
+
+                  const visibleCount = visibleStopIndex - visibleStartIndex + 1;
+                  const threshold = Math.max(5, Math.ceil(visibleCount * 0.5));
+
+                  const totalCount = hasSearch
+                    ? filteredTargetEntries.length
+                    : filteredTokens.length + filteredRemaining.length;
+
                   if (
                     totalCount > threshold &&
-                    visibleStopIndex >= totalCount - threshold &&
-                    state.hasNextPage &&
-                    !isFetchingItems
+                    visibleStopIndex >= totalCount - threshold
                   ) {
                     state.requestNextPage();
                   }
@@ -545,11 +571,17 @@ const TokenListItem = ({
   style,
 }: {
   data: {
-    searchedTokens: ViewToken[];
-    searchedRemaining: {
+    hasSearch: boolean;
+    filteredTokens: ViewToken[];
+    filteredRemaining: {
       currency: Currency;
       chainInfo: IChainInfoImpl;
     }[];
+    filteredTargetEntries: {
+      currency: Currency;
+      chainInfo: IChainInfoImpl;
+    }[];
+    ownedTokensMap: Map<string, ViewToken>;
     selectedCoinMinimalDenom?: string;
     unsupportedCoinMinimalDenoms: Set<string>;
     isFetchingItems: boolean;
@@ -558,7 +590,9 @@ const TokenListItem = ({
   index: number;
   style: any;
 }) => {
-  const total = data.searchedTokens.length + data.searchedRemaining.length;
+  const total = data.hasSearch
+    ? data.filteredTargetEntries.length
+    : data.filteredTokens.length + data.filteredRemaining.length;
   const isLoader = data.isFetchingItems && index === total;
 
   if (isLoader) {
@@ -578,10 +612,38 @@ const TokenListItem = ({
     );
   }
 
-  const isFilteredTokens = index < data.searchedTokens.length;
-  const item = isFilteredTokens
-    ? data.searchedTokens[index]
-    : data.searchedRemaining[index - data.searchedTokens.length];
+  let item: ViewToken | { currency: Currency; chainInfo: IChainInfoImpl };
+  let isOwned: boolean;
+
+  if (data.hasSearch) {
+    // 검색어가 있을 때: 서버 순서 그대로, ownedTokensMap으로 보유 여부 확인
+    const entry = data.filteredTargetEntries[index];
+    if (!entry) {
+      return null;
+    }
+    const key = `${ChainIdHelper.parse(entry.chainInfo.chainId).identifier}/${
+      entry.currency.coinMinimalDenom
+    }`;
+    const ownedToken = data.ownedTokensMap.get(key);
+
+    if (ownedToken) {
+      item = ownedToken;
+      isOwned = true;
+    } else {
+      item = entry;
+      isOwned = false;
+    }
+  } else {
+    // 검색어가 없을 때: 보유 자산 먼저, 그 다음 나머지
+    isOwned = index < data.filteredTokens.length;
+    const resolved = isOwned
+      ? data.filteredTokens[index]
+      : data.filteredRemaining[index - data.filteredTokens.length];
+    if (!resolved) {
+      return null;
+    }
+    item = resolved;
+  }
 
   const isFindingCurrency =
     data.selectedCoinMinimalDenom ===
@@ -623,7 +685,7 @@ const TokenListItem = ({
     >
       <TokenItem
         viewToken={viewToken}
-        hideBalance={isFilteredTokens ? false : true}
+        hideBalance={!isOwned}
         onClick={() => !isUnsupportedToken && data.onClick(viewToken, index)}
         noTokenTag
         disabled={isUnsupportedToken}
