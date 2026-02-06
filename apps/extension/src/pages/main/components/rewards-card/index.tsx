@@ -31,6 +31,8 @@ export const RewardsCard: FunctionComponent<{
   const [isCardHover, setIsCardHover] = React.useState(false);
   const [isClaimAllHover, setIsClaimAllHover] = React.useState(false);
 
+  const { uiConfigStore } = useStore();
+
   const {
     totalPrice,
     claimAll,
@@ -141,7 +143,12 @@ export const RewardsCard: FunctionComponent<{
         </Skeleton>
         <Gutter size="0.5rem" />
         <Skeleton isNotReady={isNotReady} verticalBleed="2px">
-          <Subtitle2>{totalPrice?.toString()}</Subtitle2>
+          <Subtitle2>
+            {uiConfigStore.hideStringIfPrivacyMode(
+              totalPrice?.toString() ?? "-",
+              3
+            )}
+          </Subtitle2>
         </Skeleton>
       </Box>
 
