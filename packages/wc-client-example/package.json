@@ -24,6 +24,8 @@
     "parcel-bundler": "^1.12.5"
   },
   "peerDependencies": {
+    "@walletconnect/sign-client": "^2",
+    "@walletconnect/types": "^2",
     "mobx-react-lite": "^3",
     "react": "^16.8.0 || ^17 || ^18",
     "react-dom": "^16.8.0 || ^17 || ^18"
