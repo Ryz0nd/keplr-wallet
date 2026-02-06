@@ -48,6 +48,8 @@ function getWorkspacePackages() {
 (async () => {
   const packages = getWorkspacePackages();
 
+  const generatedFiles = [];
+
   for (const pkg of packages) {
     const paths = {};
 
@@ -79,18 +81,23 @@ function getWorkspacePackages() {
         paths,
       },
       // 다른 패키지의 ambient .d.ts 선언을 포함 (globalThis 확장 등)
-      include: [
-        "src/**/*",
-        "../../packages/*/src/**/*.d.ts",
-      ],
+      include: ["src/**/*", "../../packages/*/src/**/*.d.ts"],
     };
 
     const outPath = path.join(pkg.dir, "tsconfig.check.json");
     fs.writeFileSync(outPath, JSON.stringify(tsconfig, null, 2) + "\n");
-    console.log(`Generated: ${path.relative(path.resolve(__dirname, ".."), outPath)}`);
+    generatedFiles.push(outPath);
+    console.log(
+      `Generated: ${path.relative(path.resolve(__dirname, ".."), outPath)}`
+    );
   }
 
-  console.log(`\nDone! Generated ${packages.length} tsconfig.check.json files.`);
+  // 생성된 파일들에 prettier 적용
+  await $`npx prettier --write ${generatedFiles}`;
+
+  console.log(
+    `\nDone! Generated ${packages.length} tsconfig.check.json files.`
+  );
 })();
 
 /* eslint-enable import/no-extraneous-dependencies, @typescript-eslint/no-var-requires */
