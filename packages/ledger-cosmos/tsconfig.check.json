@@ -2,6 +2,7 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "baseUrl": ".",
+    "rootDir": "../..",
     "noEmit": true,
     "paths": {
       "@keplr-wallet/analytics": [
@@ -57,6 +58,12 @@
       ],
       "@keplr-wallet/hooks-starknet/build/*": [
         "../hooks-starknet/src/*"
+      ],
+      "@keplr-wallet/ledger-cosmos": [
+        "src"
+      ],
+      "@keplr-wallet/ledger-cosmos/build/*": [
+        "src/*"
       ],
       "@keplr-wallet/mobx-utils": [
         "../mobx-utils/src"
@@ -209,5 +216,9 @@
         "../../apps/stores-internal/src/*"
       ]
     }
-  }
+  },
+  "include": [
+    "src/**/*",
+    "../../packages/*/src/**/*.d.ts"
+  ]
 }

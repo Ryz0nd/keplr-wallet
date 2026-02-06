@@ -2,6 +2,7 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "baseUrl": ".",
+    "rootDir": "../..",
     "noEmit": true,
     "paths": {
       "@keplr-wallet/analytics": [
@@ -39,6 +40,12 @@
       ],
       "@keplr-wallet/crypto/build/*": [
         "../crypto/src/*"
+      ],
+      "@keplr-wallet/hooks": [
+        "src"
+      ],
+      "@keplr-wallet/hooks/build/*": [
+        "src/*"
       ],
       "@keplr-wallet/hooks-bitcoin": [
         "../hooks-bitcoin/src"
@@ -209,5 +216,9 @@
         "../../apps/stores-internal/src/*"
       ]
     }
-  }
+  },
+  "include": [
+    "src/**/*",
+    "../../packages/*/src/**/*.d.ts"
+  ]
 }

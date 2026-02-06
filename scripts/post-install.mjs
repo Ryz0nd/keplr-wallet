@@ -31,6 +31,9 @@ import path from "path";
         await fs.writeFile(p, "// @ts-nocheck\n" + data);
       }
     }
+
+    // proto-types는 생성된 파일이므로 항상 빌드 필요
+    await $`yarn workspace @keplr-wallet/proto-types build`;
   } catch (e) {
     console.log(e);
     process.exit(1);

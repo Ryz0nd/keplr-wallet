@@ -52,27 +52,37 @@ function getWorkspacePackages() {
     const paths = {};
 
     for (const other of packages) {
-      if (other.name === pkg.name) continue;
-
       // 현재 패키지에서 대상 패키지의 src/로의 상대 경로
       const relativeSrc = path
         .relative(pkg.dir, path.join(other.dir, "src"))
         .split(path.sep)
         .join("/");
 
-      // @keplr-wallet/xxx -> xxx/src
+      // @keplr-wallet/xxx -> xxx/src (self-reference 포함)
       paths[other.name] = [relativeSrc];
       // @keplr-wallet/xxx/build/* -> xxx/src/* (deep import 지원)
       paths[`${other.name}/build/*`] = [`${relativeSrc}/*`];
     }
 
+    // rootDir를 모노레포 루트로 설정하여 다른 패키지 소스 참조 시 TS6059 방지
+    const rootDir = path
+      .relative(pkg.dir, path.resolve(__dirname, ".."))
+      .split(path.sep)
+      .join("/");
+
     const tsconfig = {
       extends: "./tsconfig.json",
       compilerOptions: {
         baseUrl: ".",
+        rootDir,
         noEmit: true,
         paths,
       },
+      // 다른 패키지의 ambient .d.ts 선언을 포함 (globalThis 확장 등)
+      include: [
+        "src/**/*",
+        "../../packages/*/src/**/*.d.ts",
+      ],
     };
 
     const outPath = path.join(pkg.dir, "tsconfig.check.json");

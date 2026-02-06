@@ -26,7 +26,8 @@
     "preversion": "yarn --immutable",
     "version": "zx ./scripts/lerna-lifecyle-check-version.mjs && yarn && git add yarn.lock",
     "prepare": "husky",
-    "check:gen": "zx ./scripts/generate-check-tsconfigs.mjs"
+    "check:gen": "zx ./scripts/generate-check-tsconfigs.mjs",
+    "typecheck": "lerna run typecheck"
   },
   "lint-staged": {
     "*.{js,ts,jsx,tsx}": [

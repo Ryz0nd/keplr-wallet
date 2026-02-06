@@ -2,6 +2,7 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "baseUrl": ".",
+    "rootDir": "../..",
     "noEmit": true,
     "paths": {
       "@keplr-wallet/analytics": [
@@ -87,6 +88,12 @@
       ],
       "@keplr-wallet/provider-extension/build/*": [
         "../provider-extension/src/*"
+      ],
+      "@keplr-wallet/provider-mock": [
+        "src"
+      ],
+      "@keplr-wallet/provider-mock/build/*": [
+        "src/*"
       ],
       "@keplr-wallet/router": [
         "../router/src"
@@ -209,5 +216,9 @@
         "../../apps/stores-internal/src/*"
       ]
     }
-  }
+  },
+  "include": [
+    "src/**/*",
+    "../../packages/*/src/**/*.d.ts"
+  ]
 }

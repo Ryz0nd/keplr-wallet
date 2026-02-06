@@ -8,7 +8,7 @@ import {
 import { SendTxEthereumMsg, SendTxEthereumMsgAndRecordMsg } from "./messages";
 import { BackgroundTxEthereumService } from "./service";
 import { PermissionInteractiveService } from "../permission-interactive";
-import { RecentSendHistoryService } from "src/recent-send-history";
+import { RecentSendHistoryService } from "../recent-send-history";
 
 export const getHandler: (
   service: BackgroundTxEthereumService,

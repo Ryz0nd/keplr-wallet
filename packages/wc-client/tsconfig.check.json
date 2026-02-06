@@ -2,6 +2,7 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "baseUrl": ".",
+    "rootDir": "../..",
     "noEmit": true,
     "paths": {
       "@keplr-wallet/analytics": [
@@ -178,6 +179,12 @@
       "@keplr-wallet/unit/build/*": [
         "../unit/src/*"
       ],
+      "@keplr-wallet/wc-client": [
+        "src"
+      ],
+      "@keplr-wallet/wc-client/build/*": [
+        "src/*"
+      ],
       "@keplr-wallet/wc-client-example": [
         "../wc-client-example/src"
       ],
@@ -209,5 +216,9 @@
         "../../apps/stores-internal/src/*"
       ]
     }
-  }
+  },
+  "include": [
+    "src/**/*",
+    "../../packages/*/src/**/*.d.ts"
+  ]
 }
