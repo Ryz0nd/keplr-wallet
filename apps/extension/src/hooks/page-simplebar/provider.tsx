@@ -7,6 +7,13 @@ import React, {
 import { PageSimpleBarContext } from "./internal";
 import SimpleBar from "simplebar-react";
 import SimpleBarCore from "simplebar-core";
+import styled from "styled-components";
+
+const StyledSimpleBar = styled(SimpleBar)`
+  & .simplebar-content {
+    height: 100%;
+  }
+`;
 
 export const PageSimpleBarProvider: FunctionComponent<
   PropsWithChildren<{
@@ -37,7 +44,7 @@ export const PageSimpleBarProvider: FunctionComponent<
         };
       }, [])}
     >
-      <SimpleBar
+      <StyledSimpleBar
         style={style}
         ref={(r) => {
           ref.current = r;
@@ -48,7 +55,7 @@ export const PageSimpleBarProvider: FunctionComponent<
         }}
       >
         {children}
-      </SimpleBar>
+      </StyledSimpleBar>
     </PageSimpleBarContext.Provider>
   );
 };

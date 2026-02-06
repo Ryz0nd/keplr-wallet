@@ -422,7 +422,6 @@ export const IBCSwapDestinationSelectAssetPage: FunctionComponent = observer(
       <HeaderLayout
         title={intl.formatMessage({ id: "page.send.select-asset.title" })}
         left={<BackButton />}
-        contentContainerStyle={{ height: "100vh" }}
       >
         <Styles.Container gutter="0.5rem">
           <SearchTextInput
@@ -437,122 +436,131 @@ export const IBCSwapDestinationSelectAssetPage: FunctionComponent = observer(
               setSearch(e.target.value);
             }}
           />
-          <AutoSizer>
-            {({ height, width }: { height: number; width: number }) => (
-              <FixedSizeList
-                itemData={{
-                  hasSearch,
-                  filteredTokens,
-                  filteredRemaining,
-                  filteredTargetEntries,
-                  ownedTokensMap: state.ownedTokensMap,
-                  selectedCoinMinimalDenom,
-                  unsupportedCoinMinimalDenoms,
-                  isFetchingItems,
-                  onClick: async (viewToken) => {
-                    let timer: NodeJS.Timeout | undefined;
-                    let disposal: IReactionDisposer | undefined;
-                    await Promise.race([
-                      new Promise((resolve) => {
-                        timer = setTimeout(resolve, 3000);
-                      }),
-                      new Promise((resolve) => {
-                        // findCurrency가 동기적이기 때문에 currency를 찾는 동안에도 undefined를 리턴한다.
-                        // findCurrencyAsync를 쓰면 되지만 현재 의도대로 동작하지 않는다.
-                        // 따라서 findCurrency를 쓰되 정해진 timeout 동안에도 찾지 못하면 찾지 못했다고 판단하도록 한다.
-                        disposal = autorun(() => {
-                          const currency = chainStore
-                            .getChain(viewToken.chainInfo.chainId)
-                            .findCurrency(
-                              viewToken.token.currency.coinMinimalDenom
-                            );
-                          setSelectedCoinMinimalDenom(
-                            `${
-                              ChainIdHelper.parse(viewToken.chainInfo.chainId)
-                                .identifier
-                            }/${viewToken.token.currency.coinMinimalDenom}`
-                          );
-                          if (currency) {
-                            if (paramNavigateTo) {
-                              navigate(
-                                paramNavigateTo
-                                  .replace(
-                                    "{chainId}",
-                                    viewToken.chainInfo.chainId
-                                  )
-                                  .replace(
-                                    "{coinMinimalDenom}",
-                                    viewToken.token.currency.coinMinimalDenom
-                                  ),
-                                {
-                                  replace: paramNavigateReplace === "true",
-                                }
+          <div style={{ flex: 1, minHeight: 0 }}>
+            <AutoSizer>
+              {({ height, width }: { height: number; width: number }) => (
+                <FixedSizeList
+                  itemData={{
+                    hasSearch,
+                    filteredTokens,
+                    filteredRemaining,
+                    filteredTargetEntries,
+                    ownedTokensMap: state.ownedTokensMap,
+                    selectedCoinMinimalDenom,
+                    unsupportedCoinMinimalDenoms,
+                    isFetchingItems,
+                    onClick: async (viewToken) => {
+                      let timer: NodeJS.Timeout | undefined;
+                      let disposal: IReactionDisposer | undefined;
+                      await Promise.race([
+                        new Promise((resolve) => {
+                          timer = setTimeout(resolve, 3000);
+                        }),
+                        new Promise((resolve) => {
+                          // findCurrency가 동기적이기 때문에 currency를 찾는 동안에도 undefined를 리턴한다.
+                          // findCurrencyAsync를 쓰면 되지만 현재 의도대로 동작하지 않는다.
+                          // 따라서 findCurrency를 쓰되 정해진 timeout 동안에도 찾지 못하면 찾지 못했다고 판단하도록 한다.
+                          disposal = autorun(() => {
+                            const currency = chainStore
+                              .getChain(viewToken.chainInfo.chainId)
+                              .findCurrency(
+                                viewToken.token.currency.coinMinimalDenom
                               );
-                            } else {
-                              console.error("Empty navigateTo param");
+                            setSelectedCoinMinimalDenom(
+                              `${
+                                ChainIdHelper.parse(viewToken.chainInfo.chainId)
+                                  .identifier
+                              }/${viewToken.token.currency.coinMinimalDenom}`
+                            );
+                            if (currency) {
+                              if (paramNavigateTo) {
+                                navigate(
+                                  paramNavigateTo
+                                    .replace(
+                                      "{chainId}",
+                                      viewToken.chainInfo.chainId
+                                    )
+                                    .replace(
+                                      "{coinMinimalDenom}",
+                                      viewToken.token.currency.coinMinimalDenom
+                                    ),
+                                  {
+                                    replace: paramNavigateReplace === "true",
+                                  }
+                                );
+                              } else {
+                                console.error("Empty navigateTo param");
+                              }
+                              resolve(null);
                             }
-                            resolve(null);
-                          }
-                        });
-                      }),
-                    ]);
+                          });
+                        }),
+                      ]);
 
-                    setSelectedCoinMinimalDenom(undefined);
-                    const newUnsupportedCoinMinimalDenoms = new Set(
-                      unsupportedCoinMinimalDenoms
-                    );
-                    newUnsupportedCoinMinimalDenoms.add(
-                      `${
-                        ChainIdHelper.parse(viewToken.chainInfo.chainId)
-                          .identifier
-                      }/${viewToken.token.currency.coinMinimalDenom}`
-                    );
-                    setUnsupportedCoinMinimalDenoms(
-                      newUnsupportedCoinMinimalDenoms
-                    );
-                    setIsSwapNotAvailableModalOpen(true);
+                      setSelectedCoinMinimalDenom(undefined);
+                      const newUnsupportedCoinMinimalDenoms = new Set(
+                        unsupportedCoinMinimalDenoms
+                      );
+                      newUnsupportedCoinMinimalDenoms.add(
+                        `${
+                          ChainIdHelper.parse(viewToken.chainInfo.chainId)
+                            .identifier
+                        }/${viewToken.token.currency.coinMinimalDenom}`
+                      );
+                      setUnsupportedCoinMinimalDenoms(
+                        newUnsupportedCoinMinimalDenoms
+                      );
+                      setIsSwapNotAvailableModalOpen(true);
 
-                    if (timer) {
-                      clearTimeout(timer);
-                    }
-                    if (disposal) {
-                      disposal();
-                    }
-                  },
-                }}
-                width={width}
-                height={height}
-                itemCount={
-                  (hasSearch
-                    ? filteredTargetEntries.length
-                    : filteredTokens.length + filteredRemaining.length) +
-                  (isFetchingItems ? 1 : 0)
-                }
-                itemSize={66}
-                onItemsRendered={({ visibleStartIndex, visibleStopIndex }) => {
-                  if (isFetchingItems || !state.hasNextPage) {
-                    return;
+                      if (timer) {
+                        clearTimeout(timer);
+                      }
+                      if (disposal) {
+                        disposal();
+                      }
+                    },
+                  }}
+                  width={width}
+                  height={height}
+                  itemCount={
+                    (hasSearch
+                      ? filteredTargetEntries.length
+                      : filteredTokens.length + filteredRemaining.length) +
+                    (isFetchingItems ? 1 : 0)
                   }
+                  itemSize={66}
+                  onItemsRendered={({
+                    visibleStartIndex,
+                    visibleStopIndex,
+                  }) => {
+                    if (isFetchingItems || !state.hasNextPage) {
+                      return;
+                    }
 
-                  const visibleCount = visibleStopIndex - visibleStartIndex + 1;
-                  const threshold = Math.max(5, Math.ceil(visibleCount * 0.5));
+                    const visibleCount =
+                      visibleStopIndex - visibleStartIndex + 1;
+                    const threshold = Math.max(
+                      5,
+                      Math.ceil(visibleCount * 0.5)
+                    );
 
-                  const totalCount = hasSearch
-                    ? filteredTargetEntries.length
-                    : filteredTokens.length + filteredRemaining.length;
+                    const totalCount = hasSearch
+                      ? filteredTargetEntries.length
+                      : filteredTokens.length + filteredRemaining.length;
 
-                  if (
-                    totalCount > threshold &&
-                    visibleStopIndex >= totalCount - threshold
-                  ) {
-                    state.requestNextPage();
-                  }
-                }}
-              >
-                {TokenListItem}
-              </FixedSizeList>
-            )}
-          </AutoSizer>
+                    if (
+                      totalCount > threshold &&
+                      visibleStopIndex >= totalCount - threshold
+                    ) {
+                      state.requestNextPage();
+                    }
+                  }}
+                >
+                  {TokenListItem}
+                </FixedSizeList>
+              )}
+            </AutoSizer>
+          </div>
         </Styles.Container>
         <SwapNotAvailableModal
           isOpen={isSwapNotAvailableModalOpen}
