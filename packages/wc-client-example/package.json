@@ -5,7 +5,8 @@
   "license": "Apache-2.0",
   "private": true,
   "scripts": {
-    "serve": "npx parcel ./src/index.html"
+    "serve": "npx parcel ./src/index.html",
+    "typecheck": "npx tsc -p tsconfig.check.json"
   },
   "dependencies": {
     "@keplr-wallet/common": "0.13.4-rc.0",

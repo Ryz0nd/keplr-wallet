@@ -12,6 +12,7 @@
     "dev:analyzer": "npx cross-env NODE_ENV=development ANALYZER=true webpack",
     "analyzer": "npx cross-env NODE_ENV=production ANALYZER=true DISABLE_SPLIT_CHUNKS=true webpack",
     "analyzer:chunks": "npx cross-env NODE_ENV=production ANALYZER=true webpack",
+    "typecheck": "npx tsc -p tsconfig.check.json",
     "test": "npx jest --passWithNoTests",
     "lint-test": "npx eslint \"src/**/*\" webpack.config.js && npx prettier --check \"src/**/*\" webpack.config.js",
     "lint-fix": "npx eslint --fix \"src/**/*\" webpack.config.js && npx prettier --write \"src/**/*\" webpack.config.js",

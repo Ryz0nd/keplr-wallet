@@ -1,0 +1,213 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "noEmit": true,
+    "paths": {
+      "@keplr-wallet/analytics": [
+        "../../packages/analytics/src"
+      ],
+      "@keplr-wallet/analytics/build/*": [
+        "../../packages/analytics/src/*"
+      ],
+      "@keplr-wallet/background": [
+        "../../packages/background/src"
+      ],
+      "@keplr-wallet/background/build/*": [
+        "../../packages/background/src/*"
+      ],
+      "@keplr-wallet/chain-validator": [
+        "../../packages/chain-validator/src"
+      ],
+      "@keplr-wallet/chain-validator/build/*": [
+        "../../packages/chain-validator/src/*"
+      ],
+      "@keplr-wallet/common": [
+        "../../packages/common/src"
+      ],
+      "@keplr-wallet/common/build/*": [
+        "../../packages/common/src/*"
+      ],
+      "@keplr-wallet/cosmos": [
+        "../../packages/cosmos/src"
+      ],
+      "@keplr-wallet/cosmos/build/*": [
+        "../../packages/cosmos/src/*"
+      ],
+      "@keplr-wallet/crypto": [
+        "../../packages/crypto/src"
+      ],
+      "@keplr-wallet/crypto/build/*": [
+        "../../packages/crypto/src/*"
+      ],
+      "@keplr-wallet/hooks": [
+        "../../packages/hooks/src"
+      ],
+      "@keplr-wallet/hooks/build/*": [
+        "../../packages/hooks/src/*"
+      ],
+      "@keplr-wallet/hooks-bitcoin": [
+        "../../packages/hooks-bitcoin/src"
+      ],
+      "@keplr-wallet/hooks-bitcoin/build/*": [
+        "../../packages/hooks-bitcoin/src/*"
+      ],
+      "@keplr-wallet/hooks-starknet": [
+        "../../packages/hooks-starknet/src"
+      ],
+      "@keplr-wallet/hooks-starknet/build/*": [
+        "../../packages/hooks-starknet/src/*"
+      ],
+      "@keplr-wallet/ledger-cosmos": [
+        "../../packages/ledger-cosmos/src"
+      ],
+      "@keplr-wallet/ledger-cosmos/build/*": [
+        "../../packages/ledger-cosmos/src/*"
+      ],
+      "@keplr-wallet/mobx-utils": [
+        "../../packages/mobx-utils/src"
+      ],
+      "@keplr-wallet/mobx-utils/build/*": [
+        "../../packages/mobx-utils/src/*"
+      ],
+      "@keplr-wallet/popup": [
+        "../../packages/popup/src"
+      ],
+      "@keplr-wallet/popup/build/*": [
+        "../../packages/popup/src/*"
+      ],
+      "@keplr-wallet/provider": [
+        "../../packages/provider/src"
+      ],
+      "@keplr-wallet/provider/build/*": [
+        "../../packages/provider/src/*"
+      ],
+      "@keplr-wallet/provider-extension": [
+        "../../packages/provider-extension/src"
+      ],
+      "@keplr-wallet/provider-extension/build/*": [
+        "../../packages/provider-extension/src/*"
+      ],
+      "@keplr-wallet/provider-mock": [
+        "../../packages/provider-mock/src"
+      ],
+      "@keplr-wallet/provider-mock/build/*": [
+        "../../packages/provider-mock/src/*"
+      ],
+      "@keplr-wallet/router": [
+        "../../packages/router/src"
+      ],
+      "@keplr-wallet/router/build/*": [
+        "../../packages/router/src/*"
+      ],
+      "@keplr-wallet/router-extension": [
+        "../../packages/router-extension/src"
+      ],
+      "@keplr-wallet/router-extension/build/*": [
+        "../../packages/router-extension/src/*"
+      ],
+      "@keplr-wallet/router-mock": [
+        "../../packages/router-mock/src"
+      ],
+      "@keplr-wallet/router-mock/build/*": [
+        "../../packages/router-mock/src/*"
+      ],
+      "@keplr-wallet/simple-fetch": [
+        "../../packages/simple-fetch/src"
+      ],
+      "@keplr-wallet/simple-fetch/build/*": [
+        "../../packages/simple-fetch/src/*"
+      ],
+      "@keplr-wallet/stores": [
+        "../../packages/stores/src"
+      ],
+      "@keplr-wallet/stores/build/*": [
+        "../../packages/stores/src/*"
+      ],
+      "@keplr-wallet/stores-bitcoin": [
+        "../../packages/stores-bitcoin/src"
+      ],
+      "@keplr-wallet/stores-bitcoin/build/*": [
+        "../../packages/stores-bitcoin/src/*"
+      ],
+      "@keplr-wallet/stores-core": [
+        "../../packages/stores-core/src"
+      ],
+      "@keplr-wallet/stores-core/build/*": [
+        "../../packages/stores-core/src/*"
+      ],
+      "@keplr-wallet/stores-etc": [
+        "../../packages/stores-etc/src"
+      ],
+      "@keplr-wallet/stores-etc/build/*": [
+        "../../packages/stores-etc/src/*"
+      ],
+      "@keplr-wallet/stores-eth": [
+        "../../packages/stores-eth/src"
+      ],
+      "@keplr-wallet/stores-eth/build/*": [
+        "../../packages/stores-eth/src/*"
+      ],
+      "@keplr-wallet/stores-ibc": [
+        "../../packages/stores-ibc/src"
+      ],
+      "@keplr-wallet/stores-ibc/build/*": [
+        "../../packages/stores-ibc/src/*"
+      ],
+      "@keplr-wallet/stores-starknet": [
+        "../../packages/stores-starknet/src"
+      ],
+      "@keplr-wallet/stores-starknet/build/*": [
+        "../../packages/stores-starknet/src/*"
+      ],
+      "@keplr-wallet/topup-client": [
+        "../../packages/topup-client/src"
+      ],
+      "@keplr-wallet/topup-client/build/*": [
+        "../../packages/topup-client/src/*"
+      ],
+      "@keplr-wallet/types": [
+        "../../packages/types/src"
+      ],
+      "@keplr-wallet/types/build/*": [
+        "../../packages/types/src/*"
+      ],
+      "@keplr-wallet/unit": [
+        "../../packages/unit/src"
+      ],
+      "@keplr-wallet/unit/build/*": [
+        "../../packages/unit/src/*"
+      ],
+      "@keplr-wallet/wc-client": [
+        "../../packages/wc-client/src"
+      ],
+      "@keplr-wallet/wc-client/build/*": [
+        "../../packages/wc-client/src/*"
+      ],
+      "@keplr-wallet/wc-client-example": [
+        "../../packages/wc-client-example/src"
+      ],
+      "@keplr-wallet/wc-client-example/build/*": [
+        "../../packages/wc-client-example/src/*"
+      ],
+      "@keplr-wallet/wc-qrcode-modal": [
+        "../../packages/wc-qrcode-modal/src"
+      ],
+      "@keplr-wallet/wc-qrcode-modal/build/*": [
+        "../../packages/wc-qrcode-modal/src/*"
+      ],
+      "@keplr-wallet/extension": [
+        "../extension/src"
+      ],
+      "@keplr-wallet/extension/build/*": [
+        "../extension/src/*"
+      ],
+      "@keplr-wallet/stores-internal": [
+        "../stores-internal/src"
+      ],
+      "@keplr-wallet/stores-internal/build/*": [
+        "../stores-internal/src/*"
+      ]
+    }
+  }
+}

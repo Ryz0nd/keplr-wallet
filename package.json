@@ -25,7 +25,8 @@
     "__comment__": "There is a problem that `yarn --immutable` cannot be passed in CI because the yarn.lock file includes the monorepo package version. To solve this, check if there are any problems with the yarn.lock file in \"preversion\" and update the yarn.lock file in \"version\"",
     "preversion": "yarn --immutable",
     "version": "zx ./scripts/lerna-lifecyle-check-version.mjs && yarn && git add yarn.lock",
-    "prepare": "husky"
+    "prepare": "husky",
+    "check:gen": "zx ./scripts/generate-check-tsconfigs.mjs"
   },
   "lint-staged": {
     "*.{js,ts,jsx,tsx}": [
