@@ -30,7 +30,7 @@
   "bottom-tabs.settings": "Settings",
   "bottom-tabs.swap.disabled": "Swap only works with Cosmos or Ethereum-based chains. Please add one to use it.",
 
-  "pages.register.components.header.intro-title": "Your Interchain Gateway",
+  "pages.register.components.header.intro-title": "Your Multichain Gateway",
   "pages.register.components.header.header-step.title": "Step",
   "pages.register.components.help-desk-button.title": "Get Support",
   "pages.register.components.help-desk-button.question": "?",
@@ -207,7 +207,7 @@
 
   "pages.register.pages.welcome.title": "Account Created!",
   "pages.register.pages.welcome.sub-title": "You may close this page",
-  "pages.register.pages.welcome.paragraph": "Ready to explore the Interchain?",
+  "pages.register.pages.welcome.paragraph": "Ready to explore the Multichain?",
   "pages.register.pages.welcome.osmosis-link.title": "Osmosis",
   "pages.register.pages.welcome.osmosis-link.paragraph": "Trade Tokens",
   "pages.register.pages.welcome.swapped-link.title": "Swapped",
@@ -639,7 +639,7 @@
   "page.main.balance.staked-balance-title-1": "with",
   "page.main.balance.staked-balance-title-2": "staked",
 
-  "page.main.spendable.empty-view-title": "Ready to Explore the Interchain?",
+  "page.main.spendable.empty-view-title": "Ready to Explore the Multichain?",
   "page.main.spendable.empty-view-paragraph": "Gear up yourself by topping up your wallet!",
   "page.main.spendable.get-started-button": "Get Started",
   "page.main.spendable.new-token-found": "{numFoundToken} new token(s) found",
