@@ -93,13 +93,37 @@ function getWorkspacePackages() {
     console.log(
       `Generated: ${path.relative(path.resolve(__dirname, ".."), outPath)}`
     );
+
+    // 패키지별 .eslintrc.json에 자기 자신의 패키지명 import 금지 규칙 추가.
+    // 기존 .eslintrc.json이 있으면 rules를 병합하고, 없으면 새로 생성한다.
+    // 하위 eslintrc는 같은 rule에 대해 부모를 완전히 대체하므로
+    // root의 "src/*" 패턴도 함께 포함해야 한다.
+    const eslintrcPath = path.join(pkg.dir, ".eslintrc.json");
+    const existingEslintrc = fs.existsSync(eslintrcPath)
+      ? JSON.parse(fs.readFileSync(eslintrcPath, "utf8"))
+      : {};
+    existingEslintrc.rules = {
+      ...existingEslintrc.rules,
+      "no-restricted-imports": [
+        "error",
+        { patterns: ["src/*", pkg.name, `${pkg.name}/*`] },
+      ],
+    };
+    fs.writeFileSync(
+      eslintrcPath,
+      JSON.stringify(existingEslintrc, null, 2) + "\n"
+    );
+    generatedFiles.push(eslintrcPath);
+    console.log(
+      `Generated: ${path.relative(path.resolve(__dirname, ".."), eslintrcPath)}`
+    );
   }
 
   // 생성된 파일들에 prettier 적용
   await $`npx prettier --write ${generatedFiles}`;
 
   console.log(
-    `\nDone! Generated ${packages.length} tsconfig.check.json files.`
+    `\nDone! Generated ${packages.length} tsconfig.check.json + .eslintrc.json files.`
   );
 })();
 
