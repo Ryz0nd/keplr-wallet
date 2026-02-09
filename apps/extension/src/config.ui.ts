@@ -164,8 +164,6 @@ export const SwapVenues: {
   { name: "babylon-tower", chainId: "bbn-1" },
   { name: "osmosis-poolmanager", chainId: "osmosis-1" },
   { name: "initia-dex", chainId: "interwoven-1" },
-  { name: "pryzm-native", chainId: "pryzm-1" },
-  { name: "persistence-dexter", chainId: "core-1" },
   { name: "injective-astroport", chainId: "injective-1" },
   { name: "blast-uniswap", chainId: "eip155:81457" },
   { name: "binance-uniswap", chainId: "eip155:56" },
@@ -202,10 +200,6 @@ export const SwapFeeBps = {
     {
       chainId: "core-1",
       address: "persistence1my4tk420gjmhggqwvvha6ey9390gqwfrlwlzd2",
-    },
-    {
-      chainId: "pryzm-1",
-      address: "pryzm1my4tk420gjmhggqwvvha6ey9390gqwfrfjwkaa",
     },
     {
       chainId: "chihuahua-1",

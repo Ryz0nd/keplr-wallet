@@ -1753,43 +1753,6 @@ export const EmbedChainInfos: (ChainInfo | ModularChainInfo)[] = [
     features: ["eth-address-gen", "eth-key-sign", "cosmwasm"],
   },
   {
-    rpc: "https://rpc-pryzm.keplr.app",
-    rest: "https://lcd-pryzm.keplr.app",
-    chainId: "pryzm-1",
-    chainName: "Pryzm",
-    stakeCurrency: {
-      coinDenom: "PRYZM",
-      coinMinimalDenom: "upryzm",
-      coinDecimals: 6,
-    },
-    bip44: {
-      coinType: 118,
-    },
-    bech32Config: {
-      bech32PrefixAccAddr: "pryzm",
-      bech32PrefixAccPub: "pryzmpub",
-      bech32PrefixValAddr: "pryzmvaloper",
-      bech32PrefixValPub: "pryzmvaloperpub",
-      bech32PrefixConsAddr: "pryzmvalcons",
-      bech32PrefixConsPub: "pryzmvalconspub",
-    },
-    currencies: [
-      {
-        coinDenom: "PRYZM",
-        coinMinimalDenom: "upryzm",
-        coinDecimals: 6,
-      },
-    ],
-    feeCurrencies: [
-      {
-        coinDenom: "PRYZM",
-        coinMinimalDenom: "upryzm",
-        coinDecimals: 6,
-      },
-    ],
-    features: ["cosmwasm"],
-  },
-  {
     rpc: "https://rpc-zetachain.keplr.app",
     rest: "https://lcd-zetachain.keplr.app",
     chainId: "zetachain_7000-1",

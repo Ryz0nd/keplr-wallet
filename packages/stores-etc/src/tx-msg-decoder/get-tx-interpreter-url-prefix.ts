@@ -27,7 +27,6 @@ const TX_INTERPRETER_URL_PREFIX_BY_BECH32_PREFIX: Record<string, string> = {
   pasg: "passage",
   persistence: "persistence",
   pokt: "pocket",
-  pryzm: "pryzm",
   quick: "quicksilver",
   regen: "regen",
   saga: "saga",
