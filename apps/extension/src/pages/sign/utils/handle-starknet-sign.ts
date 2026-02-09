@@ -298,7 +298,7 @@ function handleLedgerResponse<R>(
       throw new KeplrError(
         ErrModuleLedgerSign,
         ErrFailedGetPublicKey,
-        "Failed to get public key"
+        "Open the Starknet app on Ledger,\nor update it to the latest version."
       );
     case LedgerError.UserRejected:
       throw new KeplrError(
