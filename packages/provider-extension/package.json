@@ -1,6 +1,6 @@
 {
   "name": "@keplr-wallet/provider-extension",
-  "version": "0.12.313",
+  "version": "0.13.4-rc.0",
   "main": "build/index.js",
   "author": "chainapsis",
   "license": "Apache-2.0",
@@ -18,10 +18,11 @@
     "test": "npx jest --passWithNoTests",
     "lint-test": "npx eslint \"src/**/*\" && npx prettier --check \"src/**/*\"",
     "lint-fix": "npx eslint --fix \"src/**/*\" && npx prettier --write \"src/**/*\"",
-    "version": "npx zx ./scripts/lerna-lifecyle-version.mjs"
+    "version": "npx zx ./scripts/lerna-lifecyle-version.mjs",
+    "typecheck": "npx tsc -p tsconfig.check.json"
   },
   "dependencies": {
-    "@keplr-wallet/types": "0.12.313",
+    "@keplr-wallet/types": "0.13.4-rc.0",
     "deepmerge": "^4.2.2",
     "long": "^4.0.0",
     "uuid": "^11.1.0"

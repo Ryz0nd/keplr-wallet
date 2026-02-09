@@ -227,7 +227,7 @@ export class AmountConfig extends TxChainSetter implements IAmountConfig {
       }
       if (dec.lt(new Dec(0))) {
         return {
-          error: new NegativeAmountError("Amount is negative"),
+          error: new NegativeAmountError("Enter a positive number"),
         };
       }
 
@@ -238,7 +238,7 @@ export class AmountConfig extends TxChainSetter implements IAmountConfig {
       );
     } catch {
       return {
-        error: new InvalidNumberAmountError("Invalid form of number"),
+        error: new InvalidNumberAmountError("Enter a valid number"),
       };
     }
 
@@ -247,7 +247,7 @@ export class AmountConfig extends TxChainSetter implements IAmountConfig {
 
       if (!this.canUseCurrency(currency)) {
         return {
-          error: new NotSupportedCurrencyError("Not supported currency"),
+          error: new NotSupportedCurrencyError("Token not supported"),
         };
       }
 
@@ -261,7 +261,7 @@ export class AmountConfig extends TxChainSetter implements IAmountConfig {
       if (!bal) {
         return {
           warning: new Error(
-            `Can't parse the balance for ${currency.coinMinimalDenom}`
+            `Unable to load your ${currency.coinMinimalDenom} balance`
           ),
         };
       }

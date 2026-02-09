@@ -3,7 +3,7 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Twitter: Keplr Wallet](https://img.shields.io/twitter/follow/keplrwallet.svg?style=social)](https://twitter.com/keplrwallet)
 
-> The most powerful wallet for the Cosmos ecosystem and the Interchain.
+> The most powerful open source wallet infrastructure for the multi-chain world.
 
 ## Official Releases
 
@@ -11,8 +11,8 @@
 
 You can find the latest versions of the official managed releases on these links:
 
-- [Browser Extension](https://chrome.google.com/webstore/detail/keplr/dmkamcknogkgcdfhhbddcghachkejeap)
-  - Keplr officially supports Chrome, Firefox.
+- Browser Extension
+  - Keplr officially supports [Chrome](https://chrome.google.com/webstore/detail/keplr/dmkamcknogkgcdfhhbddcghachkejeap), [Firefox](https://addons.mozilla.org/en-US/firefox/addon/keplr/), and [Microsoft Edge](https://microsoftedge.microsoft.com/addons/detail/keplr/ocodgmmffbkkeecmadcijjhkmeohinei).
 - [iOS App](https://apps.apple.com/us/app/keplr-wallet/id1567851089)
 - [Android App](https://play.google.com/store/apps/details?id=com.chainapsis.keplr)
 
@@ -41,10 +41,6 @@ yarn && yarn build
 ```
 
 You can find the build output of Keplr Extension in apps/extension/build/manifest-v3. This output only works on Chrome now, so we recommend using other build outputs (in apps/extension/build/manifest-v2 or apps/extension/build/firefox) for other browsers. You can visit [this page](https://developer.chrome.com/docs/extensions/mv3/getstarted/development-basics/#load-unpacked) for instructions on loading the build output on Chrome.
-
-## Building mobile app locally
-
-WIP
 
 ## Packages
 
@@ -77,8 +73,4 @@ Also, this repo contains submodules that are not open sourced and are only avail
 
 ### Browser Extension
 
-Apache 2.0
-
-### iOS / Android App
-
-Copyright (c) 2021 Chainapsis Inc. All rights reserved.
+Apache 2.0 License

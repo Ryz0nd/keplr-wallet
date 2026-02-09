@@ -1,6 +1,6 @@
 {
   "name": "@keplr-wallet/analytics",
-  "version": "0.12.313",
+  "version": "0.13.4-rc.0",
   "main": "build/index.js",
   "author": "chainapsis",
   "license": "Apache-2.0",
@@ -16,6 +16,7 @@
     "build": "npx tsc",
     "dev": "npx tsc -w",
     "lint-test": "npx eslint \"src/**/*\" && npx prettier --check \"src/**/*\"",
-    "lint-fix": "npx eslint --fix \"src/**/*\" && npx prettier --write \"src/**/*\""
+    "lint-fix": "npx eslint --fix \"src/**/*\" && npx prettier --write \"src/**/*\"",
+    "typecheck": "npx tsc -p tsconfig.check.json"
   }
 }

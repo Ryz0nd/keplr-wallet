@@ -1,5 +1,5 @@
 import { observer } from "mobx-react-lite";
-import React, { FunctionComponent, useMemo, useState } from "react";
+import React, { FunctionComponent, useEffect, useMemo, useState } from "react";
 import { BackButton } from "../../../layouts/header/components";
 import { HeaderLayout } from "../../../layouts/header";
 import styled from "styled-components";
@@ -12,33 +12,264 @@ import { useFocusOnMount } from "../../../hooks/use-focus-on-mount";
 import { useSearchParams } from "react-router-dom";
 import { useNavigate } from "react-router";
 import { useIntl } from "react-intl";
-import { HugeQueriesStore } from "../../../stores/huge-queries";
 import { ViewToken } from "../../main";
-import { autorun, computed, IReactionDisposer, makeObservable } from "mobx";
-import { ObservableQueryIbcSwap } from "@keplr-wallet/stores-internal";
+import {
+  action,
+  autorun,
+  computed,
+  IReactionDisposer,
+  makeObservable,
+  observable,
+  runInAction,
+} from "mobx";
+import {
+  ObservableQuerySwapHelper,
+  ObservableQueryTargetAssets,
+} from "@keplr-wallet/stores-internal";
 import { Currency } from "@keplr-wallet/types";
 import { IChainInfoImpl } from "@keplr-wallet/stores";
 import { FixedSizeList } from "react-window";
 import AutoSizer from "react-virtualized-auto-sizer";
-import { useSearch } from "../../../hooks/use-search";
 import { DenomHelper } from "@keplr-wallet/common";
 import { SwapNotAvailableModal } from "../components/swap-not-available-modal";
 import { MsgItemSkeleton } from "../../main/token-detail/msg-items/skeleton";
 import { ChainIdHelper } from "@keplr-wallet/cosmos";
+import { ChainStore } from "../../../stores/chain";
+import { HugeQueriesStore } from "../../../stores/huge-queries";
 
-// 계산이 복잡해서 memoize을 적용해야하는데
-// mobx와 useMemo()는 같이 사용이 어려워서
-// 그냥 일단 computed를 쓰기 위해서 따로 뺌
 class IBCSwapDestinationState {
+  @observable.ref sourceChainId: string | undefined = undefined;
+  @observable.ref sourceDenom: string | undefined = undefined;
+  @observable.ref search: string = "";
+  @observable.ref currentPage = 1;
+  @observable.ref hasNextPage = false;
+  @observable.ref isFetching = false;
+  @observable.shallow appendedPages: Set<number> = new Set();
+  @observable.shallow targetEntriesInternal: {
+    currency: Currency;
+    chainInfo: IChainInfoImpl;
+  }[] = [];
+  protected disposer: IReactionDisposer | undefined;
+
   constructor(
     protected readonly hugeQueriesStore: HugeQueriesStore,
-    protected readonly queryIBCSwap: ObservableQueryIbcSwap
+    protected readonly swapHelper: ObservableQuerySwapHelper,
+    protected readonly chainStore: ChainStore,
+    protected readonly targetAssets: ObservableQueryTargetAssets
   ) {
     makeObservable(this);
+
+    this.disposer = autorun(() => {
+      const query = this.currentQuery;
+      if (!query) {
+        return;
+      }
+
+      if (query.error && !query.isFetching) {
+        runInAction(() => {
+          this.isFetching = false;
+        });
+        return;
+      }
+
+      if (!query.response) {
+        return;
+      }
+
+      const page = query.response.data.pagination.page;
+      const totalPages = query.response.data.pagination.total_pages;
+
+      if (this.appendedPages.has(page)) {
+        return;
+      }
+
+      runInAction(() => {
+        // 기존 엔트리 키 셋 생성
+        const existingKeys = new Set(
+          this.targetEntriesInternal.map(
+            (e) =>
+              `${ChainIdHelper.parse(e.chainInfo.chainId).identifier}/${
+                e.currency.coinMinimalDenom
+              }`
+          )
+        );
+
+        for (const [, value] of query.currenciesMap) {
+          for (const currency of value.currencies) {
+            const denomHelper = new DenomHelper(currency.coinMinimalDenom);
+            if (denomHelper.type === "lp") {
+              continue;
+            }
+
+            // 중복 검사
+            const key = `${
+              ChainIdHelper.parse(value.chainInfo.chainId).identifier
+            }/${currency.coinMinimalDenom}`;
+            if (existingKeys.has(key)) {
+              continue;
+            }
+            existingKeys.add(key);
+
+            this.targetEntriesInternal.push({
+              currency,
+              chainInfo: value.chainInfo,
+            });
+          }
+        }
+        this.appendedPages.add(page);
+        this.hasNextPage = page < totalPages;
+        this.isFetching = false;
+      });
+    });
   }
 
-  // ibc swap destination인 currency 중에서 현재 가지고 있는 자산은 기존처럼 보여준다.
-  // 현재 가지고 있지 않은 자산도 유저가 선택할 수 있도록 UI 상 후순위로 둔채로 balance 등을 보여주지 않은채 선택은 할 수 있도록 보여준다.
+  @action
+  setSource(chainId: string | undefined, denom: string | undefined) {
+    this.sourceChainId = chainId || undefined;
+    this.sourceDenom = denom || undefined;
+    this.currentPage = 1;
+    this.hasNextPage = !!(chainId && denom);
+    this.appendedPages = new Set();
+    this.targetEntriesInternal = [];
+    this.isFetching = !!(chainId && denom);
+  }
+
+  @action
+  setSearch(search: string) {
+    if (this.search === search) {
+      return;
+    }
+
+    this.search = search;
+    this.currentPage = 1;
+    this.hasNextPage = !!(this.sourceChainId && this.sourceDenom);
+    this.appendedPages = new Set();
+    this.targetEntriesInternal = [];
+    this.isFetching = !!(this.sourceChainId && this.sourceDenom);
+  }
+
+  @action
+  requestNextPage() {
+    if (!this.sourceChainId || !this.sourceDenom) {
+      return;
+    }
+
+    if (!this.hasNextPage) {
+      return;
+    }
+
+    if (this.isFetching) {
+      return;
+    }
+
+    this.currentPage = this.currentPage + 1;
+    this.isFetching = true;
+  }
+
+  @computed
+  get currentQuery() {
+    if (!this.sourceChainId || !this.sourceDenom) {
+      return undefined;
+    }
+
+    return this.targetAssets.getObservableQueryTargetAssets(
+      this.sourceChainId,
+      this.sourceDenom,
+      this.currentPage,
+      100,
+      this.search.trim()
+    );
+  }
+
+  @computed
+  get pagination() {
+    const query = this.currentQuery;
+    if (query && query.response) {
+      return query.response.data.pagination;
+    }
+    return undefined;
+  }
+
+  @computed
+  get targetEntries(): { currency: Currency; chainInfo: IChainInfoImpl }[] {
+    return this.targetEntriesInternal;
+  }
+
+  @computed
+  get isFetchingItems(): boolean {
+    const q = this.currentQuery;
+    return this.isFetching || q?.isFetching === true;
+  }
+
+  @computed
+  get ownedTokens(): ViewToken[] {
+    if (!this.sourceChainId || !this.sourceDenom) {
+      return [];
+    }
+
+    const sourceChainId = this.sourceChainId;
+    const sourceDenom = this.sourceDenom;
+
+    return this.hugeQueriesStore
+      .getAllBalances({
+        allowIBCToken: false,
+        enableFilterDisabledAssetToken: false,
+      })
+      .filter((token) => {
+        if (!("currencies" in token.chainInfo)) {
+          return false;
+        }
+        if (token.token.toDec().lte(new Dec(0))) {
+          return false;
+        }
+
+        return this.swapHelper.isSwapDestinationOrAlternatives(
+          sourceChainId,
+          sourceDenom,
+          token.chainInfo.chainId,
+          token.token.currency.coinMinimalDenom
+        );
+      });
+  }
+
+  @computed
+  get ownedTokensMap(): Map<string, ViewToken> {
+    const map = new Map<string, ViewToken>();
+    for (const token of this.ownedTokens) {
+      const key = `${ChainIdHelper.parse(token.chainInfo.chainId).identifier}/${
+        token.token.currency.coinMinimalDenom
+      }`;
+      map.set(key, token);
+    }
+    return map;
+  }
+
+  @computed
+  get remainingCombined(): { currency: Currency; chainInfo: IChainInfoImpl }[] {
+    if (!this.sourceChainId || !this.sourceDenom) {
+      return [];
+    }
+
+    const ownedKeys = new Set(
+      this.ownedTokens.map(
+        (t) =>
+          `${ChainIdHelper.parse(t.chainInfo.chainId).identifier}/${
+            t.token.currency.coinMinimalDenom
+          }`
+      )
+    );
+
+    // targetEntries는 페이지 순서대로 누적된 결과이며, 보유 중인 자산 키를 제외하고 그대로 뒤에 이어 붙인다.
+    const remaining = this.targetEntries.filter((entry) => {
+      const key = `${ChainIdHelper.parse(entry.chainInfo.chainId).identifier}/${
+        entry.currency.coinMinimalDenom
+      }`;
+      return !ownedKeys.has(key);
+    });
+
+    return remaining;
+  }
+
   @computed
   get tokens(): {
     tokens: ReadonlyArray<ViewToken>;
@@ -46,90 +277,12 @@ class IBCSwapDestinationState {
       currency: Currency;
       chainInfo: IChainInfoImpl;
     }[];
-    isLoading: boolean;
+    isFetchingItems: boolean;
   } {
-    const zeroDec = new Dec(0);
-
-    const destinationMap = this.queryIBCSwap.swapDestinationCurrenciesMap;
-
-    // Swap destination은 ibc currency는 보여주지 않는다.
-    let tokens = this.hugeQueriesStore.getAllBalances({
-      allowIBCToken: false,
-      enableFilterDisabledAssetToken: false,
-    });
-    let remaining: {
-      currency: Currency;
-      chainInfo: IChainInfoImpl;
-    }[] = [];
-
-    tokens = tokens
-      .filter((token) => {
-        return token.token.toDec().gt(zeroDec);
-      })
-      .filter((token) => {
-        if (!("currencies" in token.chainInfo)) {
-          return false;
-        }
-
-        const map = destinationMap.get(token.chainInfo.chainIdentifier);
-        if (map) {
-          return (
-            map.currencies.find(
-              (cur) =>
-                cur.coinMinimalDenom === token.token.currency.coinMinimalDenom
-            ) != null
-          );
-        }
-
-        return false;
-      });
-
-    // tokens에 존재했는지 체크 용으로 사용
-    // key: {chain_identifier}/{coinMinimalDenom}
-    const tokensKeyMap = new Map<string, boolean>();
-
-    for (const token of tokens) {
-      if ("currencies" in token.chainInfo) {
-        tokensKeyMap.set(
-          `${token.chainInfo.chainIdentifier}/${token.token.currency.coinMinimalDenom}`,
-          true
-        );
-      }
-    }
-
-    for (const [chainIdentifier, map] of destinationMap) {
-      for (const currency of map.currencies) {
-        if (
-          !tokensKeyMap.has(`${chainIdentifier}/${currency.coinMinimalDenom}`)
-        ) {
-          remaining.push({
-            currency,
-            chainInfo: map.chainInfo,
-          });
-        }
-      }
-    }
-
-    remaining = remaining.sort((a, b) => {
-      if (
-        CoinPretty.makeCoinDenomPretty(a.currency.coinDenom) <
-        CoinPretty.makeCoinDenomPretty(b.currency.coinDenom)
-      ) {
-        return -1;
-      } else if (
-        CoinPretty.makeCoinDenomPretty(a.currency.coinDenom) >
-        CoinPretty.makeCoinDenomPretty(b.currency.coinDenom)
-      ) {
-        return 1;
-      } else {
-        return 0;
-      }
-    });
-
     return {
-      tokens,
-      remaining,
-      isLoading: this.queryIBCSwap.isLoadingSwapDestinationCurrenciesMap,
+      tokens: this.ownedTokens,
+      remaining: this.remainingCombined,
+      isFetchingItems: this.isFetchingItems,
     };
   }
 }
@@ -141,38 +294,12 @@ const Styles = {
   `,
 };
 
-const searchFields = [
-  {
-    key: "originCurrency.coinDenom",
-    function: (item: ViewToken) => {
-      const currency = item.token.currency;
-      if ("originCurrency" in currency) {
-        return CoinPretty.makeCoinDenomPretty(
-          currency.originCurrency?.coinDenom || ""
-        );
-      }
-      return CoinPretty.makeCoinDenomPretty(currency.coinDenom);
-    },
-  },
-  "chainInfo.chainName",
-];
-
-const remainingSearchFields = [
-  {
-    key: "currency.coinDenom",
-    function: (item: { currency: Currency; chainInfo: IChainInfoImpl }) => {
-      return CoinPretty.makeCoinDenomPretty(item.currency.coinDenom);
-    },
-  },
-  "chainInfo.chainName",
-];
-
 // /send/select-asset와 기본 로직은 거의 유사한데...
 // 뷰 쪽이 생각보다 이질적이라서 그냥 분리 시킴...
 // /send/select-asset 페이지와 세트로 관리하셈
 export const IBCSwapDestinationSelectAssetPage: FunctionComponent = observer(
   () => {
-    const { hugeQueriesStore, chainStore, skipQueriesStore } = useStore();
+    const { hugeQueriesStore, chainStore, swapQueriesStore } = useStore();
     const navigate = useNavigate();
     const intl = useIntl();
     const [searchParams] = useSearchParams();
@@ -189,6 +316,8 @@ export const IBCSwapDestinationSelectAssetPage: FunctionComponent = observer(
     const paramNavigateReplace = searchParams.get("navigateReplace");
     // {chain_identifier}/{coinMinimalDenom}
     const excludeKey = searchParams.get("excludeKey");
+    const inChainId = searchParams.get("inChainId") ?? undefined;
+    const inDenom = searchParams.get("inDenom") ?? undefined;
 
     const [search, setSearch] = useState("");
 
@@ -198,11 +327,24 @@ export const IBCSwapDestinationSelectAssetPage: FunctionComponent = observer(
       () =>
         new IBCSwapDestinationState(
           hugeQueriesStore,
-          skipQueriesStore.queryIBCSwap
+          swapQueriesStore.querySwapHelper,
+          chainStore,
+          swapQueriesStore.queryTargetAssets
         )
     );
 
-    const { tokens, remaining, isLoading } = state.tokens;
+    useEffect(() => {
+      state.setSource(inChainId, inDenom);
+    }, [inChainId, inDenom, state]);
+
+    useEffect(() => {
+      const handle = setTimeout(() => {
+        state.setSearch(search);
+      }, 300);
+      return () => clearTimeout(handle);
+    }, [search, state]);
+
+    const { tokens, remaining, isFetchingItems } = state.tokens;
 
     const filteredTokens = useMemo(() => {
       const filtered = tokens.filter((token) => {
@@ -244,12 +386,30 @@ export const IBCSwapDestinationSelectAssetPage: FunctionComponent = observer(
       return filtered;
     }, [excludeKey, remaining]);
 
-    const searchedTokens = useSearch(filteredTokens, search, searchFields);
-    const searchedRemaining = useSearch(
-      filteredRemaining,
-      search,
-      remainingSearchFields
-    );
+    // 검색어가 있을 때는 서버 순서 그대로, 없을 때는 보유 자산 우선
+    // state.search 기준으로 해야 targetEntries와 동기화됨 (300ms 디바운스)
+    const hasSearch = state.search.trim().length > 0;
+
+    // useMemo 밖에서 targetEntries 접근해야 mobx가 추적함
+    const targetEntries = state.targetEntries;
+
+    // 검색어가 있을 때 사용할 targetEntries (서버 순서 유지)
+    // useMemo 제거: mobx 배열은 내용 변경 시 참조가 유지되어 의존성 감지 안 됨
+    const filteredTargetEntries = hasSearch
+      ? targetEntries.filter((entry) => {
+          const denomHelper = new DenomHelper(entry.currency.coinMinimalDenom);
+          if (denomHelper.type === "lp") {
+            return false;
+          }
+
+          return (
+            !excludeKey ||
+            `${ChainIdHelper.parse(entry.chainInfo.chainId).identifier}/${
+              entry.currency.coinMinimalDenom
+            }` !== excludeKey
+          );
+        })
+      : [];
 
     const [selectedCoinMinimalDenom, setSelectedCoinMinimalDenom] =
       useState<string>();
@@ -262,7 +422,7 @@ export const IBCSwapDestinationSelectAssetPage: FunctionComponent = observer(
       <HeaderLayout
         title={intl.formatMessage({ id: "page.send.select-asset.title" })}
         left={<BackButton />}
-        contentContainerStyle={{ height: "100vh" }}
+        fillHeight
       >
         <Styles.Container gutter="0.5rem">
           <SearchTextInput
@@ -277,20 +437,19 @@ export const IBCSwapDestinationSelectAssetPage: FunctionComponent = observer(
               setSearch(e.target.value);
             }}
           />
-          {isLoading ? (
-            <Stack gutter="0.5rem">
-              <MsgItemSkeleton />
-              <MsgItemSkeleton />
-            </Stack>
-          ) : (
+          <div style={{ flex: 1, minHeight: 0 }}>
             <AutoSizer>
               {({ height, width }: { height: number; width: number }) => (
                 <FixedSizeList
                   itemData={{
-                    searchedTokens,
-                    searchedRemaining,
+                    hasSearch,
+                    filteredTokens,
+                    filteredRemaining,
+                    filteredTargetEntries,
+                    ownedTokensMap: state.ownedTokensMap,
                     selectedCoinMinimalDenom,
                     unsupportedCoinMinimalDenoms,
+                    isFetchingItems,
                     onClick: async (viewToken) => {
                       let timer: NodeJS.Timeout | undefined;
                       let disposal: IReactionDisposer | undefined;
@@ -364,14 +523,45 @@ export const IBCSwapDestinationSelectAssetPage: FunctionComponent = observer(
                   }}
                   width={width}
                   height={height}
-                  itemCount={searchedTokens.length + searchedRemaining.length}
+                  itemCount={
+                    (hasSearch
+                      ? filteredTargetEntries.length
+                      : filteredTokens.length + filteredRemaining.length) +
+                    (isFetchingItems ? 1 : 0)
+                  }
                   itemSize={66}
+                  onItemsRendered={({
+                    visibleStartIndex,
+                    visibleStopIndex,
+                  }) => {
+                    if (isFetchingItems || !state.hasNextPage) {
+                      return;
+                    }
+
+                    const visibleCount =
+                      visibleStopIndex - visibleStartIndex + 1;
+                    const threshold = Math.max(
+                      5,
+                      Math.ceil(visibleCount * 0.5)
+                    );
+
+                    const totalCount = hasSearch
+                      ? filteredTargetEntries.length
+                      : filteredTokens.length + filteredRemaining.length;
+
+                    if (
+                      totalCount > threshold &&
+                      visibleStopIndex >= totalCount - threshold
+                    ) {
+                      state.requestNextPage();
+                    }
+                  }}
                 >
                   {TokenListItem}
                 </FixedSizeList>
               )}
             </AutoSizer>
-          )}
+          </div>
         </Styles.Container>
         <SwapNotAvailableModal
           isOpen={isSwapNotAvailableModalOpen}
@@ -390,22 +580,79 @@ const TokenListItem = ({
   style,
 }: {
   data: {
-    searchedTokens: ViewToken[];
-    searchedRemaining: {
+    hasSearch: boolean;
+    filteredTokens: ViewToken[];
+    filteredRemaining: {
       currency: Currency;
       chainInfo: IChainInfoImpl;
     }[];
+    filteredTargetEntries: {
+      currency: Currency;
+      chainInfo: IChainInfoImpl;
+    }[];
+    ownedTokensMap: Map<string, ViewToken>;
     selectedCoinMinimalDenom?: string;
     unsupportedCoinMinimalDenoms: Set<string>;
+    isFetchingItems: boolean;
     onClick: (viewToken: ViewToken, index: number) => void;
   };
   index: number;
   style: any;
 }) => {
-  const isFilteredTokens = index < data.searchedTokens.length;
-  const item = isFilteredTokens
-    ? data.searchedTokens[index]
-    : data.searchedRemaining[index - data.searchedTokens.length];
+  const total = data.hasSearch
+    ? data.filteredTargetEntries.length
+    : data.filteredTokens.length + data.filteredRemaining.length;
+  const isLoader = data.isFetchingItems && index === total;
+
+  if (isLoader) {
+    return (
+      <div
+        style={{
+          ...style,
+          paddingTop: index === 0 ? 0 : TOKEN_LIST_ITEM_GUTTER,
+          height:
+            index === 0 ? style.height - TOKEN_LIST_ITEM_GUTTER : style.height,
+          top: index === 0 ? style.top : style.top - TOKEN_LIST_ITEM_GUTTER,
+        }}
+      >
+        {/* 로딩 시 리스트 끝에만 스켈레톤 한 칸을 추가하기 위한 분기 */}
+        <MsgItemSkeleton />
+      </div>
+    );
+  }
+
+  let item: ViewToken | { currency: Currency; chainInfo: IChainInfoImpl };
+  let isOwned: boolean;
+
+  if (data.hasSearch) {
+    // 검색어가 있을 때: 서버 순서 그대로, ownedTokensMap으로 보유 여부 확인
+    const entry = data.filteredTargetEntries[index];
+    if (!entry) {
+      return null;
+    }
+    const key = `${ChainIdHelper.parse(entry.chainInfo.chainId).identifier}/${
+      entry.currency.coinMinimalDenom
+    }`;
+    const ownedToken = data.ownedTokensMap.get(key);
+
+    if (ownedToken) {
+      item = ownedToken;
+      isOwned = true;
+    } else {
+      item = entry;
+      isOwned = false;
+    }
+  } else {
+    // 검색어가 없을 때: 보유 자산 먼저, 그 다음 나머지
+    isOwned = index < data.filteredTokens.length;
+    const resolved = isOwned
+      ? data.filteredTokens[index]
+      : data.filteredRemaining[index - data.filteredTokens.length];
+    if (!resolved) {
+      return null;
+    }
+    item = resolved;
+  }
 
   const isFindingCurrency =
     data.selectedCoinMinimalDenom ===
@@ -425,6 +672,7 @@ const TokenListItem = ({
         }
       : item;
 
+  // CHECK: swap v1처럼 상관없는 토큰 전체를 가져오는 것이 아니므로 굳이 따로 처리하지 않아도 될 것 같음
   const isUnsupportedToken = data.unsupportedCoinMinimalDenoms.has(
     `${ChainIdHelper.parse(item.chainInfo.chainId).identifier}/${
       "currency" in item
@@ -446,7 +694,7 @@ const TokenListItem = ({
     >
       <TokenItem
         viewToken={viewToken}
-        hideBalance={isFilteredTokens ? false : true}
+        hideBalance={!isOwned}
         onClick={() => !isUnsupportedToken && data.onClick(viewToken, index)}
         noTokenTag
         disabled={isUnsupportedToken}

@@ -71,6 +71,7 @@ const Styles = {
     font-weight: 500;
     font-size: 1.75rem;
     line-height: 2.125rem;
+    text-align: center;
   `,
 };
 
@@ -87,7 +88,7 @@ export const TokenDetailModal: FunctionComponent<{
     bitcoinQueriesStore,
     priceStore,
     price24HChangesStore,
-    skipQueriesStore,
+    swapQueriesStore,
     uiConfigStore,
   } = useStore();
 
@@ -302,7 +303,7 @@ export const TokenDetailModal: FunctionComponent<{
           }&outCoinMinimalDenom=uusdc&entryPoint=token_detail`
         );
       },
-      disabled: !skipQueriesStore.queryIBCSwap.isSwappableCurrency(
+      disabled: !swapQueriesStore.querySwapHelper.isSwappableCurrency(
         chainId,
         currency
       ),

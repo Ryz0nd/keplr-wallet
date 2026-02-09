@@ -2,7 +2,7 @@ import React, { FunctionComponent, PropsWithChildren } from "react";
 import { ColorPalette } from "../../styles";
 import { Box } from "../box";
 import { ButtonRadius } from "../button";
-import { CopyAddressRadius } from "../../pages/main/components";
+import { CopyAddressRadius } from "../../pages/main/components/copy-address";
 import { useTheme } from "styled-components";
 
 export interface SkeletonProps {

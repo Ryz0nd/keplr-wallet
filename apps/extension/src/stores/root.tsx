@@ -95,6 +95,7 @@ import {
   SkipQueries,
   Price24HChangesStore,
   SwapUsageQueries,
+  SwapQueries,
 } from "@keplr-wallet/stores-internal";
 import { setInteractionDataHref } from "../utils";
 import {
@@ -167,6 +168,7 @@ export class RootStore {
   >;
   public readonly swapUsageQueries: SwapUsageQueries;
   public readonly skipQueriesStore: SkipQueries;
+  public readonly swapQueriesStore: SwapQueries;
   public readonly starknetQueriesStore: StarknetQueriesStore;
   public readonly bitcoinQueriesStore: BitcoinQueriesStore;
   public readonly accountStore: AccountStore<
@@ -400,6 +402,14 @@ export class RootStore {
           _address,
           minimalDenom
         ) => {
+          // Base의 axlUSDC만 밸런스를 가지고 올 수 없는 문제가 있어서 우선 하드코딩으로 처리
+          if (
+            chainId === "eip155:8453" &&
+            minimalDenom === "erc20:0xeb466342c4d449bc9f53a865d5cb90586f405215"
+          ) {
+            return true;
+          }
+
           return this.tokensStore.tokenIsRegistered(chainId, minimalDenom);
         },
       }),
@@ -414,6 +424,11 @@ export class RootStore {
       this.chainStore,
       this.swapUsageQueries,
       SwapVenues
+    );
+    this.swapQueriesStore = new SwapQueries(
+      this.queriesStore.sharedContext,
+      this.chainStore,
+      process.env["KEPLR_API_ENDPOINT"] ?? ""
     );
     this.starknetQueriesStore = new StarknetQueriesStore(
       this.queriesStore.sharedContext,

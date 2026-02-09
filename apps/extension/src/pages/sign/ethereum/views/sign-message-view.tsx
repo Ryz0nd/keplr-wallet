@@ -173,7 +173,7 @@ export const EthereumSignMessageView: FunctionComponent<{
     },
     {
       text: intl.formatMessage({ id: "button.approve" }),
-      color: "primary",
+      isSpecial: true,
       size: "large",
       left: !isLoading && <ApproveIcon />,
       isLoading,
@@ -320,7 +320,6 @@ export const EthereumSignMessageView: FunctionComponent<{
   return (
     <HeaderLayout
       title={""}
-      fixedHeight={true}
       headerContainerStyle={{
         height: "0",
       }}

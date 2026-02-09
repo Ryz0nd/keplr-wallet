@@ -222,6 +222,7 @@ export const CopyAddressScene: FunctionComponent<{
             sceneTransition.push("buy-crypto", {
               buySupportServiceInfos,
               showBackButton: true,
+              close,
             });
           }}
           right={

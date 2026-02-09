@@ -1314,48 +1314,6 @@ export const EmbedChainInfos: (ChainInfo | ModularChainInfo)[] = [
     features: [],
   },
   {
-    rpc: "https://rpc-omniflixhub.keplr.app",
-    rest: "https://lcd-omniflixhub.keplr.app",
-    chainId: "omniflixhub-1",
-    chainName: "OmniFlix",
-    stakeCurrency: {
-      coinDenom: "FLIX",
-      coinMinimalDenom: "uflix",
-      coinDecimals: 6,
-    },
-    bip44: {
-      coinType: 118,
-    },
-    bech32Config: {
-      bech32PrefixAccAddr: "omniflix",
-      bech32PrefixAccPub: "omniflixpub",
-      bech32PrefixValAddr: "omniflixvaloper",
-      bech32PrefixValPub: "omniflixvaloperpub",
-      bech32PrefixConsAddr: "omniflixvalcons",
-      bech32PrefixConsPub: "omniflixvalconspub",
-    },
-    currencies: [
-      {
-        coinDenom: "FLIX",
-        coinMinimalDenom: "uflix",
-        coinDecimals: 6,
-      },
-    ],
-    feeCurrencies: [
-      {
-        coinDenom: "FLIX",
-        coinMinimalDenom: "uflix",
-        coinDecimals: 6,
-        gasPriceStep: {
-          low: 0.001,
-          average: 0.0025,
-          high: 0.025,
-        },
-      },
-    ],
-    features: [],
-  },
-  {
     rpc: "https://rpc-kyve.keplr.app",
     rest: "https://lcd-kyve.keplr.app",
     chainId: "kyve-1",
@@ -1441,51 +1399,6 @@ export const EmbedChainInfos: (ChainInfo | ModularChainInfo)[] = [
       process.env.NODE_ENV === "production"
         ? "https://wallet.keplr.app/chains/neutron?modal=staking&chain=neutron-1&step_id=2"
         : "http://localhost:8080/chains/neutron?modal=staking&chain=neutron-1&step_id=2",
-    features: [],
-  },
-  {
-    rpc: "https://rpc-likecoin.keplr.app",
-    rest: "https://lcd-likecoin.keplr.app",
-    chainId: "likecoin-mainnet-2",
-    chainName: "Likecoin",
-    stakeCurrency: {
-      coinDenom: "LIKE",
-      coinMinimalDenom: "nanolike",
-      coinDecimals: 9,
-      coinGeckoId: "likecoin",
-    },
-    bip44: {
-      coinType: 118,
-    },
-    bech32Config: {
-      bech32PrefixAccAddr: "like",
-      bech32PrefixAccPub: "likepub",
-      bech32PrefixValAddr: "likevaloper",
-      bech32PrefixValPub: "likevaloperpub",
-      bech32PrefixConsAddr: "likevalcons",
-      bech32PrefixConsPub: "likevalconspub",
-    },
-    currencies: [
-      {
-        coinDenom: "LIKE",
-        coinMinimalDenom: "nanolike",
-        coinDecimals: 9,
-        coinGeckoId: "likecoin",
-      },
-    ],
-    feeCurrencies: [
-      {
-        coinDenom: "LIKE",
-        coinMinimalDenom: "nanolike",
-        coinDecimals: 9,
-        coinGeckoId: "likecoin",
-        gasPriceStep: {
-          low: 1,
-          average: 2,
-          high: 3,
-        },
-      },
-    ],
     features: [],
   },
   {
@@ -3961,6 +3874,41 @@ export const EmbedChainInfos: (ChainInfo | ModularChainInfo)[] = [
       coinDecimals: 6,
     },
     features: ["cosmwasm"],
+  },
+  {
+    rpc: "https://rpc.mainnet.citrea.xyz",
+    rest: "https://rpc.mainnet.citrea.xyz",
+    evm: {
+      chainId: 4114,
+      rpc: "https://rpc.mainnet.citrea.xyz",
+      websocket: "wss://rpc.mainnet.citrea.xyz",
+    },
+    chainId: "eip155:4114",
+    chainName: "Citrea",
+    chainSymbolImageUrl:
+      "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/eip155:4114/citrea-black.png",
+    bip44: {
+      coinType: 60,
+    },
+    currencies: [
+      {
+        coinDenom: "cBTC",
+        coinMinimalDenom: "cbtc",
+        coinDecimals: 18,
+        coinImageUrl:
+          "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/eip155:4114/cbtc.png",
+      },
+    ],
+    feeCurrencies: [
+      {
+        coinDenom: "cBTC",
+        coinMinimalDenom: "cbtc",
+        coinDecimals: 18,
+        coinImageUrl:
+          "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/eip155:4114/cbtc.png",
+      },
+    ],
+    features: [],
   },
 ];
 

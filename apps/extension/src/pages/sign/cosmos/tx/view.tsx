@@ -56,6 +56,7 @@ import {
   FeeCoverageBackground,
 } from "../../../../components/top-up";
 import { useTopUp } from "../../../../hooks/use-topup";
+import { StepIndicator } from "../../../../components/step-indicator";
 
 /**
  * 서명을 처리할때 웹페이지에서 연속적으로 서명을 요청했을 수 있고
@@ -108,7 +109,10 @@ export const CosmosTxView: FunctionComponent<{
       forceUseAtoneTokenAsFee:
         interactionData.data.mode === "amino"
           ? interactionData.data.signDocWrapper.aminoSignDoc.msgs.some((msg) =>
-              msg.type.includes("MsgMintPhoton")
+              // type은 있어야 정상이지만 가끔씩 체인 단에서 amino codec에 message를 등록하지 않는 실수를 한 경우,
+              // type이 없기 때문에 type이 없는 경우도 처리해준다.
+              // (솔직히 우리쪽 버그라고 생각하진 않지만 어려운 문제는 아니라서 처리 해줌...)
+              msg.type?.includes("MsgMintPhoton")
             )
           : interactionData.data.signDocWrapper.protoSignDoc.txMsgs.some(
               (msg) => msg.typeUrl.includes("MsgMintPhoton")
@@ -184,6 +188,11 @@ export const CosmosTxView: FunctionComponent<{
     memoConfig,
     signDocHelper,
   ]);
+
+  // Capture the completed count at mount time for multi-signature flow
+  const [mountTimeCompletedCount] = useState(() => {
+    return uiConfigStore.ibcSwapConfig.signatureProgress.completed;
+  });
 
   const msgs = signDocHelper.signDocWrapper
     ? signDocHelper.signDocWrapper.mode === "amino"
@@ -552,7 +561,6 @@ export const CosmosTxView: FunctionComponent<{
   return (
     <HeaderLayout
       title={intl.formatMessage({ id: "page.sign.cosmos.tx.title" })}
-      fixedHeight={true}
       left={
         <BackButton
           hidden={
@@ -602,14 +610,59 @@ export const CosmosTxView: FunctionComponent<{
         // 유저가 enter를 눌러서 우발적으로(?) approve를 누르지 않도록 onSubmit을 의도적으로 사용하지 않았음.
         {
           isSpecial: true,
-          text:
-            shouldTopUp && remainingText
-              ? remainingText
-              : intl.formatMessage({ id: "button.approve" }),
+          text: (() => {
+            if (shouldTopUp && remainingText) {
+              return remainingText;
+            }
+            const progress = uiConfigStore.ibcSwapConfig.signatureProgress;
+            if (progress.show) {
+              if (isLedgerInteracting) {
+                return intl.formatMessage({ id: "button.continue-on-ledger" });
+              }
+              if (isKeystoneInteracting) {
+                return intl.formatMessage({
+                  id: "button.continue-on-keystone",
+                });
+              }
+              return intl.formatMessage(
+                { id: "button.approve-with-progress" },
+                {
+                  total: progress.total,
+                  completed: mountTimeCompletedCount + 1,
+                }
+              );
+            }
+            return intl.formatMessage({ id: "button.approve" });
+          })(),
           size: "large",
-          left: !(shouldTopUp && remainingText) && !isLoading && (
-            <ApproveIcon />
-          ),
+          left: (() => {
+            if (shouldTopUp && remainingText) {
+              return undefined;
+            }
+            const progress = uiConfigStore.ibcSwapConfig.signatureProgress;
+            if (progress.show) {
+              return (
+                <StepIndicator
+                  totalCount={progress.total}
+                  completedCount={mountTimeCompletedCount}
+                  inactiveOpacity={0.4}
+                  activeColor={ColorPalette["white"]}
+                  blinkCurrentStep={true}
+                  style={{ marginRight: "0.125rem" }}
+                />
+              );
+            }
+            if (isLoading) {
+              return undefined;
+            }
+            return <ApproveIcon />;
+          })(),
+          ...(!(shouldTopUp && remainingText) &&
+            uiConfigStore.ibcSwapConfig.signatureProgress.show &&
+            (isLedgerInteracting || isKeystoneInteracting) && {
+              suppressDefaultLoadingIndicator: true,
+              showTextWhileLoading: true,
+            }),
           disabled: buttonDisabled,
           isLoading,
           onClick: approve,

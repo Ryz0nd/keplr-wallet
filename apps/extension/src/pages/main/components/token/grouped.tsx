@@ -69,58 +69,48 @@ const NestedTokenItem: FunctionComponent<{
     return "right";
   }, [uiConfigStore.showFiatValue]);
 
-  const TagItem = useMemo(
-    () =>
-      tag ? (
-        <Box
-          style={{
-            flex: 1,
-            flexDirection: "row",
-            alignItems: "center",
-            flexWrap: "wrap",
-            gap: "0.125rem",
-          }}
-        >
-          <XAxis>
-            <Box alignY="center" key="token-tag">
-              <TokenTag text={tag.text} tooltip={tag.tooltip} />
-            </Box>
-          </XAxis>
+  const TagItem = tag ? (
+    <Box
+      style={{
+        flex: 1,
+        flexDirection: "row",
+        alignItems: "center",
+        flexWrap: "wrap",
+        gap: "0.125rem",
+      }}
+    >
+      <XAxis>
+        <Box alignY="center" key="token-tag">
+          <TokenTag text={tag.text} tooltip={tag.tooltip} />
         </Box>
-      ) : null,
-    [tag]
+      </XAxis>
+    </Box>
+  ) : null;
+
+  const AmountItem = (
+    <Subtitle3
+      color={
+        theme.mode === "light"
+          ? ColorPalette["gray-700"]
+          : ColorPalette["gray-10"]
+      }
+    >
+      {uiConfigStore.hideStringIfPrivacyMode(
+        viewToken.token
+          .hideDenom(true)
+          .maxDecimals(6)
+          .inequalitySymbol(true)
+          .shrink(true)
+          .toString(),
+        2
+      )}
+    </Subtitle3>
   );
 
-  const AmountItem = useMemo(() => {
-    return (
-      <Subtitle3
-        color={
-          theme.mode === "light"
-            ? ColorPalette["gray-700"]
-            : ColorPalette["gray-10"]
-        }
-      >
-        {uiConfigStore.hideStringIfPrivacyMode(
-          viewToken.token
-            .hideDenom(true)
-            .maxDecimals(6)
-            .inequalitySymbol(true)
-            .shrink(true)
-            .toString(),
-          2
-        )}
-      </Subtitle3>
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [uiConfigStore.isPrivacyMode, viewToken.token, theme.mode]);
-
-  const pricePrettyString = useMemo(() => {
-    return uiConfigStore.hideStringIfPrivacyMode(
-      pricePretty ? pricePretty.inequalitySymbol(true).toString() : "-",
-      2
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [uiConfigStore.isPrivacyMode, pricePretty]);
+  const pricePrettyString = uiConfigStore.hideStringIfPrivacyMode(
+    pricePretty ? pricePretty.inequalitySymbol(true).toString() : "-",
+    2
+  );
 
   return (
     <NestedTokenItemContainer
