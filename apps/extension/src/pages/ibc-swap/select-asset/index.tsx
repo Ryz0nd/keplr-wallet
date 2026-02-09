@@ -36,6 +36,7 @@ import { MsgItemSkeleton } from "../../main/token-detail/msg-items/skeleton";
 import { ChainIdHelper } from "@keplr-wallet/cosmos";
 import { ChainStore } from "../../../stores/chain";
 import { HugeQueriesStore } from "../../../stores/huge-queries";
+import { ColorPalette } from "../../../styles/colors";
 
 class IBCSwapDestinationState {
   @observable.ref sourceChainId: string | undefined = undefined;
@@ -292,6 +293,29 @@ const Styles = {
     height: 100%;
     padding: 0.75rem;
   `,
+  VirtualListContainer: styled.div`
+    flex: 1;
+    min-height: 0;
+
+    & > div > div {
+      scrollbar-width: thin;
+      scrollbar-color: ${ColorPalette["gray-400"]} transparent;
+
+      &::-webkit-scrollbar {
+        display: block;
+        width: 0.625rem;
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background-color: ${ColorPalette["gray-400"]};
+        border-radius: 999px;
+      }
+
+      &::-webkit-scrollbar-track {
+        background-color: transparent;
+      }
+    }
+  `,
 };
 
 // /send/select-asset와 기본 로직은 거의 유사한데...
@@ -437,7 +461,7 @@ export const IBCSwapDestinationSelectAssetPage: FunctionComponent = observer(
               setSearch(e.target.value);
             }}
           />
-          <div style={{ flex: 1, minHeight: 0 }}>
+          <Styles.VirtualListContainer>
             <AutoSizer>
               {({ height, width }: { height: number; width: number }) => (
                 <FixedSizeList
@@ -561,7 +585,7 @@ export const IBCSwapDestinationSelectAssetPage: FunctionComponent = observer(
                 </FixedSizeList>
               )}
             </AutoSizer>
-          </div>
+          </Styles.VirtualListContainer>
         </Styles.Container>
         <SwapNotAvailableModal
           isOpen={isSwapNotAvailableModalOpen}
@@ -672,7 +696,6 @@ const TokenListItem = ({
         }
       : item;
 
-  // CHECK: swap v1처럼 상관없는 토큰 전체를 가져오는 것이 아니므로 굳이 따로 처리하지 않아도 될 것 같음
   const isUnsupportedToken = data.unsupportedCoinMinimalDenoms.has(
     `${ChainIdHelper.parse(item.chainInfo.chainId).identifier}/${
       "currency" in item
