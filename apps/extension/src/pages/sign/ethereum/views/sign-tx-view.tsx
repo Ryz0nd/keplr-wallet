@@ -766,6 +766,7 @@ export const EthereumSignTxView: FunctionComponent<{
           </Columns>
         </Box>
         <SimpleBar
+          key={isViewData ? "data" : "summary"}
           autoHide={false}
           style={{
             display: "flex",

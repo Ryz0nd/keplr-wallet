@@ -725,6 +725,7 @@ export const CosmosTxView: FunctionComponent<{
         </Box>
 
         <SimpleBar
+          key={isViewData ? "data" : "summary"}
           autoHide={false}
           style={{
             display: "flex",
