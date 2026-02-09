@@ -51,6 +51,7 @@ import {
 } from "@keplr-wallet/background";
 import { IPsbtInput, RemainderStatus } from "@keplr-wallet/stores-bitcoin";
 import { BitcoinGuideBox } from "../components/guide-box";
+import { UnfilteredUtxoWarning } from "../components/unfiltered-utxo-warning";
 
 const Styles = {
   Flex1: styled.div`
@@ -155,9 +156,14 @@ export const BitcoinSendPage: FunctionComponent = observer(() => {
   // 페이지가 렌더링될 때 한 번만 호출해도 충분할 것으로 예상된다.
   const {
     isFetching: isFetchingAvailableUTXOs,
-    error: availableUTXOsError,
+
+    indexerError: availableUTXOsIndexerError,
+    apiError: availableUTXOsApiError,
     availableUTXOs,
-    availableBalance,
+    isUnfiltered: isAvailableBalanceUnfiltered,
+    allowUnfilteredOnApiError,
+    setAllowUnfilteredOnApiError,
+    setAvailableBalanceOnce,
   } = useGetUTXOs(chainId, sender, paymentType === "taproot", true);
 
   const sendConfigs = useSendTxConfig(
@@ -169,35 +175,27 @@ export const BitcoinSendPage: FunctionComponent = observer(() => {
   );
   sendConfigs.amountConfig.setCurrency(currency);
 
-  const [isAvailableBalanceInitialized, setIsAvailableBalanceInitialized] =
-    useState<boolean>(false);
-
   useEffect(() => {
-    if (
-      isFetchingAvailableUTXOs ||
-      availableUTXOsError ||
-      isAvailableBalanceInitialized
-    ) {
-      return;
-    }
-
-    sendConfigs.availableBalanceConfig.setAvailableBalanceByAddress(
-      sender,
-      availableBalance
-    );
-    setIsAvailableBalanceInitialized(true);
-  }, [
-    sender,
-    availableBalance,
-    sendConfigs.availableBalanceConfig,
-    isFetchingAvailableUTXOs,
-    availableUTXOsError,
-    isAvailableBalanceInitialized,
-  ]);
+    setAvailableBalanceOnce((address, balance) => {
+      sendConfigs.availableBalanceConfig.setAvailableBalanceByAddress(
+        address,
+        balance
+      );
+    });
+  }, [setAvailableBalanceOnce, sendConfigs.availableBalanceConfig]);
 
   // bitcoin tx size는 amount, fee rate, recipient address type에 따라 달라진다.
   // 키는 요청의 고유한 값들을 조합하여 이전에 캐시된 psbt를 잘못 불러오는 것을 방지해야 한다.
   const psbtSimulatorKey = useMemo(() => {
+    const simpleHash = (str: string): number => {
+      let hash = 0;
+      for (let i = 0; i < str.length; i++) {
+        hash = (hash << 5) - hash + str.charCodeAt(i);
+        hash = hash & hash;
+      }
+      return Math.abs(hash);
+    };
+
     const recipient = (() => {
       if (!sendConfigs.recipientConfig.uiProperties.error) {
         return sendConfigs.recipientConfig.recipient;
@@ -218,11 +216,22 @@ export const BitcoinSendPage: FunctionComponent = observer(() => {
       return "0";
     })();
 
+    const utxoHash = simpleHash(
+      [...availableUTXOs]
+        .sort((a, b) => {
+          const txidCompare = a.txid.localeCompare(b.txid);
+          if (txidCompare !== 0) return txidCompare;
+          return a.vout - b.vout;
+        })
+        .map((u) => `${u.txid}:${u.vout}`)
+        .join(",")
+    ).toString(16);
+
     return [
       `to-${recipient}`,
       `amt-${amountHex}`,
       `fee-${sendConfigs.feeRateConfig.feeRate.toString()}`,
-      `bal-${availableUTXOs.length.toString()}`,
+      `utxo-${utxoHash}`,
     ].join("-");
   }, [
     sendConfigs.amountConfig.amount,
@@ -276,7 +285,7 @@ export const BitcoinSendPage: FunctionComponent = observer(() => {
         throw new Error("Fetching available utxos");
       }
 
-      if (availableUTXOsError) {
+      if (availableUTXOsIndexerError) {
         throw new Error("Can't find available utxos");
       }
 
@@ -424,7 +433,15 @@ export const BitcoinSendPage: FunctionComponent = observer(() => {
 
   const historyType = "basic-send/bitcoin";
 
-  const isUnableToGetUTXOs = !isFetchingAvailableUTXOs && !!availableUTXOsError;
+  const isUnableToGetUTXOs =
+    !isFetchingAvailableUTXOs && !!availableUTXOsIndexerError;
+  const needsUnfilteredConsent =
+    !!availableUTXOsApiError && !allowUnfilteredOnApiError;
+
+  const buttonDisabled =
+    txConfigsValidate.interactionBlocked ||
+    isUnableToGetUTXOs ||
+    needsUnfilteredConsent;
 
   return (
     <HeaderLayout
@@ -453,7 +470,7 @@ export const BitcoinSendPage: FunctionComponent = observer(() => {
       }
       bottomButtons={[
         {
-          disabled: txConfigsValidate.interactionBlocked || isUnableToGetUTXOs,
+          disabled: buttonDisabled,
           text: intl.formatMessage({ id: "button.next" }),
           color: "primary",
           size: "large",
@@ -591,6 +608,7 @@ export const BitcoinSendPage: FunctionComponent = observer(() => {
               sender
             )}
             isLoading={!!isFetchingAvailableUTXOs}
+            isUnfiltered={isAvailableBalanceUnfiltered}
           />
           <BitcoinGuideBox isUnableToGetUTXOs={isUnableToGetUTXOs} />
 
@@ -602,6 +620,12 @@ export const BitcoinSendPage: FunctionComponent = observer(() => {
             feeConfig={sendConfigs.feeConfig}
             feeRateConfig={sendConfigs.feeRateConfig}
             psbtSimulator={psbtSimulator}
+          />
+          <UnfilteredUtxoWarning
+            isLoading={isFetchingAvailableUTXOs}
+            apiError={availableUTXOsApiError}
+            allowUnfilteredOnApiError={allowUnfilteredOnApiError}
+            setAllowUnfilteredOnApiError={setAllowUnfilteredOnApiError}
           />
         </Stack>
       </Box>

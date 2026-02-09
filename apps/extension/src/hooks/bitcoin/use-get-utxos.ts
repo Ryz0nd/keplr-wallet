@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { DUST_THRESHOLD } from "@keplr-wallet/stores-bitcoin";
 import { useStore } from "../../stores";
 import { useGetInscriptionsByAddress } from "./use-get-inscriptions";
@@ -10,6 +11,8 @@ export const useGetUTXOs = (
   inscriptionProtected: boolean,
   runesProtected: boolean
 ) => {
+  const [allowUnfilteredOnApiError, setAllowUnfilteredOnApiError] =
+    useState(false);
   const { chainStore, bitcoinQueriesStore } = useStore();
 
   const modularChainInfo = chainStore.getModularChain(chainId);
@@ -33,30 +36,60 @@ export const useGetUTXOs = (
 
   const confirmedUTXOs = queryUTXOs?.confirmedUTXOs || [];
 
-  // Extract inscribed UTXOs
-  const inscribedUTXOs = inscriptionsPages
-    ?.flatMap((page) => page.response?.data ?? [])
-    .map((inscription) => {
-      const { satpoint } = inscription;
-      const [txid, vout] = satpoint.split(":");
-      return {
-        txid,
-        vout: Number(vout),
-      };
-    });
+  const hasInscriptionsApiError =
+    inscriptionProtected &&
+    inscriptionsPages?.some((page) => page.error) &&
+    !isFetchingInscriptions;
+  const hasRunesApiError =
+    runesProtected &&
+    runesPages?.some((page) => page.error) &&
+    !isFetchingRunesOutputs;
 
-  // Extract runes UTXOs
-  const runesUTXOs = runesPages
-    ?.flatMap((page) => page.response?.data ?? [])
-    .filter(Boolean)
-    .map((runesOutput) => {
-      const { output } = runesOutput;
-      const [txid, vout] = output.split(":");
-      return {
-        txid,
-        vout: Number(vout),
-      };
-    });
+  const indexerIsHealthy =
+    !queryUTXOs?.error &&
+    (!queryUTXOs?.isFetching || confirmedUTXOs.length > 0);
+
+  const hasApiError = hasInscriptionsApiError || hasRunesApiError;
+
+  const shouldSkipFiltering =
+    allowUnfilteredOnApiError && indexerIsHealthy && hasApiError;
+
+  const isUnfiltered = hasApiError && indexerIsHealthy;
+
+  // NOTE: inscriptions/runes 조회 결과에 오류가 있고 사용자가 허용한 경우 빈 배열을 반환한다.
+  // inscriptions/runes 조회는 명시적으로 파이지네이션으로 구현이 되어있지만, 이 훅에서는 파이지네이션을 사용하지 않는다.
+  // 따라서, 조회 오류가 있는 경우는 항상 빈 배열을 반환하게 된다.
+
+  const inscribedUTXOs =
+    hasInscriptionsApiError && allowUnfilteredOnApiError
+      ? []
+      : inscriptionsPages
+          ?.filter((page) => !page.error)
+          ?.flatMap((page) => page.response?.data ?? [])
+          .map((inscription) => {
+            const { satpoint } = inscription;
+            const [txid, vout] = satpoint.split(":");
+            return {
+              txid,
+              vout: Number(vout),
+            };
+          });
+
+  const runesUTXOs =
+    hasRunesApiError && allowUnfilteredOnApiError
+      ? []
+      : runesPages
+          ?.filter((page) => !page.error)
+          ?.flatMap((page) => page.response?.data ?? [])
+          .filter(Boolean)
+          .map((runesOutput) => {
+            const { output } = runesOutput;
+            const [txid, vout] = output.split(":");
+            return {
+              txid,
+              vout: Number(vout),
+            };
+          });
 
   // Create lookup maps for faster filtering
   const protectedUTXOs = new Set(
@@ -84,27 +117,50 @@ export const useGetUTXOs = (
       availableBalance,
     };
   })();
-
   const isFetching =
     isFetchingInscriptions || isFetchingRunesOutputs || queryUTXOs?.isFetching;
 
-  // Determine if there's an error
-  const error =
-    queryUTXOs?.error ||
-    (inscriptionsPages?.some((page) => page.error)
+  const indexerError = queryUTXOs?.error;
+  const apiError =
+    (hasInscriptionsApiError
       ? inscriptionsPages.find((page) => page.error)?.error
       : undefined) ||
-    (runesPages?.some((page) => page.error)
+    (hasRunesApiError
       ? runesPages.find((page) => page.error)?.error
       : undefined);
+
+  const error = indexerError || apiError;
+
+  const [hasSetAvailableBalance, setHasSetAvailableBalance] = useState(false);
+
+  // allowUnfilteredOnApiError가 변경되면 리셋
+  useEffect(() => {
+    setHasSetAvailableBalance(false);
+  }, [allowUnfilteredOnApiError]);
+
+  const setAvailableBalanceOnce = (
+    setter: (sender: string, balance: CoinPretty) => void
+  ) => {
+    if (!isFetching && !indexerError && !hasSetAvailableBalance) {
+      setHasSetAvailableBalance(true);
+      setter(address, availableBalance);
+    }
+  };
 
   return {
     isFetching,
     error,
+    indexerError,
+    apiError,
     confirmedUTXOs,
     inscribedUTXOs,
     runesUTXOs,
     availableUTXOs,
     availableBalance,
+    shouldSkipFiltering,
+    isUnfiltered,
+    allowUnfilteredOnApiError,
+    setAllowUnfilteredOnApiError,
+    setAvailableBalanceOnce,
   };
 };

@@ -69,6 +69,7 @@ import { Bech32Address } from "@keplr-wallet/cosmos";
 import { InformationPlainIcon } from "../../../../components/icon";
 import { Tooltip } from "../../../../components/tooltip";
 import { BitcoinGuideBox } from "../../components/guide-box";
+import { UnfilteredUtxoWarning } from "../../components/unfiltered-utxo-warning";
 import { HeaderProps } from "../../../../layouts/header/types";
 import { KeplrError } from "@keplr-wallet/router";
 import { ErrModuleLedgerSign } from "../../../sign/utils/ledger-types";
@@ -161,7 +162,10 @@ export const SignBitcoinTxView: FunctionComponent<{
   const {
     availableUTXOs,
     isFetching: isFetchingUTXOs,
-    error: utxoError,
+    indexerError,
+    apiError,
+    allowUnfilteredOnApiError,
+    setAllowUnfilteredOnApiError,
   } = useGetUTXOs(
     chainId,
     senderConfig.sender,
@@ -210,7 +214,7 @@ export const SignBitcoinTxView: FunctionComponent<{
         throw new Error("Fetching available utxos");
       }
 
-      if (utxoError) {
+      if (indexerError) {
         throw new Error("Can't find available utxos");
       }
 
@@ -333,20 +337,25 @@ export const SignBitcoinTxView: FunctionComponent<{
     (data) => data.inputsToSign.length === 0
   );
   const isUnableToGetUTXOs =
-    hasPsbtCandidate && !isFetchingUTXOs && !!utxoError;
+    hasPsbtCandidate && !isFetchingUTXOs && !!indexerError;
   const isUnableToSendBitcoin =
     hasPsbtCandidate && !isFetchingUTXOs && availableUTXOs.length === 0;
+  const needsUnfilteredConsent =
+    hasPsbtCandidate && !!apiError && !allowUnfilteredOnApiError;
 
   const buttonDisabled =
     txConfigsValidate.interactionBlocked ||
     !isInitialized ||
     !!criticalValidationError ||
     hasUnableToSignPsbt ||
-    isUnableToGetUTXOs;
+    isUnableToGetUTXOs ||
+    needsUnfilteredConsent;
   const isLoading =
     signBitcoinTxInteractionStore.isObsoleteInteractionApproved(
       interactionData.id
-    ) || isLedgerInteracting;
+    ) ||
+    isLedgerInteracting ||
+    (hasPsbtCandidate && isFetchingUTXOs);
   const isExternal =
     interactionInfo.interaction && !interactionInfo.interactionInternal;
 
@@ -650,6 +659,10 @@ export const SignBitcoinTxView: FunctionComponent<{
             validatedPsbt={validatedPsbts?.[0]}
             ledgerGuideBox={ledgerGuideBox}
             criticalValidationError={criticalValidationError}
+            isFetchingUTXOs={isFetchingUTXOs}
+            apiError={apiError}
+            allowUnfilteredOnApiError={allowUnfilteredOnApiError}
+            setAllowUnfilteredOnApiError={setAllowUnfilteredOnApiError}
           />
         )
       ) : (
@@ -939,6 +952,10 @@ const PsbtDetailsView: FunctionComponent<{
   currentPsbtIndex?: number;
   ledgerGuideBox?: React.ReactNode;
   criticalValidationError?: Error;
+  isFetchingUTXOs?: boolean;
+  apiError?: Error;
+  allowUnfilteredOnApiError?: boolean;
+  setAllowUnfilteredOnApiError?: (value: boolean) => void;
 }> = observer(
   ({
     validatedPsbt,
@@ -951,6 +968,10 @@ const PsbtDetailsView: FunctionComponent<{
     currentPsbtIndex,
     ledgerGuideBox,
     criticalValidationError,
+    isFetchingUTXOs,
+    apiError,
+    allowUnfilteredOnApiError,
+    setAllowUnfilteredOnApiError,
   }) => {
     const theme = useTheme();
     const {
@@ -1015,11 +1036,13 @@ const PsbtDetailsView: FunctionComponent<{
       (input) => !input.isMine
     );
     const isUnableToSign = validatedPsbt?.inputsToSign.length === 0;
+    const hasApiErrorWarning = !isFetchingUTXOs && !!apiError;
     const hasGuideBox =
       isUnableToGetUTXOs ||
       isUnableToSendBitcoin ||
       isPartialSign ||
-      isUnableToSign;
+      isUnableToSign ||
+      hasApiErrorWarning;
     const hasLedgerGuideBox =
       totalPsbts && currentPsbtIndex !== undefined
         ? currentPsbtIndex === totalPsbts - 1 && ledgerGuideBox
@@ -1046,6 +1069,14 @@ const PsbtDetailsView: FunctionComponent<{
           isUnableToSendBitcoin={isUnableToSendBitcoin}
           criticalValidationError={criticalValidationError}
         />
+        {setAllowUnfilteredOnApiError && (
+          <UnfilteredUtxoWarning
+            isLoading={isFetchingUTXOs}
+            apiError={apiError}
+            allowUnfilteredOnApiError={allowUnfilteredOnApiError ?? false}
+            setAllowUnfilteredOnApiError={setAllowUnfilteredOnApiError}
+          />
+        )}
         {ledgerGuideBox}
         {(hasGuideBox || hasLedgerGuideBox) && <Gutter size="0.75rem" />}
         {totalPsbts && totalPsbts > 1 && currentPsbtIndex !== undefined && (
