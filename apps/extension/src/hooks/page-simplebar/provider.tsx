@@ -7,19 +7,34 @@ import React, {
 import { PageSimpleBarContext } from "./internal";
 import SimpleBar from "simplebar-react";
 import SimpleBarCore from "simplebar-core";
-import styled from "styled-components";
+import styled, { css } from "styled-components";
 
-const StyledSimpleBar = styled(SimpleBar)`
+const StyledSimpleBar = styled(SimpleBar)<{
+  $fillHeight?: boolean;
+  $displayFlex?: boolean;
+}>`
   & .simplebar-content {
-    height: 100%;
+    ${({ $fillHeight }) =>
+      $fillHeight &&
+      css`
+        height: 100%;
+      `}
+    ${({ $displayFlex }) =>
+      $displayFlex &&
+      css`
+        display: flex;
+        flex-direction: column;
+      `}
   }
 `;
 
 export const PageSimpleBarProvider: FunctionComponent<
   PropsWithChildren<{
     style: React.CSSProperties;
+    fillHeight?: boolean;
+    displayFlex?: boolean;
   }>
-> = ({ children, style }) => {
+> = ({ children, style, fillHeight, displayFlex }) => {
   const ref = useRef<SimpleBarCore | null>(null);
   const refHandlers = useRef<((ref: SimpleBarCore | null) => void)[]>([]);
 
@@ -45,6 +60,8 @@ export const PageSimpleBarProvider: FunctionComponent<
       }, [])}
     >
       <StyledSimpleBar
+        $fillHeight={fillHeight}
+        $displayFlex={displayFlex}
         style={style}
         ref={(r) => {
           ref.current = r;

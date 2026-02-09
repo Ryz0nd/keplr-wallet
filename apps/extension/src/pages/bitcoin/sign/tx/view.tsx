@@ -751,6 +751,7 @@ const InternalSendBitcoinTxReview: FunctionComponent<{
           </Columns>
         </Box>
         <SimpleBar
+          key={isViewData ? "data" : "summary"}
           autoHide={false}
           style={{
             display: "flex",
@@ -916,7 +917,7 @@ const InternalSendBitcoinTxReview: FunctionComponent<{
           isUnableToGetUTXOs={isUnableToGetUTXOs}
           isUnableToSign={isUnableToSign}
         />
-        <div style={{ marginTop: "0.75rem", flex: 1 }} />
+        <div style={{ marginTop: "0.75rem", flex: isViewData ? 0 : 1 }} />
         {feeSummary}
         {ledgerGuideBox}
       </Box>

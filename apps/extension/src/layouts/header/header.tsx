@@ -172,6 +172,8 @@ export const HeaderLayout: FunctionComponent<
   headerContainerStyle,
   contentContainerStyle,
 
+  fillHeight,
+
   bottomBackground,
 }) => {
   const hasBottomButton =
@@ -258,7 +260,11 @@ export const HeaderLayout: FunctionComponent<
         bottomPadding={bottomPadding}
         style={contentContainerStyle}
       >
-        <PageSimpleBarProvider style={{ height: "100%" }}>
+        <PageSimpleBarProvider
+          style={{ height: "100%" }}
+          fillHeight={fillHeight !== false}
+          displayFlex={displayFlex}
+        >
           <HeaderBorderScrollHandler
             onShowBorderBottomChange={handleShowBorderBottomChange}
           />

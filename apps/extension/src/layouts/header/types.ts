@@ -28,5 +28,7 @@ export interface HeaderProps {
   headerContainerStyle?: React.CSSProperties;
   contentContainerStyle?: React.CSSProperties;
 
+  fillHeight?: boolean;
+
   bottomBackground?: React.ReactElement;
 }

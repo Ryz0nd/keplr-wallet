@@ -422,6 +422,7 @@ export const IBCSwapDestinationSelectAssetPage: FunctionComponent = observer(
       <HeaderLayout
         title={intl.formatMessage({ id: "page.send.select-asset.title" })}
         left={<BackButton />}
+        fillHeight
       >
         <Styles.Container gutter="0.5rem">
           <SearchTextInput
