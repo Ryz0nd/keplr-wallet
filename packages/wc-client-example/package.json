@@ -5,7 +5,8 @@
   "license": "Apache-2.0",
   "private": true,
   "scripts": {
-    "serve": "npx parcel ./src/index.html"
+    "serve": "npx parcel ./src/index.html",
+    "typecheck": "npx tsc -p tsconfig.check.json"
   },
   "dependencies": {
     "@keplr-wallet/common": "0.13.4-rc.0",
@@ -23,6 +24,8 @@
     "parcel-bundler": "^1.12.5"
   },
   "peerDependencies": {
+    "@walletconnect/sign-client": "^2",
+    "@walletconnect/types": "^2",
     "mobx-react-lite": "^3",
     "react": "^16.8.0 || ^17 || ^18",
     "react-dom": "^16.8.0 || ^17 || ^18"

@@ -49,6 +49,9 @@ module.exports = {
     ],
     "import/no-default-export": "error",
     "import/no-useless-path-segments": "error",
+    // 패키지 내부에서 "src/..." 같은 비상대경로 import를 금지.
+    // baseUrl/rootDir에 의존하는 import는 tsconfig.check.json의 rootDir 오버라이드와 충돌한다.
+    "no-restricted-imports": ["error", { patterns: ["src/*"] }],
     "unused-imports/no-unused-imports": "error",
   },
   overrides: [

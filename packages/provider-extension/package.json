@@ -18,7 +18,8 @@
     "test": "npx jest --passWithNoTests",
     "lint-test": "npx eslint \"src/**/*\" && npx prettier --check \"src/**/*\"",
     "lint-fix": "npx eslint --fix \"src/**/*\" && npx prettier --write \"src/**/*\"",
-    "version": "npx zx ./scripts/lerna-lifecyle-version.mjs"
+    "version": "npx zx ./scripts/lerna-lifecyle-version.mjs",
+    "typecheck": "npx tsc -p tsconfig.check.json"
   },
   "dependencies": {
     "@keplr-wallet/types": "0.13.4-rc.0",

@@ -7,7 +7,7 @@ import {
 
 import { Env } from "@keplr-wallet/router";
 import { KeyRingBitcoinService } from "./service";
-import { PermissionInteractiveService } from "src/permission-interactive";
+import { PermissionInteractiveService } from "../permission-interactive";
 import {
   GetBitcoinKeyMsg,
   GetBitcoinKeysForEachVaultSettledMsg,

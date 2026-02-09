@@ -16,7 +16,7 @@ class MemoryKVStoreProvider implements KVStoreProvider {
     // To mitigate the risk, we check the type of value to be stored if env is for testing.
     if (
       typeof process !== "undefined" &&
-      (process.env["NODE_ENV"] === "test" ||
+      ((process.env["NODE_ENV"] as any) === "test" ||
         process.env["NODE_ENV"] === "development")
     ) {
       this.checkNotPrimitiveField(items);

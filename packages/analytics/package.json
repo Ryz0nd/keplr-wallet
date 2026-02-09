@@ -16,6 +16,7 @@
     "build": "npx tsc",
     "dev": "npx tsc -w",
     "lint-test": "npx eslint \"src/**/*\" && npx prettier --check \"src/**/*\"",
-    "lint-fix": "npx eslint --fix \"src/**/*\" && npx prettier --write \"src/**/*\""
+    "lint-fix": "npx eslint --fix \"src/**/*\" && npx prettier --write \"src/**/*\"",
+    "typecheck": "npx tsc -p tsconfig.check.json"
   }
 }
