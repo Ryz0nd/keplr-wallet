@@ -1135,6 +1135,17 @@ export class KeyRingCosmosService {
     const feeCurrency =
       this.chainsService.getChainInfoOrThrow(chainId).feeCurrencies[0];
 
+    const balancesRes = await simpleFetch<{
+      balances: { denom: string; amount: string }[];
+    }>(
+      this.chainsService.getChainInfoOrThrow(chainId).rest,
+      `/cosmos/bank/v1beta1/balances/${bech32Address}?pagination.limit=1000`
+    );
+    const feeBalance = balancesRes.data.balances.find(
+      (balance) => balance.denom === feeCurrency.coinMinimalDenom
+    );
+    const hasFeeBalance = feeBalance && feeBalance.amount !== "0";
+
     const { gasUsed } = await this.simulateTx(
       vaultId,
       chainId,
@@ -1143,13 +1154,16 @@ export class KeyRingCosmosService {
         amount: [
           {
             denom: feeCurrency.coinMinimalDenom,
-            amount: "1",
+            amount: hasFeeBalance ? "1" : "0",
           },
         ],
       },
       signDirectWithMessagesOptions.memo
     );
-    const gasAdjustment = signDirectWithMessagesOptions.gasAdjustment || 1.5;
+    let gasAdjustment = signDirectWithMessagesOptions.gasAdjustment || 1.5;
+    if (!hasFeeBalance) {
+      gasAdjustment = 2;
+    }
 
     const gasLimitDec = new Dec(gasUsed).mulTruncate(new Dec(gasAdjustment));
 
