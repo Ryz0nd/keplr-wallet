@@ -250,8 +250,23 @@ export class ObservableQueryRewardsInner extends ObservableChainQuery<Rewards> {
   ) {
     super.onReceiveResponse(response);
 
+    const denoms: Set<string> = new Set();
     const chainInfo = this.chainGetter.getChain(this.chainId);
-    const denoms = response.data.total.map((coin) => coin.denom);
+    if (response.data.total) {
+      response.data.total.forEach((coin) => {
+        denoms.add(coin.denom);
+      });
+    }
+    if (response.data.rewards) {
+      response.data.rewards.forEach((reward) => {
+        if (reward.reward) {
+          reward.reward.forEach((r) => {
+            denoms.add(r.denom);
+          });
+        }
+      });
+    }
+
     chainInfo.addUnknownDenoms(...denoms);
   }
 }
