@@ -60,6 +60,7 @@ export const useSwapAnalytics = ({
   const prevSlippageRef = useRef(uiConfigStore.ibcSwapConfig.slippageNum);
   const prevFetchingRef = useRef(false);
   const prevRouteKeyRef = useRef("");
+  const loggedQuoteFailKeysRef = useRef<Set<string>>(new Set());
 
   const aggregatedPropsRef = useRef<Record<string, Record<string, any>>>({});
 
@@ -353,6 +354,10 @@ export const useSwapAnalytics = ({
   // Quote failed
   useEffect(() => {
     if (!queryRouteForLog?.error) return;
+
+    const failKey = `${inChainIdentifier}:${inCurrency.coinDenom}:${inAmountRaw}:${outChainIdentifier}:${outCurrency.coinDenom}`;
+    if (loggedQuoteFailKeysRef.current.has(failKey)) return;
+    loggedQuoteFailKeysRef.current.add(failKey);
 
     const durationMs = requestStartedAtRef.current
       ? performance.now() - requestStartedAtRef.current
