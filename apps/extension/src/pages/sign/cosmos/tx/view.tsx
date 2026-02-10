@@ -38,7 +38,7 @@ import SimpleBar from "simplebar-react";
 import { KeystoneSign } from "../../components/keystone";
 import { ErrModuleKeystoneSign, KeystoneUR } from "../../utils/keystone";
 import { KeyRingService } from "@keplr-wallet/background";
-import { useTheme } from "styled-components";
+import styled, { useTheme } from "styled-components";
 import { defaultProtoCodec } from "@keplr-wallet/cosmos";
 import { MsgGrant } from "@keplr-wallet/proto-types/cosmos/authz/v1beta1/tx";
 import { GenericAuthorization } from "@keplr-wallet/stores/build/query/cosmos/authz/types";
@@ -57,6 +57,13 @@ import {
 } from "../../../../components/top-up";
 import { useTopUp } from "../../../../hooks/use-topup";
 import { StepIndicator } from "../../../../components/step-indicator";
+
+const DelayedScrollBarSimpleBar = styled(SimpleBar)`
+  .simplebar-scrollbar.simplebar-visible::before {
+    transition-delay: 0.15s;
+    transition-duration: 0.15s;
+  }
+`;
 
 /**
  * 서명을 처리할때 웹페이지에서 연속적으로 서명을 요청했을 수 있고
@@ -724,7 +731,7 @@ export const CosmosTxView: FunctionComponent<{
           </Columns>
         </Box>
 
-        <SimpleBar
+        <DelayedScrollBarSimpleBar
           key={isViewData ? "data" : "summary"}
           autoHide={false}
           style={{
@@ -790,7 +797,7 @@ export const CosmosTxView: FunctionComponent<{
               </Box>
             )}
           </Box>
-        </SimpleBar>
+        </DelayedScrollBarSimpleBar>
 
         <Box height="0" minHeight="0.75rem" />
 
