@@ -2,8 +2,8 @@ import { Coin } from "@keplr-wallet/types";
 import { CoinPrimitive } from "../../../common";
 
 export type Rewards = {
-  rewards: DelegatorReward[] | null;
-  total: CoinPrimitive[];
+  rewards?: DelegatorReward[] | null;
+  total?: CoinPrimitive[];
 };
 
 export type DelegatorReward = {
