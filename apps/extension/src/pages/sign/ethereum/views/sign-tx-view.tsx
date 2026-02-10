@@ -27,7 +27,7 @@ import {
 import { FormattedMessage, useIntl } from "react-intl";
 import { ErrModuleKeystoneSign, KeystoneUR } from "../../utils/keystone";
 import { KeystoneSign } from "../../components/keystone";
-import { useTheme } from "styled-components";
+import styled, { useTheme } from "styled-components";
 import SimpleBar from "simplebar-react";
 import { ViewDataButton } from "../../components/view-data-button";
 import { UnsignedTransaction } from "@ethersproject/transactions";
@@ -56,6 +56,13 @@ import { HeaderProps } from "../../../../layouts/header/types";
 import { getKeplrFromWindow } from "@keplr-wallet/stores";
 import { UnsignedEVMTransactionWithErc20Approvals } from "@keplr-wallet/stores-eth";
 import { StepIndicator } from "../../../../components/step-indicator";
+
+const DelayedScrollBarSimpleBar = styled(SimpleBar)`
+  .simplebar-scrollbar.simplebar-visible::before {
+    transition-delay: 0.15s;
+    transition-duration: 0.15s;
+  }
+`;
 
 export const EthereumSignTxView: FunctionComponent<{
   interactionData: NonNullable<SignEthereumInteractionStore["waitingData"]>;
@@ -765,7 +772,7 @@ export const EthereumSignTxView: FunctionComponent<{
             />
           </Columns>
         </Box>
-        <SimpleBar
+        <DelayedScrollBarSimpleBar
           key={isViewData ? "data" : "summary"}
           autoHide={false}
           style={{
@@ -857,7 +864,7 @@ export const EthereumSignTxView: FunctionComponent<{
               {signingDataText}
             </Box>
           )}
-        </SimpleBar>
+        </DelayedScrollBarSimpleBar>
 
         <Box height="0" minHeight="0.75rem" />
 

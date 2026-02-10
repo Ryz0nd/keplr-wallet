@@ -24,7 +24,7 @@ import {
 } from "@keplr-wallet/hooks-bitcoin";
 import { Box } from "../../../../components/box";
 import { ColorPalette } from "../../../../styles";
-import { useTheme } from "styled-components";
+import styled, { useTheme } from "styled-components";
 import {
   BaseTypography,
   Body1,
@@ -75,6 +75,13 @@ import { KeplrError } from "@keplr-wallet/router";
 import { ErrModuleLedgerSign } from "../../../sign/utils/ledger-types";
 import { LedgerGuideBox } from "../../../sign/components/ledger-guide-box";
 import { connectAndSignPsbtsWithLedger } from "../../../sign/utils/handle-bitcoin-sign";
+
+const DelayedScrollBarSimpleBar = styled(SimpleBar)`
+  .simplebar-scrollbar.simplebar-visible::before {
+    transition-delay: 0.15s;
+    transition-duration: 0.15s;
+  }
+`;
 
 export const SignBitcoinTxView: FunctionComponent<{
   interactionData: NonNullable<SignBitcoinTxInteractionStore["waitingData"]>;
@@ -763,7 +770,7 @@ const InternalSendBitcoinTxReview: FunctionComponent<{
             />
           </Columns>
         </Box>
-        <SimpleBar
+        <DelayedScrollBarSimpleBar
           key={isViewData ? "data" : "summary"}
           autoHide={false}
           style={{
@@ -924,7 +931,7 @@ const InternalSendBitcoinTxReview: FunctionComponent<{
               </Box>
             )}
           </Box>
-        </SimpleBar>
+        </DelayedScrollBarSimpleBar>
         <BitcoinGuideBox
           isPartialSign={isPartialSign}
           isUnableToGetUTXOs={isUnableToGetUTXOs}

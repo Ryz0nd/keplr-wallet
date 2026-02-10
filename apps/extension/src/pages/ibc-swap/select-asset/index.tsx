@@ -37,6 +37,7 @@ import { ChainIdHelper } from "@keplr-wallet/cosmos";
 import { ChainStore } from "../../../stores/chain";
 import { HugeQueriesStore } from "../../../stores/huge-queries";
 import { ColorPalette } from "../../../styles/colors";
+import { performSearch } from "../../../hooks/use-search";
 
 class IBCSwapDestinationState {
   @observable.ref sourceChainId: string | undefined = undefined;
@@ -318,6 +319,16 @@ const Styles = {
   `,
 };
 
+const targetEntrySearchFields = [
+  {
+    key: "currency.coinDenom",
+    function: (item: { currency: Currency; chainInfo: IChainInfoImpl }) => {
+      return CoinPretty.makeCoinDenomPretty(item.currency.coinDenom);
+    },
+  },
+  "chainInfo.chainName",
+];
+
 // /send/select-asset와 기본 로직은 거의 유사한데...
 // 뷰 쪽이 생각보다 이질적이라서 그냥 분리 시킴...
 // /send/select-asset 페이지와 세트로 관리하셈
@@ -417,22 +428,28 @@ export const IBCSwapDestinationSelectAssetPage: FunctionComponent = observer(
     // useMemo 밖에서 targetEntries 접근해야 mobx가 추적함
     const targetEntries = state.targetEntries;
 
-    // 검색어가 있을 때 사용할 targetEntries (서버 순서 유지)
+    // 검색어가 있을 때 검색 관련도 기준으로 재정렬
     // useMemo 제거: mobx 배열은 내용 변경 시 참조가 유지되어 의존성 감지 안 됨
     const filteredTargetEntries = hasSearch
-      ? targetEntries.filter((entry) => {
-          const denomHelper = new DenomHelper(entry.currency.coinMinimalDenom);
-          if (denomHelper.type === "lp") {
-            return false;
-          }
-
-          return (
-            !excludeKey ||
-            `${ChainIdHelper.parse(entry.chainInfo.chainId).identifier}/${
+      ? performSearch(
+          targetEntries.filter((entry) => {
+            const denomHelper = new DenomHelper(
               entry.currency.coinMinimalDenom
-            }` !== excludeKey
-          );
-        })
+            );
+            if (denomHelper.type === "lp") {
+              return false;
+            }
+
+            return (
+              !excludeKey ||
+              `${ChainIdHelper.parse(entry.chainInfo.chainId).identifier}/${
+                entry.currency.coinMinimalDenom
+              }` !== excludeKey
+            );
+          }),
+          state.search,
+          targetEntrySearchFields
+        )
       : [];
 
     const [selectedCoinMinimalDenom, setSelectedCoinMinimalDenom] =
