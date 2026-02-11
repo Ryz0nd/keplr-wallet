@@ -1,8 +1,15 @@
-import React, { FunctionComponent, useMemo, useState } from "react";
+import React, {
+  Fragment,
+  FunctionComponent,
+  startTransition,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { observer } from "mobx-react-lite";
 import { useStore } from "../../../../stores";
 import { FormattedMessage, useIntl } from "react-intl";
-import { useTheme } from "styled-components";
+import styled, { keyframes, useTheme } from "styled-components";
 import { useFocusOnMount } from "../../../../hooks/use-focus-on-mount";
 import { Box } from "../../../../components/box";
 import { ColorPalette } from "../../../../styles";
@@ -45,6 +52,14 @@ export type Address = {
   };
 };
 
+const fadeIn = keyframes`
+  from { opacity: 0; }
+  to { opacity: 1; }
+`;
+const FadeInContainer = styled.div`
+  animation: ${fadeIn} 200ms ease-out;
+`;
+
 const chainSearchFields = [
   "chainInfo.chainName",
   "chainInfo.chainId",
@@ -67,6 +82,8 @@ const chainSearchFields = [
     },
   },
 ];
+
+const CHUNK_SIZE = 15;
 
 export const CopyAddressScene: FunctionComponent<{
   close: () => void;
@@ -96,6 +113,26 @@ export const CopyAddressScene: FunctionComponent<{
 
   const { sortedAddresses, setSortPriorities } =
     useGetAddressesOnCopyAddress(search);
+
+  const [renderedCount, setRenderedCount] = useState(0);
+
+  useEffect(() => {
+    setRenderedCount(0);
+  }, [search]);
+
+  useEffect(() => {
+    if (renderedCount >= sortedAddresses.length) return;
+
+    const rafId = requestAnimationFrame(() => {
+      startTransition(() => {
+        setRenderedCount((prev) =>
+          Math.min(prev + CHUNK_SIZE, sortedAddresses.length)
+        );
+      });
+    });
+
+    return () => cancelAnimationFrame(rafId);
+  }, [renderedCount, sortedAddresses.length]);
 
   const [blockInteraction, setBlockInteraction] = useState(false);
 
@@ -270,59 +307,69 @@ export const CopyAddressScene: FunctionComponent<{
           height: runInSidePanel ? "" : "21.5rem",
         }}
       >
-        {isShowNoResult && <NoResultBox />}
+        {renderedCount > 0 ? (
+          <FadeInContainer>
+            {isShowNoResult && <NoResultBox />}
 
-        <CopyAddressItemList
-          containerStyle={{
-            padding: "0 1.125rem",
-          }}
-          sortedAddresses={sortedAddresses}
-          close={close}
-          blockInteraction={blockInteraction}
-          setBlockInteraction={setBlockInteraction}
-          setSortPriorities={setSortPriorities}
-          search={search}
-          onClickIcon={(address: Address) => {
-            sceneTransition.push("qr-code", {
-              chainId: address.modularChainInfo.chainId,
-              address:
-                address.starknetAddress ||
-                address.ethereumAddress ||
-                address.bech32Address ||
-                address.bitcoinAddress?.bech32Address,
-              close,
-            });
-          }}
-          setShowEnterTag={setShowEnterTag}
-        />
+            <CopyAddressItemList
+              containerStyle={{
+                padding: "0 1.125rem",
+              }}
+              sortedAddresses={sortedAddresses.slice(0, renderedCount)}
+              close={close}
+              blockInteraction={blockInteraction}
+              setBlockInteraction={setBlockInteraction}
+              setSortPriorities={setSortPriorities}
+              search={search}
+              onClickIcon={(address: Address) => {
+                sceneTransition.push("qr-code", {
+                  chainId: address.modularChainInfo.chainId,
+                  address:
+                    address.starknetAddress ||
+                    address.ethereumAddress ||
+                    address.bech32Address ||
+                    address.bitcoinAddress?.bech32Address,
+                  close,
+                });
+              }}
+              setShowEnterTag={setShowEnterTag}
+            />
 
-        {hasAddresses && hasLookingForChains && <Gutter size="1.25rem" />}
-        {hasLookingForChains && (
-          <Box paddingX="0.75rem">
-            <Subtitle4
-              color={
-                theme.mode === "light"
-                  ? ColorPalette["gray-500"]
-                  : ColorPalette["gray-200"]
-              }
-            >
-              <FormattedMessage id="page.main.components.deposit-modal.look-for-chains" />
-            </Subtitle4>
-            {searchedLookingForChains.map((chainData) => {
-              return (
-                <React.Fragment key={chainData.chainInfo.chainId}>
-                  <Gutter size="0.75rem" />
-                  <LookingForChainItem
-                    chainInfo={chainData.chainInfo}
-                    stored={chainData.stored}
-                    embedded={chainData.embedded}
-                  />
-                </React.Fragment>
-              );
-            })}
-          </Box>
-        )}
-        <Gutter size="0.75rem" />
+            {renderedCount >= sortedAddresses.length && (
+              <Fragment>
+                {hasAddresses && hasLookingForChains && (
+                  <Gutter size="1.25rem" />
+                )}
+                {hasLookingForChains && (
+                  <Box paddingX="0.75rem">
+                    <Subtitle4
+                      color={
+                        theme.mode === "light"
+                          ? ColorPalette["gray-500"]
+                          : ColorPalette["gray-200"]
+                      }
+                    >
+                      <FormattedMessage id="page.main.components.deposit-modal.look-for-chains" />
+                    </Subtitle4>
+                    {searchedLookingForChains.map((chainData) => {
+                      return (
+                        <React.Fragment key={chainData.chainInfo.chainId}>
+                          <Gutter size="0.75rem" />
+                          <LookingForChainItem
+                            chainInfo={chainData.chainInfo}
+                            stored={chainData.stored}
+                            embedded={chainData.embedded}
+                          />
+                        </React.Fragment>
+                      );
+                    })}
+                  </Box>
+                )}
+                <Gutter size="0.75rem" />
+              </Fragment>
+            )}
+          </FadeInContainer>
+        ) : null}
       </SimpleBar>
     </Box>
   );

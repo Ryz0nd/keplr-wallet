@@ -1,4 +1,10 @@
-import React, { FunctionComponent, useState } from "react";
+import React, {
+  Fragment,
+  FunctionComponent,
+  startTransition,
+  useEffect,
+  useState,
+} from "react";
 import { observer } from "mobx-react-lite";
 import { useIntl } from "react-intl";
 import { useTheme } from "styled-components";
@@ -19,6 +25,8 @@ import {
   CopyAddressItemList,
   EnterTag,
 } from "../copy-address-item/copy-address-item-list";
+
+const CHUNK_SIZE = 15;
 
 export const CopyAddressSceneForFloatModal: FunctionComponent<{
   close: () => void;
@@ -44,6 +52,26 @@ export const CopyAddressSceneForFloatModal: FunctionComponent<{
   const [blockInteraction, setBlockInteraction] = useState(false);
   const { sortedAddresses, setSortPriorities } =
     useGetAddressesOnCopyAddress(search);
+
+  const [renderedCount, setRenderedCount] = useState(0);
+
+  useEffect(() => {
+    setRenderedCount(0);
+  }, [search]);
+
+  useEffect(() => {
+    if (renderedCount >= sortedAddresses.length) return;
+
+    const rafId = requestAnimationFrame(() => {
+      startTransition(() => {
+        setRenderedCount((prev) =>
+          Math.min(prev + CHUNK_SIZE, sortedAddresses.length)
+        );
+      });
+    });
+
+    return () => cancelAnimationFrame(rafId);
+  }, [renderedCount, sortedAddresses.length]);
 
   const hasAddresses = sortedAddresses.length > 0;
   const isShowNoResult = !hasAddresses;
@@ -98,39 +126,43 @@ export const CopyAddressSceneForFloatModal: FunctionComponent<{
           height: "21.5rem",
         }}
       >
-        {isShowNoResult && <NoResultBox />}
+        {renderedCount > 0 ? (
+          <Fragment>
+            {isShowNoResult && <NoResultBox />}
 
-        <CopyAddressItemList
-          containerStyle={{
-            padding: "0 1rem",
-          }}
-          sortedAddresses={sortedAddresses}
-          copyItemAddressHoverColor={
-            theme.mode === "light"
-              ? ColorPalette["gray-75"]
-              : ColorPalette["gray-600"]
-          }
-          close={close}
-          blockInteraction={blockInteraction}
-          setBlockInteraction={setBlockInteraction}
-          setSortPriorities={setSortPriorities}
-          search={search}
-          onClickIcon={(address: Address) => {
-            sceneTransition.push("qr-code", {
-              chainId: address.modularChainInfo.chainId,
-              address:
-                address.starknetAddress ||
-                address.ethereumAddress ||
-                address.bech32Address ||
-                address.bitcoinAddress?.bech32Address,
-              close,
-              isOnTheFloatingModal: true,
-            });
-          }}
-          setShowEnterTag={setShowEnterTag}
-        />
+            <CopyAddressItemList
+              containerStyle={{
+                padding: "0 1rem",
+              }}
+              sortedAddresses={sortedAddresses.slice(0, renderedCount)}
+              copyItemAddressHoverColor={
+                theme.mode === "light"
+                  ? ColorPalette["gray-75"]
+                  : ColorPalette["gray-600"]
+              }
+              close={close}
+              blockInteraction={blockInteraction}
+              setBlockInteraction={setBlockInteraction}
+              setSortPriorities={setSortPriorities}
+              search={search}
+              onClickIcon={(address: Address) => {
+                sceneTransition.push("qr-code", {
+                  chainId: address.modularChainInfo.chainId,
+                  address:
+                    address.starknetAddress ||
+                    address.ethereumAddress ||
+                    address.bech32Address ||
+                    address.bitcoinAddress?.bech32Address,
+                  close,
+                  isOnTheFloatingModal: true,
+                });
+              }}
+              setShowEnterTag={setShowEnterTag}
+            />
 
-        <Gutter size="0.75rem" />
+            <Gutter size="0.75rem" />
+          </Fragment>
+        ) : null}
       </SimpleBar>
     </Box>
   );
