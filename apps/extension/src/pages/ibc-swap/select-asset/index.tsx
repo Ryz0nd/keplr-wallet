@@ -291,7 +291,8 @@ class IBCSwapDestinationState {
 
 const Styles = {
   Container: styled(Stack)`
-    height: 100%;
+    flex: 1;
+    min-height: 0;
     padding: 0.75rem;
   `,
   VirtualListContainer: styled.div`
@@ -464,6 +465,7 @@ export const IBCSwapDestinationSelectAssetPage: FunctionComponent = observer(
         title={intl.formatMessage({ id: "page.send.select-asset.title" })}
         left={<BackButton />}
         fillHeight
+        displayFlex
       >
         <Styles.Container gutter="0.5rem">
           <SearchTextInput

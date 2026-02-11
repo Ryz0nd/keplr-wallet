@@ -17,7 +17,7 @@ const StyledSimpleBar = styled(SimpleBar)<{
     ${({ $fillHeight }) =>
       $fillHeight &&
       css`
-        height: 100%;
+        min-height: 100%;
       `}
     ${({ $displayFlex }) =>
       $displayFlex &&
