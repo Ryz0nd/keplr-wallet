@@ -23,7 +23,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import ReactDOM from "react-dom";
+import { createRoot } from "react-dom/client";
 import { HashRouter, Route, Routes, useLocation } from "react-router-dom";
 import { StoreProvider, useStore } from "./stores";
 import {
@@ -662,4 +662,8 @@ const App: FunctionComponent = () => {
   );
 };
 
-ReactDOM.render(<App />, document.getElementById("app"));
+const appElement = document.getElementById("app");
+if (!appElement) throw new Error("Failed to find the app element");
+
+const root = createRoot(appElement);
+root.render(<App />);

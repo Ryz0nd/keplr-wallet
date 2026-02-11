@@ -3,7 +3,7 @@ require("setimmediate");
 // Shim ------------
 
 import React, { FunctionComponent } from "react";
-import ReactDOM from "react-dom";
+import { createRoot } from "react-dom/client";
 import { HashRouter, Route, Routes } from "react-router-dom";
 import { StoreProvider } from "./stores";
 import { GlobalStyle, ScrollBarStyle } from "./styles";
@@ -72,4 +72,8 @@ const App: FunctionComponent = () => {
   );
 };
 
-ReactDOM.render(<App />, document.getElementById("app"));
+const appElement = document.getElementById("app");
+if (!appElement) throw new Error("Failed to find the app element");
+
+const root = createRoot(appElement);
+root.render(<App />);
