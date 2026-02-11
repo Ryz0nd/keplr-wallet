@@ -1777,7 +1777,23 @@ export class KeyRingCosmosService {
       throw new Error("chain id unmatched");
     }
     if (new URL(parsed.domain).origin !== new URL(origin).origin) {
-      throw new Error("domain and origin unmatched");
+      const originURL = new URL(origin);
+      if (
+        originURL.hostname === "localhost" ||
+        originURL.hostname === "127.0.0.1"
+      ) {
+        const parsedDomain = new URL(parsed.domain);
+        if (
+          parsedDomain.hostname === "www.figuremarkets.com" ||
+          parsedDomain.hostname === "www.figuremarkets.dev"
+        ) {
+          // Allow for development purpose
+        } else {
+          throw new Error("domain and origin unmatched");
+        }
+      } else {
+        throw new Error("domain and origin unmatched");
+      }
     }
 
     const vaultId = this.keyRingService.selectedVaultId;
