@@ -4,6 +4,7 @@ import React, {
   startTransition,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { observer } from "mobx-react-lite";
@@ -115,13 +116,16 @@ export const CopyAddressScene: FunctionComponent<{
     useGetAddressesOnCopyAddress(search);
 
   const [renderedCount, setRenderedCount] = useState(0);
+  const isInitialRenderDone = useRef(false);
 
   useEffect(() => {
-    setRenderedCount(0);
-  }, [search]);
-
-  useEffect(() => {
-    if (renderedCount >= sortedAddresses.length) return;
+    if (isInitialRenderDone.current) return;
+    if (renderedCount >= sortedAddresses.length) {
+      if (sortedAddresses.length > 0) {
+        isInitialRenderDone.current = true;
+      }
+      return;
+    }
 
     const rafId = requestAnimationFrame(() => {
       startTransition(() => {
@@ -307,7 +311,7 @@ export const CopyAddressScene: FunctionComponent<{
           height: runInSidePanel ? "" : "21.5rem",
         }}
       >
-        {renderedCount > 0 ? (
+        {isInitialRenderDone.current || renderedCount > 0 ? (
           <FadeInContainer>
             {isShowNoResult && <NoResultBox />}
 
@@ -315,7 +319,11 @@ export const CopyAddressScene: FunctionComponent<{
               containerStyle={{
                 padding: "0 1.125rem",
               }}
-              sortedAddresses={sortedAddresses.slice(0, renderedCount)}
+              sortedAddresses={
+                isInitialRenderDone.current
+                  ? sortedAddresses
+                  : sortedAddresses.slice(0, renderedCount)
+              }
               close={close}
               blockInteraction={blockInteraction}
               setBlockInteraction={setBlockInteraction}
@@ -335,7 +343,8 @@ export const CopyAddressScene: FunctionComponent<{
               setShowEnterTag={setShowEnterTag}
             />
 
-            {renderedCount >= sortedAddresses.length && (
+            {(isInitialRenderDone.current ||
+              renderedCount >= sortedAddresses.length) && (
               <Fragment>
                 {hasAddresses && hasLookingForChains && (
                   <Gutter size="1.25rem" />
