@@ -328,12 +328,13 @@ const CarouselPage: FunctionComponent<{
               color={
                 theme.mode === "light"
                   ? ColorPalette["black"]
-                  : ColorPalette["white"]
+                  : ColorPalette["gray-200"]
               }
               style={{
                 fontWeight: 400,
                 fontSize: "0.75rem",
                 lineHeight: "155%",
+                textAlign: "center",
               }}
             >
               <FormattedMessage
