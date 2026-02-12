@@ -1,13 +1,13 @@
 import React, {
-  Fragment,
   FunctionComponent,
   startTransition,
   useEffect,
+  useRef,
   useState,
 } from "react";
 import { observer } from "mobx-react-lite";
 import { useIntl } from "react-intl";
-import { useTheme } from "styled-components";
+import styled, { keyframes, useTheme } from "styled-components";
 import { useFocusOnMount } from "../../../../hooks/use-focus-on-mount";
 import { Box } from "../../../../components/box";
 import { ColorPalette } from "../../../../styles";
@@ -25,6 +25,14 @@ import {
   CopyAddressItemList,
   EnterTag,
 } from "../copy-address-item/copy-address-item-list";
+
+const fadeIn = keyframes`
+  from { opacity: 0; }
+  to { opacity: 1; }
+`;
+const FadeInContainer = styled.div`
+  animation: ${fadeIn} 200ms ease-out;
+`;
 
 const CHUNK_SIZE = 15;
 
@@ -54,13 +62,16 @@ export const CopyAddressSceneForFloatModal: FunctionComponent<{
     useGetAddressesOnCopyAddress(search);
 
   const [renderedCount, setRenderedCount] = useState(0);
+  const isInitialRenderDone = useRef(false);
 
   useEffect(() => {
-    setRenderedCount(0);
-  }, [search]);
-
-  useEffect(() => {
-    if (renderedCount >= sortedAddresses.length) return;
+    if (isInitialRenderDone.current) return;
+    if (renderedCount >= sortedAddresses.length) {
+      if (sortedAddresses.length > 0) {
+        isInitialRenderDone.current = true;
+      }
+      return;
+    }
 
     const rafId = requestAnimationFrame(() => {
       startTransition(() => {
@@ -126,15 +137,19 @@ export const CopyAddressSceneForFloatModal: FunctionComponent<{
           height: "21.5rem",
         }}
       >
-        {renderedCount > 0 ? (
-          <Fragment>
+        {isInitialRenderDone.current || renderedCount > 0 ? (
+          <FadeInContainer>
             {isShowNoResult && <NoResultBox />}
 
             <CopyAddressItemList
               containerStyle={{
                 padding: "0 1rem",
               }}
-              sortedAddresses={sortedAddresses.slice(0, renderedCount)}
+              sortedAddresses={
+                isInitialRenderDone.current
+                  ? sortedAddresses
+                  : sortedAddresses.slice(0, renderedCount)
+              }
               copyItemAddressHoverColor={
                 theme.mode === "light"
                   ? ColorPalette["gray-75"]
@@ -161,7 +176,7 @@ export const CopyAddressSceneForFloatModal: FunctionComponent<{
             />
 
             <Gutter size="0.75rem" />
-          </Fragment>
+          </FadeInContainer>
         ) : null}
       </SimpleBar>
     </Box>
