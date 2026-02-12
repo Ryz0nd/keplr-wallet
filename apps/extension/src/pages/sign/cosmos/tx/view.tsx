@@ -737,7 +737,8 @@ export const CosmosTxView: FunctionComponent<{
           style={{
             display: "flex",
             flexDirection: "column",
-            flex: !isViewData ? "0 1 auto" : 1,
+            flex: isViewData ? "0 1 auto" : "0 0 auto",
+            minHeight: isViewData ? "8rem" : undefined,
             overflow: "auto",
             opacity: isLedgerAndDirect ? 0.5 : undefined,
             borderRadius: "0.375rem",
@@ -807,24 +808,18 @@ export const CosmosTxView: FunctionComponent<{
           }}
         >
           {preferNoSetMemo ? (
-            <React.Fragment>
-              <ReadonlyMemo memo={memoConfig.memo} />
-              <Gutter size="0.75rem" />
-            </React.Fragment>
+            <ReadonlyMemo memo={memoConfig.memo} />
           ) : (
-            <React.Fragment>
-              <MemoInput
-                memoConfig={memoConfig}
-                placeholder={intl.formatMessage({
-                  id: "components.input.memo-input.optional-placeholder",
-                })}
-              />
-              <Gutter size="0.75rem" />
-            </React.Fragment>
+            <MemoInput
+              memoConfig={memoConfig}
+              placeholder={intl.formatMessage({
+                id: "components.input.memo-input.optional-placeholder",
+              })}
+            />
           )}
         </Box>
 
-        {!isViewData ? <div style={{ flex: 1 }} /> : null}
+        <div style={{ flex: 1, marginTop: "0.75rem" }} />
 
         {isLavaEndpoint ? (
           <React.Fragment>

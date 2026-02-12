@@ -1,6 +1,7 @@
 import React, {
   FunctionComponent,
   PropsWithChildren,
+  useEffect,
   useMemo,
   useRef,
 } from "react";
@@ -11,32 +12,54 @@ import styled, { css } from "styled-components";
 
 const StyledSimpleBar = styled(SimpleBar)<{
   $fillHeight?: boolean;
-  $displayFlex?: boolean;
 }>`
-  & .simplebar-content {
-    ${({ $fillHeight }) =>
-      $fillHeight &&
-      css`
-        min-height: 100%;
-      `}
-    ${({ $displayFlex }) =>
-      $displayFlex &&
-      css`
-        display: flex;
-        flex-direction: column;
-      `}
-  }
+  ${({ $fillHeight }) =>
+    $fillHeight &&
+    css`
+      & .simplebar-content:not(.simplebar-content .simplebar-content) {
+        height: 100%;
+      }
+    `}
 `;
 
 export const PageSimpleBarProvider: FunctionComponent<
   PropsWithChildren<{
     style: React.CSSProperties;
     fillHeight?: boolean;
-    displayFlex?: boolean;
   }>
-> = ({ children, style, fillHeight, displayFlex }) => {
+> = ({ children, style, fillHeight }) => {
   const ref = useRef<SimpleBarCore | null>(null);
   const refHandlers = useRef<((ref: SimpleBarCore | null) => void)[]>([]);
+
+  // CSS 애니메이션(VerticalCollapseTransition 등)에 의한 자식 크기 변화를 감지하여 스크롤 바의 크기를 실시간으로 업데이트
+  useEffect(() => {
+    const simpleBar = ref.current;
+    const contentEl = simpleBar?.contentEl;
+    if (!contentEl) {
+      return;
+    }
+
+    const ro = new ResizeObserver(() => {
+      simpleBar?.recalculate();
+    });
+
+    const observeChildren = () => {
+      ro.disconnect();
+      Array.from(contentEl.children).forEach((child) => ro.observe(child));
+    };
+
+    observeChildren();
+
+    const mo = new MutationObserver(() => {
+      observeChildren();
+    });
+    mo.observe(contentEl, { childList: true });
+
+    return () => {
+      ro.disconnect();
+      mo.disconnect();
+    };
+  }, []);
 
   return (
     <PageSimpleBarContext.Provider
@@ -61,7 +84,6 @@ export const PageSimpleBarProvider: FunctionComponent<
     >
       <StyledSimpleBar
         $fillHeight={fillHeight}
-        $displayFlex={displayFlex}
         style={style}
         ref={(r) => {
           ref.current = r;

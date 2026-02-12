@@ -263,7 +263,6 @@ export const HeaderLayout: FunctionComponent<
         <PageSimpleBarProvider
           style={{ height: "100%" }}
           fillHeight={fillHeight !== false}
-          displayFlex={displayFlex}
         >
           <HeaderBorderScrollHandler
             onShowBorderBottomChange={handleShowBorderBottomChange}
