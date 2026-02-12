@@ -151,6 +151,15 @@ export const UpdateNoteModal: FunctionComponent<{
               }
               close();
             }}
+            buttonStyle={(() => {
+              const current = updateNotePageData[currentPage];
+              if (current && current.title.includes("Figure Markets")) {
+                return {
+                  backgroundColor: "#7270F6",
+                  color: ColorPalette["gray-10"],
+                };
+              }
+            })()}
           />
         </Box>
 
