@@ -538,12 +538,7 @@ export const StarknetSendPage: FunctionComponent = observer(() => {
         }
       }}
     >
-      <Box
-        paddingX="0.75rem"
-        style={{
-          flex: 1,
-        }}
-      >
+      <Box paddingX="0.75rem" minHeight="100%">
         <Stack gutter="0.75rem" flex={1}>
           <YAxis>
             <Subtitle3>

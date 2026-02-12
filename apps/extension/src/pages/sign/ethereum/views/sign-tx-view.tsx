@@ -778,7 +778,8 @@ export const EthereumSignTxView: FunctionComponent<{
           style={{
             display: "flex",
             flexDirection: "column",
-            flex: !isViewData ? "0 1 auto" : 1,
+            flex: isViewData ? "0 1 auto" : "0 0 auto",
+            minHeight: isViewData ? "8rem" : undefined,
             overflowY: "auto",
             overflowX: "hidden",
             borderRadius: "0.375rem",
@@ -866,9 +867,7 @@ export const EthereumSignTxView: FunctionComponent<{
           )}
         </DelayedScrollBarSimpleBar>
 
-        <Box height="0" minHeight="0.75rem" />
-
-        {!isViewData ? <div style={{ flex: 1 }} /> : null}
+        <div style={{ flex: 1, marginTop: "0.75rem" }} />
 
         {(() => {
           if (interactionData.isInternal) {

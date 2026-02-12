@@ -240,7 +240,7 @@ export const EarnConfirmUsdnEstimationPage: FunctionComponent = observer(() => {
         }
       }}
     >
-      <Box paddingX="1.25rem" paddingTop="1.75rem" height="100%">
+      <Box paddingX="1.25rem" paddingTop="1.75rem" minHeight="100%">
         <H2>
           <FormattedMessage
             id="page.earn.estimation-confirm.usdc-to-usdn.title"

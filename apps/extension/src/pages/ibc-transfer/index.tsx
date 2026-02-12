@@ -281,7 +281,7 @@ export const IBCTransferPage: FunctionComponent = observer(() => {
         },
       ]}
     >
-      <Box height="100%">
+      <Box minHeight="100%">
         {isSelectChannelPhase ? (
           <IBCTransferSelectChannelView
             historyType={historyType}

@@ -565,12 +565,7 @@ export const BitcoinSendPage: FunctionComponent = observer(() => {
         }
       }}
     >
-      <Box
-        paddingX="0.75rem"
-        style={{
-          flex: 1,
-        }}
-      >
+      <Box paddingX="0.75rem" minHeight="100%">
         <Stack gutter="0.75rem" flex={1}>
           <YAxis>
             <Subtitle3>
@@ -615,18 +610,20 @@ export const BitcoinSendPage: FunctionComponent = observer(() => {
           <Styles.Flex1 />
           <Gutter size="0" />
 
-          <FeeControl
-            senderConfig={sendConfigs.senderConfig}
-            feeConfig={sendConfigs.feeConfig}
-            feeRateConfig={sendConfigs.feeRateConfig}
-            psbtSimulator={psbtSimulator}
-          />
-          <UnfilteredUtxoWarning
-            isLoading={isFetchingAvailableUTXOs}
-            apiError={availableUTXOsApiError}
-            allowUnfilteredOnApiError={allowUnfilteredOnApiError}
-            setAllowUnfilteredOnApiError={setAllowUnfilteredOnApiError}
-          />
+          <Box>
+            <FeeControl
+              senderConfig={sendConfigs.senderConfig}
+              feeConfig={sendConfigs.feeConfig}
+              feeRateConfig={sendConfigs.feeRateConfig}
+              psbtSimulator={psbtSimulator}
+            />
+            <UnfilteredUtxoWarning
+              isLoading={isFetchingAvailableUTXOs}
+              apiError={availableUTXOsApiError}
+              allowUnfilteredOnApiError={allowUnfilteredOnApiError}
+              setAllowUnfilteredOnApiError={setAllowUnfilteredOnApiError}
+            />
+          </Box>
         </Stack>
       </Box>
     </HeaderLayout>

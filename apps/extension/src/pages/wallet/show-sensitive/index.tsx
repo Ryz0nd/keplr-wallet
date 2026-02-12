@@ -138,7 +138,7 @@ export const WalletShowSensitivePage: FunctionComponent = observer(() => {
         padding="0.75rem"
         paddingTop="0.5rem"
         paddingBottom="0"
-        height="100%"
+        minHeight="100%"
       >
         {sensitive === "" ? (
           <React.Fragment>

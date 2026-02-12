@@ -118,7 +118,7 @@ export const PermissionBasicAccessForStarknetPage: FunctionComponent<{
         );
       }}
     >
-      <Box height="100%" padding="0.75rem" paddingBottom="0">
+      <Box minHeight="100%" padding="0.75rem" paddingBottom="0">
         <Box alignX="center">
           <Image
             alt="Keplr Logo Image"

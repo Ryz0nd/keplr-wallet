@@ -22,6 +22,7 @@ export const UnfilteredUtxoWarning: FunctionComponent<{
 
   return (
     <VerticalCollapseTransition collapsed={isLoading || !apiError}>
+      <Gutter size="0.75rem" />
       <GuideBox
         color="warning"
         hideInformationIcon={true}
