@@ -93,7 +93,7 @@ export const UpdateNoteModal: FunctionComponent<{
       <Box
         position="relative"
         width="95%"
-        maxWidth="20rem"
+        maxWidth={isFigureMarketsUpdate ? "18.5rem" : "20rem"}
         borderRadius="0.75rem"
         backgroundColor={
           theme.mode === "light"
