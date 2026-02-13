@@ -84,6 +84,10 @@ export const UpdateNoteModal: FunctionComponent<{
     return null;
   }
 
+  const currentUpdateNote = updateNotePageData[currentPage];
+  const isFigureMarketsUpdate =
+    currentUpdateNote?.title.includes("Figure Markets");
+
   return (
     <YAxis alignX="center">
       <Box
@@ -129,10 +133,8 @@ export const UpdateNoteModal: FunctionComponent<{
         <Box marginX="1.25rem" marginBottom="1.25rem">
           <Button
             text={(() => {
-              const current = updateNotePageData[currentPage];
-
-              if (current && current.closeText) {
-                return current.closeText;
+              if (currentUpdateNote && currentUpdateNote.closeText) {
+                return currentUpdateNote.closeText;
               }
 
               return intl.formatMessage({
@@ -142,15 +144,21 @@ export const UpdateNoteModal: FunctionComponent<{
             size="medium"
             color="secondary"
             onClick={() => {
-              const current = updateNotePageData[currentPage];
-
-              if (current && current.closeLink) {
+              if (currentUpdateNote && currentUpdateNote.closeLink) {
                 browser.tabs.create({
-                  url: current.closeLink,
+                  url: currentUpdateNote.closeLink,
                 });
               }
               close();
             }}
+            buttonStyle={
+              isFigureMarketsUpdate
+                ? {
+                    backgroundColor: "#7270F6",
+                    color: ColorPalette["gray-10"],
+                  }
+                : undefined
+            }
           />
         </Box>
 
@@ -181,6 +189,8 @@ export const UpdateNoteModal: FunctionComponent<{
               <path
                 fill={
                   theme.mode === "light"
+                    ? ColorPalette["black"]
+                    : isFigureMarketsUpdate
                     ? ColorPalette["black"]
                     : ColorPalette["white"]
                 }
@@ -328,12 +338,13 @@ const CarouselPage: FunctionComponent<{
               color={
                 theme.mode === "light"
                   ? ColorPalette["black"]
-                  : ColorPalette["white"]
+                  : ColorPalette["gray-200"]
               }
               style={{
                 fontWeight: 400,
                 fontSize: "0.75rem",
                 lineHeight: "155%",
+                textAlign: "center",
               }}
             >
               <FormattedMessage

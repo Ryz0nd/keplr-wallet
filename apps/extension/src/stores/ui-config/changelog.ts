@@ -103,8 +103,25 @@ export class ChangelogConfig {
     }
 
     if (lastVersion !== currentVersion) {
-      // should not ignore
+      runInAction(() => {
+        this._lastInfo = {
+          lastVersion,
+          currentVersion,
+          cleared: false,
+          histories: [],
+        };
+      });
       this.fetchVersion(lastVersion, currentVersion);
+    } else if (
+      this._lastInfo &&
+      !this._lastInfo.cleared &&
+      this._lastInfo.lastVersion !== this._lastInfo.currentVersion &&
+      this._lastInfo.histories.length === 0
+    ) {
+      this.fetchVersion(
+        this._lastInfo.lastVersion,
+        this._lastInfo.currentVersion
+      );
     }
 
     autorun(() => {
