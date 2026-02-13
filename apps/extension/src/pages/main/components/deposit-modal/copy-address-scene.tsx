@@ -1,16 +1,8 @@
-import React, {
-  Fragment,
-  FunctionComponent,
-  startTransition,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import React, { Fragment, FunctionComponent, useMemo, useState } from "react";
 import { observer } from "mobx-react-lite";
 import { useStore } from "../../../../stores";
 import { FormattedMessage, useIntl } from "react-intl";
-import styled, { keyframes, useTheme } from "styled-components";
+import { useTheme } from "styled-components";
 import { useFocusOnMount } from "../../../../hooks/use-focus-on-mount";
 import { Box } from "../../../../components/box";
 import { ColorPalette } from "../../../../styles";
@@ -41,6 +33,8 @@ import {
   CopyAddressItemList,
   EnterTag,
 } from "../copy-address-item/copy-address-item-list";
+import { useInitialChunkedRender } from "../../../../hooks/use-initial-chunked-render";
+import { FadeInContainer } from "../copy-address-item/fade-in-container";
 
 export type Address = {
   modularChainInfo: ModularChainInfo;
@@ -52,14 +46,6 @@ export type Address = {
     paymentType: SupportedPaymentType;
   };
 };
-
-const fadeIn = keyframes`
-  from { opacity: 0; }
-  to { opacity: 1; }
-`;
-const FadeInContainer = styled.div`
-  animation: ${fadeIn} 200ms ease-out;
-`;
 
 const chainSearchFields = [
   "chainInfo.chainName",
@@ -83,8 +69,6 @@ const chainSearchFields = [
     },
   },
 ];
-
-const CHUNK_SIZE = 15;
 
 export const CopyAddressScene: FunctionComponent<{
   close: () => void;
@@ -115,28 +99,8 @@ export const CopyAddressScene: FunctionComponent<{
   const { sortedAddresses, setSortPriorities } =
     useGetAddressesOnCopyAddress(search);
 
-  const [renderedCount, setRenderedCount] = useState(0);
-  const isInitialRenderDone = useRef(false);
-
-  useEffect(() => {
-    if (isInitialRenderDone.current) return;
-    if (renderedCount >= sortedAddresses.length) {
-      if (sortedAddresses.length > 0) {
-        isInitialRenderDone.current = true;
-      }
-      return;
-    }
-
-    const rafId = requestAnimationFrame(() => {
-      startTransition(() => {
-        setRenderedCount((prev) =>
-          Math.min(prev + CHUNK_SIZE, sortedAddresses.length)
-        );
-      });
-    });
-
-    return () => cancelAnimationFrame(rafId);
-  }, [renderedCount, sortedAddresses.length]);
+  const { visibleItems, isVisible, isInitialRenderDone } =
+    useInitialChunkedRender(sortedAddresses);
 
   const [blockInteraction, setBlockInteraction] = useState(false);
 
@@ -311,7 +275,7 @@ export const CopyAddressScene: FunctionComponent<{
           height: runInSidePanel ? "" : "21.5rem",
         }}
       >
-        {isInitialRenderDone.current || renderedCount > 0 ? (
+        {isVisible ? (
           <FadeInContainer>
             {isShowNoResult && <NoResultBox />}
 
@@ -319,11 +283,7 @@ export const CopyAddressScene: FunctionComponent<{
               containerStyle={{
                 padding: "0 1.125rem",
               }}
-              sortedAddresses={
-                isInitialRenderDone.current
-                  ? sortedAddresses
-                  : sortedAddresses.slice(0, renderedCount)
-              }
+              sortedAddresses={visibleItems}
               close={close}
               blockInteraction={blockInteraction}
               setBlockInteraction={setBlockInteraction}
@@ -343,8 +303,7 @@ export const CopyAddressScene: FunctionComponent<{
               setShowEnterTag={setShowEnterTag}
             />
 
-            {(isInitialRenderDone.current ||
-              renderedCount >= sortedAddresses.length) && (
+            {isInitialRenderDone && (
               <Fragment>
                 {hasAddresses && hasLookingForChains && (
                   <Gutter size="1.25rem" />

@@ -1,13 +1,7 @@
-import React, {
-  FunctionComponent,
-  startTransition,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import React, { FunctionComponent, useState } from "react";
 import { observer } from "mobx-react-lite";
 import { useIntl } from "react-intl";
-import styled, { keyframes, useTheme } from "styled-components";
+import { useTheme } from "styled-components";
 import { useFocusOnMount } from "../../../../hooks/use-focus-on-mount";
 import { Box } from "../../../../components/box";
 import { ColorPalette } from "../../../../styles";
@@ -25,16 +19,8 @@ import {
   CopyAddressItemList,
   EnterTag,
 } from "../copy-address-item/copy-address-item-list";
-
-const fadeIn = keyframes`
-  from { opacity: 0; }
-  to { opacity: 1; }
-`;
-const FadeInContainer = styled.div`
-  animation: ${fadeIn} 200ms ease-out;
-`;
-
-const CHUNK_SIZE = 15;
+import { useInitialChunkedRender } from "../../../../hooks/use-initial-chunked-render";
+import { FadeInContainer } from "../copy-address-item/fade-in-container";
 
 export const CopyAddressSceneForFloatModal: FunctionComponent<{
   close: () => void;
@@ -61,28 +47,7 @@ export const CopyAddressSceneForFloatModal: FunctionComponent<{
   const { sortedAddresses, setSortPriorities } =
     useGetAddressesOnCopyAddress(search);
 
-  const [renderedCount, setRenderedCount] = useState(0);
-  const isInitialRenderDone = useRef(false);
-
-  useEffect(() => {
-    if (isInitialRenderDone.current) return;
-    if (renderedCount >= sortedAddresses.length) {
-      if (sortedAddresses.length > 0) {
-        isInitialRenderDone.current = true;
-      }
-      return;
-    }
-
-    const rafId = requestAnimationFrame(() => {
-      startTransition(() => {
-        setRenderedCount((prev) =>
-          Math.min(prev + CHUNK_SIZE, sortedAddresses.length)
-        );
-      });
-    });
-
-    return () => cancelAnimationFrame(rafId);
-  }, [renderedCount, sortedAddresses.length]);
+  const { visibleItems, isVisible } = useInitialChunkedRender(sortedAddresses);
 
   const hasAddresses = sortedAddresses.length > 0;
   const isShowNoResult = !hasAddresses;
@@ -137,7 +102,7 @@ export const CopyAddressSceneForFloatModal: FunctionComponent<{
           height: "21.5rem",
         }}
       >
-        {isInitialRenderDone.current || renderedCount > 0 ? (
+        {isVisible ? (
           <FadeInContainer>
             {isShowNoResult && <NoResultBox />}
 
@@ -145,11 +110,7 @@ export const CopyAddressSceneForFloatModal: FunctionComponent<{
               containerStyle={{
                 padding: "0 1rem",
               }}
-              sortedAddresses={
-                isInitialRenderDone.current
-                  ? sortedAddresses
-                  : sortedAddresses.slice(0, renderedCount)
-              }
+              sortedAddresses={visibleItems}
               copyItemAddressHoverColor={
                 theme.mode === "light"
                   ? ColorPalette["gray-75"]
