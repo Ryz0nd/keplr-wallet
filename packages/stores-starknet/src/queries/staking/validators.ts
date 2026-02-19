@@ -13,13 +13,10 @@ export class ObservableQueryValidators extends ObservableQuery<StarknetValidator
   constructor(
     sharedContext: QuerySharedContext,
     chainId: string,
-    chainGetter: ChainGetter
+    chainGetter: ChainGetter,
+    satelliteBaseURL: string
   ) {
-    super(
-      sharedContext,
-      "https://api.dashboard.endur.fi/api/",
-      "query/validators?page=1&per_page=200&sort_by=total_stake&sort_order=desc"
-    );
+    super(sharedContext, satelliteBaseURL, "v1/starknet/validators");
     makeObservable(this);
 
     this.chainId = chainId;

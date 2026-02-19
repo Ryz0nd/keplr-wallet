@@ -8,8 +8,9 @@ export type StarknetValidator = {
   total_stake: string;
   self_stake: string;
   delegators_count: number;
-  delegators_count_change_24h?: string;
-  total_stake_change_24h?: string;
+  // voyager API에서는 해당 값을 가져올 수 없음
+  // delegators_count_change_24h?: string;
+  // total_stake_change_24h?: string;
   commission?: number;
   pool_address?: string;
   is_active: boolean;

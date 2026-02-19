@@ -16,7 +16,8 @@ export class StarknetQueriesStore {
   constructor(
     protected readonly sharedContext: QuerySharedContext,
     protected readonly chainGetter: ChainGetter,
-    protected readonly tokenContractListURL: string
+    protected readonly tokenContractListURL: string,
+    protected readonly satelliteBaseURL: string
   ) {}
 
   public get(chainId: string): DeepReadonly<StarknetQueriesStoreImpl> {
@@ -29,7 +30,8 @@ export class StarknetQueriesStore {
       this.sharedContext,
       chainId,
       this.chainGetter,
-      this.tokenContractListURL
+      this.tokenContractListURL,
+      this.satelliteBaseURL
     );
     this.map.set(chainId, store);
     return store;
@@ -55,7 +57,8 @@ class StarknetQueriesStoreImpl {
     protected readonly sharedContext: QuerySharedContext,
     protected readonly chainId: string,
     protected readonly chainGetter: ChainGetter,
-    protected readonly tokenContractListURL: string
+    protected readonly tokenContractListURL: string,
+    protected readonly satelliteBaseURL: string
   ) {
     this.queryStarknetERC20Balance = new ObservableQueryStarknetERC20Balance(
       sharedContext
@@ -83,7 +86,8 @@ class StarknetQueriesStoreImpl {
     this.queryValidators = new ObservableQueryValidators(
       sharedContext,
       chainId,
-      chainGetter
+      chainGetter,
+      satelliteBaseURL
     );
 
     this.queryStakingApr = new ObservableQueryStakingApr(
