@@ -54,6 +54,28 @@ export interface UniswapPermitSingleIntent {
   domain: EIP712Domain;
 }
 
+export interface ERC3009TransferWithAuthorizationIntent {
+  kind: "erc3009.transferWithAuthorization";
+  from: string;
+  to: string;
+  value: string;
+  validAfter: string;
+  validBefore: string;
+  nonce: string;
+  domain: EIP712Domain;
+}
+
+export interface ERC3009ReceiveWithAuthorizationIntent {
+  kind: "erc3009.receiveWithAuthorization";
+  from: string;
+  to: string;
+  value: string;
+  validAfter: string;
+  validBefore: string;
+  nonce: string;
+  domain: EIP712Domain;
+}
+
 export interface UnknownIntent {
   kind: "unknown";
 }
@@ -62,6 +84,8 @@ export type EIP712Intent =
   | ERC2612PermitIntent
   | DAIPermitIntent
   | UniswapPermitSingleIntent
+  | ERC3009TransferWithAuthorizationIntent
+  | ERC3009ReceiveWithAuthorizationIntent
   | UnknownIntent;
 
 const EthereumAddressSchema = Joi.string()
@@ -122,6 +146,17 @@ const UniswapPermitSingleMessageSchema = Joi.object({
   details: PermitDetailsSchema.required(),
   spender: EthereumAddressSchema.required(),
   sigDeadline: BigIntStringSchema.required(),
+});
+
+const Bytes32HexSchema = Joi.string().pattern(/^0x[a-fA-F0-9]{64}$/);
+
+const ERC3009TransferAuthorizationMessageSchema = Joi.object({
+  from: EthereumAddressSchema.required(),
+  to: EthereumAddressSchema.required(),
+  value: BigIntStringSchema.required(),
+  validAfter: BigIntStringSchema.required(),
+  validBefore: BigIntStringSchema.required(),
+  nonce: Bytes32HexSchema.required(),
 });
 
 export function useEIP712Intent(
@@ -272,6 +307,94 @@ function parseUniswapPermitSingle(data: any): UniswapPermitSingleIntent | null {
   };
 }
 
+function parseERC3009TransferWithAuthorization(
+  data: any
+): ERC3009TransferWithAuthorizationIntent | null {
+  const authorizationType = data.types?.TransferWithAuthorization;
+  if (!Array.isArray(authorizationType)) {
+    return null;
+  }
+
+  const message = data.message;
+  if (!message || typeof message !== "object") {
+    return null;
+  }
+
+  const validatedMessage =
+    ERC3009TransferAuthorizationMessageSchema.validate(message);
+  if (validatedMessage.error) {
+    console.warn(
+      "ERC3009 TransferWithAuthorization validation failed:",
+      validatedMessage.error
+    );
+    return null;
+  }
+
+  if (!data.domain || typeof data.domain !== "object") {
+    return null;
+  }
+
+  const domain = parseEIP712Domain(data.domain);
+  if (!domain) {
+    return null;
+  }
+
+  return {
+    kind: "erc3009.transferWithAuthorization",
+    from: validatedMessage.value.from,
+    to: validatedMessage.value.to,
+    value: validatedMessage.value.value,
+    validAfter: validatedMessage.value.validAfter,
+    validBefore: validatedMessage.value.validBefore,
+    nonce: validatedMessage.value.nonce,
+    domain,
+  };
+}
+
+function parseERC3009ReceiveWithAuthorization(
+  data: any
+): ERC3009ReceiveWithAuthorizationIntent | null {
+  const authorizationType = data.types?.ReceiveWithAuthorization;
+  if (!Array.isArray(authorizationType)) {
+    return null;
+  }
+
+  const message = data.message;
+  if (!message || typeof message !== "object") {
+    return null;
+  }
+
+  const validatedMessage =
+    ERC3009TransferAuthorizationMessageSchema.validate(message);
+  if (validatedMessage.error) {
+    console.warn(
+      "ERC3009 ReceiveWithAuthorization validation failed:",
+      validatedMessage.error
+    );
+    return null;
+  }
+
+  if (!data.domain || typeof data.domain !== "object") {
+    return null;
+  }
+
+  const domain = parseEIP712Domain(data.domain);
+  if (!domain) {
+    return null;
+  }
+
+  return {
+    kind: "erc3009.receiveWithAuthorization",
+    from: validatedMessage.value.from,
+    to: validatedMessage.value.to,
+    value: validatedMessage.value.value,
+    validAfter: validatedMessage.value.validAfter,
+    validBefore: validatedMessage.value.validBefore,
+    nonce: validatedMessage.value.nonce,
+    domain,
+  };
+}
+
 function parseIntent(
   interactionData: NonNullable<SignEthereumInteractionStore["waitingData"]>
 ): EIP712Intent {
@@ -315,6 +438,24 @@ function parseIntent(
         const permitSingleIntent = parseUniswapPermitSingle(validatedTypedData);
         if (permitSingleIntent) {
           return permitSingleIntent;
+        }
+        break;
+      }
+
+      case "TransferWithAuthorization": {
+        const transferIntent =
+          parseERC3009TransferWithAuthorization(validatedTypedData);
+        if (transferIntent) {
+          return transferIntent;
+        }
+        break;
+      }
+
+      case "ReceiveWithAuthorization": {
+        const receiveIntent =
+          parseERC3009ReceiveWithAuthorization(validatedTypedData);
+        if (receiveIntent) {
+          return receiveIntent;
         }
         break;
       }

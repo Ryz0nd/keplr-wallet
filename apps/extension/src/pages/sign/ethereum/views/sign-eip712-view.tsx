@@ -390,6 +390,18 @@ const EIP712IntentView: FunctionComponent<{
           signingDataText={signingDataText}
         />
       );
+    case "erc3009.transferWithAuthorization":
+    case "erc3009.receiveWithAuthorization":
+      return (
+        <ERC3009TransferIntentView
+          chainInfo={chainInfo}
+          from={intent.from}
+          to={intent.to}
+          tokenAddress={intent.domain.verifyingContract}
+          amount={intent.value}
+          signingDataText={signingDataText}
+        />
+      );
     case "unknown":
     default:
       return (
@@ -678,6 +690,332 @@ const PermitIntentView: FunctionComponent<{
         </Box>
         <Gutter size="0.75rem" />
 
+        <ArbitraryMsgDataView
+          rawMessage={signingDataText}
+          forceCollapsable={true}
+        />
+      </React.Fragment>
+    );
+  }
+);
+
+const ERC3009TransferIntentView: FunctionComponent<{
+  chainInfo: IChainInfoImpl<ChainInfoWithCoreTypes>;
+  from: string;
+  to: string;
+  tokenAddress: string;
+  amount: string;
+  signingDataText: string;
+}> = observer(
+  ({ chainInfo, from, to, tokenAddress, amount, signingDataText }) => {
+    const theme = useTheme();
+    const { queriesStore } = useStore();
+    const queryExplorer = queriesStore.simpleQuery.queryGet<{
+      link: string;
+    }>(
+      process.env["KEPLR_EXT_CONFIG_SERVER"],
+      `/tx-history/explorer/${chainInfo.chainId}`
+    );
+    const explorerUrl = queryExplorer.response?.data.link || "";
+
+    const openAddressOnExplorer = (address: string) => {
+      try {
+        const domain = new URL(explorerUrl).hostname;
+        browser.tabs.create({ url: `https://${domain}/address/${address}` });
+      } catch (error) {
+        console.error("Error extracting domain from explorerUrl", error);
+      }
+    };
+
+    const {
+      currency: erc20Currency,
+      isFetching: isFetchingErc20Metadata,
+      notFound: notFoundErc20Metadata,
+    } = (() => {
+      const currency = chainInfo.findCurrency(`erc20:${tokenAddress}`);
+      if (currency) {
+        return { currency, isFetching: false, notFound: false };
+      }
+
+      const tokenMetadata = queriesStore
+        .get(chainInfo.chainId)
+        .ethereum.queryEthereumERC20ContractInfo.getQueryContract(tokenAddress);
+
+      if (tokenMetadata.error === undefined && tokenMetadata.tokenInfo) {
+        return {
+          currency: {
+            type: "erc20",
+            contractAddress: tokenAddress,
+            coinDenom: tokenMetadata.tokenInfo.symbol,
+            coinDecimals: tokenMetadata.tokenInfo.decimals,
+            coinMinimalDenom: `erc20:${tokenAddress}`,
+          },
+          isFetching: tokenMetadata.isFetching,
+          notFound: false,
+        };
+      }
+
+      return {
+        currency: {
+          type: "erc20",
+          contractAddress: tokenAddress,
+          coinDenom: "Unknown",
+          coinDecimals: 0,
+          coinMinimalDenom: `erc20:${tokenAddress}`,
+        },
+        isFetching: tokenMetadata.isFetching,
+        notFound: tokenMetadata.notFound || !!tokenMetadata.error,
+      };
+    })();
+
+    const formattedAmount = (() => {
+      if (isFetchingErc20Metadata || notFoundErc20Metadata) {
+        return {
+          display: "Unknown",
+          full: "Unknown",
+          isTruncated: false,
+        };
+      }
+
+      const coinPretty = new CoinPretty(erc20Currency, amount);
+
+      const maxLength = 24;
+      const maxDecimals = 6;
+      const showDenom = true;
+
+      const numberOnlyText = coinPretty
+        .shrink(true)
+        .trim(true)
+        .maxDecimals(maxDecimals)
+        .hideDenom(true)
+        .toString();
+
+      const denom = coinPretty.currency.coinDenom;
+
+      const fullText = showDenom
+        ? `${numberOnlyText} ${denom}`
+        : numberOnlyText;
+
+      let displayText: string;
+
+      if (fullText.length > maxLength) {
+        if (showDenom) {
+          const denomWithSpace = ` ${denom}`;
+          const availableLength = maxLength - denomWithSpace.length - 3;
+
+          if (availableLength > 0) {
+            let truncatedNumber = numberOnlyText.slice(0, availableLength);
+
+            truncatedNumber = truncatedNumber.replace(/[,.]$/, "");
+
+            displayText = `${truncatedNumber}...${denomWithSpace}`;
+          } else {
+            displayText = denom;
+          }
+        } else {
+          let truncatedNumber = numberOnlyText.slice(0, maxLength - 3);
+
+          truncatedNumber = truncatedNumber.replace(/[,.]$/, "");
+
+          displayText = `${truncatedNumber}...`;
+        }
+      } else {
+        displayText = fullText;
+      }
+
+      const isTruncated = fullText.length > maxLength;
+
+      return {
+        display: displayText,
+        full: fullText,
+        isTruncated,
+      };
+    })();
+
+    return (
+      <React.Fragment>
+        <Gutter size="1.5rem" />
+        <Box
+          style={{
+            overflow: "auto",
+            boxShadow:
+              theme.mode === "light"
+                ? "0px 1px 4px 0px rgba(43, 39, 55, 0.10)"
+                : "none",
+            display: "flex",
+            flexShrink: 0,
+            flexDirection: "column",
+            borderRadius: "0.375rem",
+            backgroundColor:
+              theme.mode === "light"
+                ? ColorPalette.white
+                : ColorPalette["gray-600"],
+            padding: "1rem",
+          }}
+        >
+          <XAxis gap="0.375rem" alignY="center">
+            <CoinOutlineIcon
+              color={
+                theme.mode === "light"
+                  ? ColorPalette["gray-300"]
+                  : ColorPalette["gray-200"]
+              }
+            />
+            <Subtitle4
+              color={
+                theme.mode === "light"
+                  ? ColorPalette["gray-300"]
+                  : ColorPalette["gray-200"]
+              }
+            >
+              Authorize transfer
+            </Subtitle4>
+          </XAxis>
+          <Gutter size="1rem" />
+          <XAxis alignY="center">
+            <Body2
+              color={
+                theme.mode === "light"
+                  ? ColorPalette["gray-300"]
+                  : ColorPalette["gray-200"]
+              }
+            >
+              From
+            </Body2>
+            <div style={{ flex: 1 }} />
+            <Box
+              cursor="pointer"
+              onClick={() => openAddressOnExplorer(from)}
+              style={{
+                display: "flex",
+                flexDirection: "row",
+                gap: "0.25rem",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+              hover={{
+                opacity: COMMON_HOVER_OPACITY,
+              }}
+            >
+              <Body2
+                color={
+                  theme.mode === "light"
+                    ? ColorPalette["gray-400"]
+                    : ColorPalette["gray-100"]
+                }
+              >
+                {`${from.slice(0, 10)}...${from.slice(-8)}`}
+              </Body2>
+              <LinkIcon
+                width="1rem"
+                height="1rem"
+                color={ColorPalette["gray-200"]}
+              />
+            </Box>
+          </XAxis>
+          <Gutter size="0.5rem" />
+          <XAxis alignY="center">
+            <Body2
+              color={
+                theme.mode === "light"
+                  ? ColorPalette["gray-300"]
+                  : ColorPalette["gray-200"]
+              }
+            >
+              To
+            </Body2>
+            <div style={{ flex: 1 }} />
+            <Box
+              cursor="pointer"
+              onClick={() => openAddressOnExplorer(to)}
+              style={{
+                display: "flex",
+                flexDirection: "row",
+                gap: "0.25rem",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+              hover={{
+                opacity: COMMON_HOVER_OPACITY,
+              }}
+            >
+              <Body2
+                color={
+                  theme.mode === "light"
+                    ? ColorPalette["gray-400"]
+                    : ColorPalette["gray-100"]
+                }
+              >
+                {`${to.slice(0, 10)}...${to.slice(-8)}`}
+              </Body2>
+              <LinkIcon
+                width="1rem"
+                height="1rem"
+                color={ColorPalette["gray-200"]}
+              />
+            </Box>
+          </XAxis>
+          <Gutter size="0.5rem" />
+          <XAxis alignY="center">
+            <Body2
+              color={
+                theme.mode === "light"
+                  ? ColorPalette["gray-300"]
+                  : ColorPalette["gray-200"]
+              }
+            >
+              Amount
+            </Body2>
+            <div style={{ flex: 1 }} />
+            <Tooltip
+              content={formattedAmount.full}
+              enabled={formattedAmount.isTruncated}
+              allowedPlacements={["bottom"]}
+              textStyle={{
+                wordBreak: "break-word",
+                whiteSpace: "normal",
+              }}
+            >
+              <Skeleton
+                isNotReady={isFetchingErc20Metadata}
+                type="button"
+                layer={1}
+              >
+                {notFoundErc20Metadata ? (
+                  <Body2
+                    color={
+                      theme.mode === "light"
+                        ? ColorPalette["gray-400"]
+                        : ColorPalette["gray-200"]
+                    }
+                  >
+                    Unknown
+                  </Body2>
+                ) : (
+                  <XAxis gap="0.5rem" alignY="center">
+                    <CurrencyImageFallback
+                      chainInfo={chainInfo}
+                      currency={erc20Currency}
+                      size="1.5rem"
+                      alt={erc20Currency.coinDenom}
+                    />
+
+                    <Body2
+                      color={
+                        theme.mode === "light"
+                          ? ColorPalette["gray-700"]
+                          : ColorPalette["white"]
+                      }
+                    >
+                      {formattedAmount.display}
+                    </Body2>
+                  </XAxis>
+                )}
+              </Skeleton>
+            </Tooltip>
+          </XAxis>
+        </Box>
+        <Gutter size="0.75rem" />
         <ArbitraryMsgDataView
           rawMessage={signingDataText}
           forceCollapsable={true}
