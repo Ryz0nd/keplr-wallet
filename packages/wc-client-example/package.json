@@ -1,6 +1,6 @@
 {
   "name": "@keplr-wallet/wc-client-example",
-  "version": "0.13.9",
+  "version": "0.13.10",
   "author": "chainapsis",
   "license": "Apache-2.0",
   "private": true,
@@ -9,13 +9,13 @@
     "typecheck": "npx tsc -p tsconfig.check.json"
   },
   "dependencies": {
-    "@keplr-wallet/common": "0.13.9",
-    "@keplr-wallet/cosmos": "0.13.9",
-    "@keplr-wallet/simple-fetch": "0.13.9",
-    "@keplr-wallet/stores": "0.13.9",
-    "@keplr-wallet/types": "0.13.9",
-    "@keplr-wallet/wc-client": "0.13.9",
-    "@keplr-wallet/wc-qrcode-modal": "0.13.9",
+    "@keplr-wallet/common": "0.13.10",
+    "@keplr-wallet/cosmos": "0.13.10",
+    "@keplr-wallet/simple-fetch": "0.13.10",
+    "@keplr-wallet/stores": "0.13.10",
+    "@keplr-wallet/types": "0.13.10",
+    "@keplr-wallet/wc-client": "0.13.10",
+    "@keplr-wallet/wc-qrcode-modal": "0.13.10",
     "@walletconnect/sign-client": "^2.13.3",
     "@walletconnect/types": "^2.13.3",
     "buffer": "^6.0.3"
