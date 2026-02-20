@@ -1,4 +1,4 @@
-import React, { FunctionComponent, useMemo, useState } from "react";
+import React, { Fragment, FunctionComponent, useMemo, useState } from "react";
 import { observer } from "mobx-react-lite";
 import { useStore } from "../../../../stores";
 import { FormattedMessage, useIntl } from "react-intl";
@@ -33,6 +33,8 @@ import {
   CopyAddressItemList,
   EnterTag,
 } from "../copy-address-item/copy-address-item-list";
+import { useInitialChunkedRender } from "../../../../hooks/use-initial-chunked-render";
+import { FadeInContainer } from "../copy-address-item/fade-in-container";
 
 export type Address = {
   modularChainInfo: ModularChainInfo;
@@ -96,6 +98,9 @@ export const CopyAddressScene: FunctionComponent<{
 
   const { sortedAddresses, setSortPriorities } =
     useGetAddressesOnCopyAddress(search);
+
+  const { visibleItems, isVisible, isInitialRenderDone } =
+    useInitialChunkedRender(sortedAddresses);
 
   const [blockInteraction, setBlockInteraction] = useState(false);
 
@@ -270,59 +275,69 @@ export const CopyAddressScene: FunctionComponent<{
           height: runInSidePanel ? "" : "21.5rem",
         }}
       >
-        {isShowNoResult && <NoResultBox />}
+        {isVisible ? (
+          <FadeInContainer>
+            {isShowNoResult && <NoResultBox />}
 
-        <CopyAddressItemList
-          containerStyle={{
-            padding: "0 1.125rem",
-          }}
-          sortedAddresses={sortedAddresses}
-          close={close}
-          blockInteraction={blockInteraction}
-          setBlockInteraction={setBlockInteraction}
-          setSortPriorities={setSortPriorities}
-          search={search}
-          onClickIcon={(address: Address) => {
-            sceneTransition.push("qr-code", {
-              chainId: address.modularChainInfo.chainId,
-              address:
-                address.starknetAddress ||
-                address.ethereumAddress ||
-                address.bech32Address ||
-                address.bitcoinAddress?.bech32Address,
-              close,
-            });
-          }}
-          setShowEnterTag={setShowEnterTag}
-        />
+            <CopyAddressItemList
+              containerStyle={{
+                padding: "0 1.125rem",
+              }}
+              sortedAddresses={visibleItems}
+              close={close}
+              blockInteraction={blockInteraction}
+              setBlockInteraction={setBlockInteraction}
+              setSortPriorities={setSortPriorities}
+              search={search}
+              onClickIcon={(address: Address) => {
+                sceneTransition.push("qr-code", {
+                  chainId: address.modularChainInfo.chainId,
+                  address:
+                    address.starknetAddress ||
+                    address.ethereumAddress ||
+                    address.bech32Address ||
+                    address.bitcoinAddress?.bech32Address,
+                  close,
+                });
+              }}
+              setShowEnterTag={setShowEnterTag}
+            />
 
-        {hasAddresses && hasLookingForChains && <Gutter size="1.25rem" />}
-        {hasLookingForChains && (
-          <Box paddingX="0.75rem">
-            <Subtitle4
-              color={
-                theme.mode === "light"
-                  ? ColorPalette["gray-500"]
-                  : ColorPalette["gray-200"]
-              }
-            >
-              <FormattedMessage id="page.main.components.deposit-modal.look-for-chains" />
-            </Subtitle4>
-            {searchedLookingForChains.map((chainData) => {
-              return (
-                <React.Fragment key={chainData.chainInfo.chainId}>
-                  <Gutter size="0.75rem" />
-                  <LookingForChainItem
-                    chainInfo={chainData.chainInfo}
-                    stored={chainData.stored}
-                    embedded={chainData.embedded}
-                  />
-                </React.Fragment>
-              );
-            })}
-          </Box>
-        )}
-        <Gutter size="0.75rem" />
+            {isInitialRenderDone && (
+              <Fragment>
+                {hasAddresses && hasLookingForChains && (
+                  <Gutter size="1.25rem" />
+                )}
+                {hasLookingForChains && (
+                  <Box paddingX="0.75rem">
+                    <Subtitle4
+                      color={
+                        theme.mode === "light"
+                          ? ColorPalette["gray-500"]
+                          : ColorPalette["gray-200"]
+                      }
+                    >
+                      <FormattedMessage id="page.main.components.deposit-modal.look-for-chains" />
+                    </Subtitle4>
+                    {searchedLookingForChains.map((chainData) => {
+                      return (
+                        <React.Fragment key={chainData.chainInfo.chainId}>
+                          <Gutter size="0.75rem" />
+                          <LookingForChainItem
+                            chainInfo={chainData.chainInfo}
+                            stored={chainData.stored}
+                            embedded={chainData.embedded}
+                          />
+                        </React.Fragment>
+                      );
+                    })}
+                  </Box>
+                )}
+                <Gutter size="0.75rem" />
+              </Fragment>
+            )}
+          </FadeInContainer>
+        ) : null}
       </SimpleBar>
     </Box>
   );

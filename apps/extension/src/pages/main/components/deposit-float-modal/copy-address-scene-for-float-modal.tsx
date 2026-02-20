@@ -19,6 +19,8 @@ import {
   CopyAddressItemList,
   EnterTag,
 } from "../copy-address-item/copy-address-item-list";
+import { useInitialChunkedRender } from "../../../../hooks/use-initial-chunked-render";
+import { FadeInContainer } from "../copy-address-item/fade-in-container";
 
 export const CopyAddressSceneForFloatModal: FunctionComponent<{
   close: () => void;
@@ -44,6 +46,8 @@ export const CopyAddressSceneForFloatModal: FunctionComponent<{
   const [blockInteraction, setBlockInteraction] = useState(false);
   const { sortedAddresses, setSortPriorities } =
     useGetAddressesOnCopyAddress(search);
+
+  const { visibleItems, isVisible } = useInitialChunkedRender(sortedAddresses);
 
   const hasAddresses = sortedAddresses.length > 0;
   const isShowNoResult = !hasAddresses;
@@ -98,39 +102,43 @@ export const CopyAddressSceneForFloatModal: FunctionComponent<{
           height: "21.5rem",
         }}
       >
-        {isShowNoResult && <NoResultBox />}
+        {isVisible ? (
+          <FadeInContainer>
+            {isShowNoResult && <NoResultBox />}
 
-        <CopyAddressItemList
-          containerStyle={{
-            padding: "0 1rem",
-          }}
-          sortedAddresses={sortedAddresses}
-          copyItemAddressHoverColor={
-            theme.mode === "light"
-              ? ColorPalette["gray-75"]
-              : ColorPalette["gray-600"]
-          }
-          close={close}
-          blockInteraction={blockInteraction}
-          setBlockInteraction={setBlockInteraction}
-          setSortPriorities={setSortPriorities}
-          search={search}
-          onClickIcon={(address: Address) => {
-            sceneTransition.push("qr-code", {
-              chainId: address.modularChainInfo.chainId,
-              address:
-                address.starknetAddress ||
-                address.ethereumAddress ||
-                address.bech32Address ||
-                address.bitcoinAddress?.bech32Address,
-              close,
-              isOnTheFloatingModal: true,
-            });
-          }}
-          setShowEnterTag={setShowEnterTag}
-        />
+            <CopyAddressItemList
+              containerStyle={{
+                padding: "0 1rem",
+              }}
+              sortedAddresses={visibleItems}
+              copyItemAddressHoverColor={
+                theme.mode === "light"
+                  ? ColorPalette["gray-75"]
+                  : ColorPalette["gray-600"]
+              }
+              close={close}
+              blockInteraction={blockInteraction}
+              setBlockInteraction={setBlockInteraction}
+              setSortPriorities={setSortPriorities}
+              search={search}
+              onClickIcon={(address: Address) => {
+                sceneTransition.push("qr-code", {
+                  chainId: address.modularChainInfo.chainId,
+                  address:
+                    address.starknetAddress ||
+                    address.ethereumAddress ||
+                    address.bech32Address ||
+                    address.bitcoinAddress?.bech32Address,
+                  close,
+                  isOnTheFloatingModal: true,
+                });
+              }}
+              setShowEnterTag={setShowEnterTag}
+            />
 
-        <Gutter size="0.75rem" />
+            <Gutter size="0.75rem" />
+          </FadeInContainer>
+        ) : null}
       </SimpleBar>
     </Box>
   );
