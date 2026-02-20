@@ -1169,25 +1169,29 @@ export class RecentSendHistoryService {
           const foundResAmount: { amount: string; denom: string }[] = [];
 
           if (traceRes.data.result) {
+            const checkCall = (call: any) => {
+              if (
+                call.type === "CALL" &&
+                call.to?.toLowerCase() === recipient.toLowerCase()
+              ) {
+                const isERC20Transfer = call.input?.startsWith("0xa9059cbb");
+                const value = BigInt(
+                  isERC20Transfer
+                    ? `0x${call.input.substring(74)}`
+                    : call.value || "0x0"
+                );
+
+                foundResAmount.push({
+                  amount: value.toString(10),
+                  denom: targetDenom,
+                });
+                isFoundFromCall = true;
+              }
+            };
+
             const searchForTransfers = (calls: any) => {
               for (const call of calls) {
-                if (
-                  call.type === "CALL" &&
-                  call.to?.toLowerCase() === recipient.toLowerCase()
-                ) {
-                  const isERC20Transfer = call.input?.startsWith("0xa9059cbb");
-                  const value = BigInt(
-                    isERC20Transfer
-                      ? `0x${call.input.substring(74)}`
-                      : call.value || "0x0"
-                  );
-
-                  foundResAmount.push({
-                    amount: value.toString(10),
-                    denom: targetDenom,
-                  });
-                  isFoundFromCall = true;
-                }
+                checkCall(call);
 
                 if (call.calls && call.calls.length > 0) {
                   searchForTransfers(call.calls);
@@ -1195,6 +1199,8 @@ export class RecentSendHistoryService {
               }
             };
 
+            // 최상위 result 프레임 자체도 검사 (단순 네이티브 전송 등 calls가 없는 경우)
+            checkCall(traceRes.data.result);
             searchForTransfers(traceRes.data.result.calls || []);
           }
 
