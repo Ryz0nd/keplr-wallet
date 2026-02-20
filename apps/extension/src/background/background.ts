@@ -31,7 +31,9 @@ const router = new ExtensionRouter(ExtensionEnv.produceEnv);
 router.addGuard(ExtensionGuards.checkOriginIsValid);
 router.addGuard(ExtensionGuards.checkMessageIsInternal);
 
-const { initFn, keyRingService, analyticsService } = init(
+const blocklistPageURL = "https://blocklist.keplr.app";
+
+const { initFn, keyRingService, analyticsService, phishingListService } = init(
   router,
   (prefix: string) => new ExtensionKVStore(prefix),
   new ContentScriptMessageRequester(),
@@ -68,7 +70,7 @@ const { initFn, keyRingService, analyticsService } = init(
       }
     );
   },
-  "https://blocklist.keplr.app",
+  blocklistPageURL,
   {
     commonCrypto: {
       scrypt: async (
@@ -193,6 +195,56 @@ router.listen(BACKGROUND_PORT, initFn).then(() => {
     }
   });
 });
+
+const blockedTabMap = new Map<number, { url: string; timestamp: number }>();
+const BLOCKED_TAB_TIMEOUT_MS = 30_000;
+
+browser.webNavigation.onBeforeNavigate.addListener((details) => {
+  if (details.frameId !== 0) return;
+  try {
+    if (phishingListService.checkURLIsPhishing(details.url)) {
+      blockedTabMap.set(details.tabId, {
+        url: details.url,
+        timestamp: Date.now(),
+      });
+      browser.tabs.update(details.tabId, {
+        url: blocklistPageURL + `?origin=${encodeURIComponent(details.url)}`,
+      });
+    }
+  } catch (e) {
+    // parseDomain throws for URLs without second-level domain (localhost, chrome://, etc.)
+  }
+});
+
+browser.webNavigation.onCommitted.addListener((details) => {
+  if (details.frameId !== 0) return;
+  const blocked = blockedTabMap.get(details.tabId);
+  if (!blocked) return;
+  blockedTabMap.delete(details.tabId);
+  if (
+    blocked.url !== details.url &&
+    !details.url.startsWith(blocklistPageURL)
+  ) {
+    browser.tabs.update(details.tabId, {
+      url: blocklistPageURL + `?origin=${encodeURIComponent(blocked.url)}`,
+    });
+  }
+});
+
+const cleanupBlockedTab = (details: { tabId: number; frameId: number }) => {
+  if (details.frameId === 0) blockedTabMap.delete(details.tabId);
+};
+browser.webNavigation.onCompleted.addListener(cleanupBlockedTab);
+browser.webNavigation.onErrorOccurred.addListener(cleanupBlockedTab);
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [tabId, entry] of blockedTabMap) {
+    if (now - entry.timestamp > BLOCKED_TAB_TIMEOUT_MS) {
+      blockedTabMap.delete(tabId);
+    }
+  }
+}, BLOCKED_TAB_TIMEOUT_MS);
 
 browser.alarms.create("keep-alive-alarm", {
   periodInMinutes: 0.25,
