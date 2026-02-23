@@ -63,6 +63,23 @@ export class IndexedDBKVStore implements KVStore {
     }
   }
 
+  async getAllKeys(): Promise<string[]> {
+    const tx = (await this.getDB()).transaction([this.prefix()], "readonly");
+    const store = tx.objectStore(this.prefix());
+
+    return new Promise((resolve, reject) => {
+      const request = store.getAllKeys();
+      request.onerror = (event) => {
+        event.stopPropagation();
+
+        reject(event.target);
+      };
+      request.onsuccess = () => {
+        resolve(request.result as string[]);
+      };
+    });
+  }
+
   prefix(): string {
     return this._prefix;
   }
