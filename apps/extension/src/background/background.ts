@@ -223,7 +223,7 @@ browser.webNavigation.onCommitted.addListener((details) => {
   blockedTabMap.delete(details.tabId);
   if (
     blocked.url !== details.url &&
-    !details.url.startsWith(blocklistPageURL)
+    new URL(details.url).origin !== blocklistPageURL
   ) {
     browser.tabs.update(details.tabId, {
       url: blocklistPageURL + `?origin=${encodeURIComponent(blocked.url)}`,
