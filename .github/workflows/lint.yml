@@ -17,3 +17,4 @@ jobs:
       - run: npm install --global yarn
       - run: yarn install --immutable
       - run: yarn ci-lint
+      - run: yarn typecheck
