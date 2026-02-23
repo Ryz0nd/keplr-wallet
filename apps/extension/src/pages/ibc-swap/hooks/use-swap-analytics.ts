@@ -59,6 +59,8 @@ export const useSwapAnalytics = ({
   const prevFractionRef = useRef(0);
   const prevSlippageRef = useRef(uiConfigStore.ibcSwapConfig.slippageNum);
   const prevFetchingRef = useRef(false);
+  const prevQueryRouteRef =
+    useRef<ReturnType<SwapAmountConfig["getQueryRoute"]>>(undefined);
   const prevRouteKeyRef = useRef("");
   const loggedQuoteFailKeysRef = useRef<Set<string>>(new Set());
 
@@ -85,7 +87,10 @@ export const useSwapAnalytics = ({
       if (milestoneEvents.has(eventName) && id) {
         const now = performance.now();
         if (eventName === "swap_quote_requested" || !durationRef.current[id]) {
-          durationRef.current[id] = { first: now, prev: now };
+          durationRef.current[id] = {
+            first: requestStartedAtRef.current ?? now,
+            prev: now,
+          };
         }
 
         if (eventName !== "swap_quote_requested") {
@@ -242,7 +247,12 @@ export const useSwapAnalytics = ({
       return;
     }
 
-    if (!prevFetchingRef.current && queryRouteForLog.isFetching) {
+    const isNewQuery = queryRouteForLog !== prevQueryRouteRef.current;
+
+    if (
+      queryRouteForLog.isFetching &&
+      (!prevFetchingRef.current || isNewQuery)
+    ) {
       requestStartedAtRef.current = performance.now();
       logEvent("swap_quote_requested", {
         in_chain_identifier: inChainIdentifier,
@@ -257,8 +267,9 @@ export const useSwapAnalytics = ({
       });
     }
     prevFetchingRef.current = queryRouteForLog.isFetching;
+    prevQueryRouteRef.current = queryRouteForLog;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [queryRouteForLog?.isFetching]);
+  }, [queryRouteForLog, queryRouteForLog?.isFetching]);
 
   // Quote received
   useEffect(() => {
