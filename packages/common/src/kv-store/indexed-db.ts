@@ -1,7 +1,7 @@
 import { KVStore } from "./interface";
 
 export class IndexedDBKVStore implements KVStore {
-  protected cachedDB?: IDBDatabase;
+  protected cachedDBPromise?: Promise<IDBDatabase>;
 
   constructor(protected readonly _prefix: string) {}
 
@@ -68,14 +68,19 @@ export class IndexedDBKVStore implements KVStore {
   }
 
   protected async getDB(): Promise<IDBDatabase> {
-    if (this.cachedDB) {
-      return this.cachedDB;
+    if (!this.cachedDBPromise) {
+      this.cachedDBPromise = this.openDB();
     }
 
+    return this.cachedDBPromise;
+  }
+
+  protected openDB(): Promise<IDBDatabase> {
     return new Promise((resolve, reject) => {
       const request = window.indexedDB.open(this.prefix());
       request.onerror = (event) => {
         event.stopPropagation();
+        this.cachedDBPromise = undefined;
         reject(event.target);
       };
 
@@ -88,8 +93,17 @@ export class IndexedDBKVStore implements KVStore {
       };
 
       request.onsuccess = () => {
-        this.cachedDB = request.result;
-        resolve(request.result);
+        const db = request.result;
+
+        db.onclose = () => {
+          this.cachedDBPromise = undefined;
+        };
+        db.onversionchange = () => {
+          db.close();
+          this.cachedDBPromise = undefined;
+        };
+
+        resolve(db);
       };
     });
   }
