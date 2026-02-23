@@ -1,7 +1,7 @@
 import { KVStore } from "./interface";
 
 export class IndexedDBKVStore implements KVStore {
-  protected cachedDBPromise?: Promise<IDBDatabase>;
+  protected static dbPromiseMap = new Map<string, Promise<IDBDatabase>>();
 
   constructor(protected readonly _prefix: string) {}
 
@@ -85,19 +85,21 @@ export class IndexedDBKVStore implements KVStore {
   }
 
   protected async getDB(): Promise<IDBDatabase> {
-    if (!this.cachedDBPromise) {
-      this.cachedDBPromise = this.openDB();
+    const prefix = this.prefix();
+    if (!IndexedDBKVStore.dbPromiseMap.has(prefix)) {
+      IndexedDBKVStore.dbPromiseMap.set(prefix, this.openDB());
     }
 
-    return this.cachedDBPromise;
+    return IndexedDBKVStore.dbPromiseMap.get(prefix)!;
   }
 
   protected openDB(): Promise<IDBDatabase> {
+    const prefix = this.prefix();
     return new Promise((resolve, reject) => {
-      const request = window.indexedDB.open(this.prefix());
+      const request = window.indexedDB.open(prefix);
       request.onerror = (event) => {
         event.stopPropagation();
-        this.cachedDBPromise = undefined;
+        IndexedDBKVStore.dbPromiseMap.delete(prefix);
         reject(event.target);
       };
 
@@ -106,18 +108,18 @@ export class IndexedDBKVStore implements KVStore {
         // @ts-ignore
         const db = event.target.result;
 
-        db.createObjectStore(this.prefix(), { keyPath: "key" });
+        db.createObjectStore(prefix, { keyPath: "key" });
       };
 
       request.onsuccess = () => {
         const db = request.result;
 
         db.onclose = () => {
-          this.cachedDBPromise = undefined;
+          IndexedDBKVStore.dbPromiseMap.delete(prefix);
         };
         db.onversionchange = () => {
           db.close();
-          this.cachedDBPromise = undefined;
+          IndexedDBKVStore.dbPromiseMap.delete(prefix);
         };
 
         resolve(db);
