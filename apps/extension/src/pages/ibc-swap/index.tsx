@@ -1224,7 +1224,6 @@ export const IBCSwapPage: FunctionComponent = observer(() => {
           if (isSwap) {
             logEvent("swap_tx_success", {
               quote_id: quoteIdRef.current,
-              is_hold_to_swap: holdToSwapEnabled,
             });
           }
 
@@ -1333,7 +1332,6 @@ export const IBCSwapPage: FunctionComponent = observer(() => {
             logEvent("swap_tx_failed", {
               quote_id: quoteIdRef.current,
               error_message: e?.message,
-              is_hold_to_swap: holdToSwapEnabled,
             });
           }
 
