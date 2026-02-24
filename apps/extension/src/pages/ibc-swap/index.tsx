@@ -2017,14 +2017,13 @@ const SpinnerSvg = styled.svg`
   @keyframes spinnerRotate {
     0% {
       transform: rotate(75deg);
-      animation-timing-function: ease-in;
     }
     100% {
       transform: rotate(435deg);
     }
   }
 
-  animation: spinnerRotate 0.85s infinite;
+  animation: spinnerRotate 0.85s cubic-bezier(0.2, 0.6, 0.7, 0.9) infinite;
 `;
 
 const SpinnerIcon: FunctionComponent<{
