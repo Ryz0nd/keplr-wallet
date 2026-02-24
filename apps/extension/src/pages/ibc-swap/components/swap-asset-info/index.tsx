@@ -44,7 +44,7 @@ const GlowBorderWrapper = styled.div<{ $isLoading: boolean }>`
   ${(props) =>
     props.$isLoading &&
     css`
-      border: 1.5px solid
+      box-shadow: 0 0 0 1.5px
         ${props.theme.mode === "light" ? "#FEFEFE" : "#1D1D1F"};
       background: ${props.theme.mode === "light"
         ? "linear-gradient(270deg, #FEFEFE 0%, #E5F2FD 49.71%, #FEFEFE 100%)"
