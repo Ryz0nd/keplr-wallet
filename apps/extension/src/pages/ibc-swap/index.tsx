@@ -492,6 +492,19 @@ export const IBCSwapPage: FunctionComponent = observer(() => {
     uiConfigStore.ibcSwapConfig.celestiaDisabled
   );
 
+  const [
+    decorateUpperAmountTextIfTypeIsTo,
+    setDecorateUpperAmountTextIfTypeIsTo,
+  ] = useState("");
+
+  useEffect(() => {
+    if (swapConfigs.amountConfig.isFetchingOutAmount) {
+      setDecorateUpperAmountTextIfTypeIsTo("Finding the best route...");
+    } else {
+      setDecorateUpperAmountTextIfTypeIsTo("");
+    }
+  }, [swapConfigs.amountConfig.isFetchingOutAmount]);
+
   return (
     <MainHeaderLayout
       additionalPaddingBottom={BottomTabsHeightRem}
@@ -1505,6 +1518,7 @@ export const IBCSwapPage: FunctionComponent = observer(() => {
           type="to"
           senderConfig={swapConfigs.senderConfig}
           amountConfig={swapConfigs.amountConfig}
+          decorateUpperAmountTextIfTypeIsTo={decorateUpperAmountTextIfTypeIsTo}
           onDestinationChainSelect={(chainId, coinMinimalDenom) => {
             setSearchParams(
               (prev) => {

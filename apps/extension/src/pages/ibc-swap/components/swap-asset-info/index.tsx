@@ -181,12 +181,20 @@ export const SwapAssetInfo: FunctionComponent<{
   senderConfig: ISenderConfig;
   amountConfig: SwapAmountConfig;
 
+  decorateUpperAmountTextIfTypeIsTo?: string;
+
   onDestinationChainSelect?: (
     chainId: string,
     coinMinimalDenom: string
   ) => void;
 }> = observer(
-  ({ type, senderConfig, amountConfig, onDestinationChainSelect }) => {
+  ({
+    type,
+    senderConfig,
+    amountConfig,
+    decorateUpperAmountTextIfTypeIsTo,
+    onDestinationChainSelect,
+  }) => {
     const {
       chainStore,
       queriesStore,
@@ -384,6 +392,18 @@ export const SwapAssetInfo: FunctionComponent<{
                       })(),
                     }
                   )}
+                </Body3>
+              </Box>
+            ) : decorateUpperAmountTextIfTypeIsTo ? (
+              <Box>
+                <Body3
+                  color={
+                    theme.mode === "light"
+                      ? ColorPalette["gray-300"]
+                      : ColorPalette["gray-200"]
+                  }
+                >
+                  {decorateUpperAmountTextIfTypeIsTo}
                 </Body3>
               </Box>
             ) : null}
