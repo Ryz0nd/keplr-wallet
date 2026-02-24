@@ -1476,15 +1476,27 @@ export const IBCSwapPage: FunctionComponent = observer(() => {
                 );
               }}
             >
-              <ArrowsUpDownIcon
-                width="1.5rem"
-                height="1.5rem"
-                color={
-                  theme.mode === "light"
-                    ? ColorPalette["gray-400"]
-                    : ColorPalette["gray-10"]
-                }
-              />
+              {swapConfigs.amountConfig.isFetchingOutAmount ? (
+                <SpinnerIcon
+                  width="1.5rem"
+                  height="1.5rem"
+                  color={
+                    theme.mode === "light"
+                      ? ColorPalette["gray-400"]
+                      : ColorPalette["gray-10"]
+                  }
+                />
+              ) : (
+                <ArrowsUpDownIcon
+                  width="1.5rem"
+                  height="1.5rem"
+                  color={
+                    theme.mode === "light"
+                      ? ColorPalette["gray-400"]
+                      : ColorPalette["gray-10"]
+                  }
+                />
+              )}
             </Box>
           </div>
         </Box>
@@ -1972,6 +1984,61 @@ const ArrowsUpDownIcon: FunctionComponent<{
         clipRule="evenodd"
       />
     </svg>
+  );
+};
+
+const SpinnerSvg = styled.svg`
+  @keyframes spinnerRotate {
+    0% {
+      transform: rotate(0deg);
+      animation-timing-function: ease-in;
+    }
+    50% {
+      transform: rotate(180deg);
+      animation-timing-function: ease-out;
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+
+  animation: spinnerRotate 1s infinite;
+`;
+
+const SpinnerIcon: FunctionComponent<{
+  width: string;
+  height: string;
+  color: string;
+}> = ({ width, height, color }) => {
+  return (
+    <SpinnerSvg
+      xmlns="http://www.w3.org/2000/svg"
+      xmlSpace="preserve"
+      fillRule="evenodd"
+      clipRule="evenodd"
+      width={width}
+      height={height}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="none"
+    >
+      <circle
+        cx="12"
+        cy="12"
+        r="10"
+        fill="none"
+        stroke={color}
+        strokeOpacity="0.2"
+        strokeWidth="3.7"
+      />
+      <path
+        fill="none"
+        stroke={color}
+        strokeLinecap="round"
+        strokeWidth="3.7"
+        d="M2 12C2 6.477 6.477 2 12 2"
+      />
+    </SpinnerSvg>
   );
 };
 

@@ -132,9 +132,15 @@ const GlowBorderWrapper = styled.div<{ $isLoading: boolean }>`
 `;
 
 const Styles = {
-  TextInput: styled.input`
+  TextInput: styled.input<{ $isLoading: boolean }>`
     font-weight: 600;
     font-size: 1.25rem;
+
+    ${(props) =>
+      props.$isLoading &&
+      css`
+        opacity: 0.5;
+      `}
 
     width: 100%;
 
@@ -298,10 +304,7 @@ export const SwapAssetInfo: FunctionComponent<{
             ) : null}
 
             {(() => {
-              if (
-                (type === "from" && amountConfig.isFetchingInAmount) ||
-                (type === "to" && amountConfig.isFetchingOutAmount)
-              ) {
+              if (type === "from" && amountConfig.isFetchingInAmount) {
                 /* 로딩 아이콘이 부모의 height에 영향을 끼치지 않게 하기 위한 트릭 구조임 */
                 return (
                   <Box
@@ -402,6 +405,7 @@ export const SwapAssetInfo: FunctionComponent<{
             ) : null}
             <Styles.TextInput
               ref={textInputRef}
+              $isLoading={isLoadingWithGlowEffect}
               value={
                 type === "from"
                   ? (() => {
