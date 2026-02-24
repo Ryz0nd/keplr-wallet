@@ -58,22 +58,8 @@ const GlowBorderWrapper = styled.div<{ $isLoading: boolean }>`
         border-radius: inherit;
 
         background: ${props.theme.mode === "light"
-          ? `linear-gradient(
-              90deg,
-              transparent 0%,
-              transparent 40%,
-              rgba(100, 160, 255, 0.5) 50%,
-              transparent 60%,
-              transparent 100%
-            )`
-          : `linear-gradient(
-              90deg,
-              transparent 0%,
-              transparent 40%,
-              rgba(255, 255, 255, 0.5) 50%,
-              transparent 60%,
-              transparent 100%
-            )`};
+          ? `linear-gradient(270deg, transparent 0%, ${ColorPalette["blue-200"]} 49.71%, transparent 100%)`
+          : `linear-gradient(90deg, transparent 0%, ${ColorPalette["gray-300"]} 50%, transparent 100%)`};
         background-size: 300% 100%;
 
         -webkit-mask: linear-gradient(#000 0 0) content-box,
@@ -93,22 +79,8 @@ const GlowBorderWrapper = styled.div<{ $isLoading: boolean }>`
         border-radius: inherit;
 
         background: ${props.theme.mode === "light"
-          ? `linear-gradient(
-              90deg,
-              transparent 0%,
-              transparent 42%,
-              rgba(100, 160, 255, 0.03) 50%,
-              transparent 58%,
-              transparent 100%
-            )`
-          : `linear-gradient(
-              90deg,
-              transparent 0%,
-              transparent 42%,
-              rgba(255, 255, 255, 0.03) 50%,
-              transparent 58%,
-              transparent 100%
-            )`};
+          ? `linear-gradient(270deg, transparent 0%, ${ColorPalette["blue-100"]} 49.71%, transparent 100%)`
+          : `linear-gradient(90deg, transparent 0%, ${ColorPalette["gray-550"]} 50%, transparent 100%)`};
         background-size: 300% 100%;
 
         pointer-events: none;
