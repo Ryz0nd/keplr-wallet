@@ -65,7 +65,7 @@ const GlowBorderWrapper = styled.div`
 
     pointer-events: none;
     z-index: 2;
-    animation: borderSlide 2s ease-in-out infinite;
+    animation: borderSlide 1.5s infinite;
   }
 
   &::after {
@@ -85,12 +85,17 @@ const GlowBorderWrapper = styled.div`
     background-size: 300% 100%;
 
     pointer-events: none;
-    animation: borderSlide 2s ease-in-out infinite;
+    animation: borderSlide 1.5s infinite;
   }
 
   @keyframes borderSlide {
     0% {
       background-position: 100% 0;
+      animation-timing-function: ease-in;
+    }
+    50% {
+      background-position: 50% 0;
+      animation-timing-function: linear;
     }
     100% {
       background-position: 0% 0;
