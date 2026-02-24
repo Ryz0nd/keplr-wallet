@@ -500,6 +500,10 @@ export const IBCSwapPage: FunctionComponent = observer(() => {
   useEffect(() => {
     if (swapConfigs.amountConfig.isFetchingOutAmount) {
       setDecorateUpperAmountTextIfTypeIsTo("Finding the best route...");
+      const timer = setTimeout(() => {
+        setDecorateUpperAmountTextIfTypeIsTo("Checking a few more routes...");
+      }, 5000);
+      return () => clearTimeout(timer);
     } else {
       setDecorateUpperAmountTextIfTypeIsTo("");
     }
