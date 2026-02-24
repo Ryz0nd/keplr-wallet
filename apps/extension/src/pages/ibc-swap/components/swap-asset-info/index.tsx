@@ -40,22 +40,38 @@ import { Tooltip } from "../../../../components/tooltip";
 const GlowBorderWrapper = styled.div`
   position: relative;
   border-radius: 0.375rem;
+  border: 1.5px solid
+    ${(props) => (props.theme.mode === "light" ? "#FEFEFE" : "#1D1D1F")};
+  background: ${(props) =>
+    props.theme.mode === "light"
+      ? "linear-gradient(270deg, #FEFEFE 0%, #E5F2FD 49.71%, #FEFEFE 100%)"
+      : "linear-gradient(90deg, #1D1D1F 0%, #242428 50%, #1D1D1F 100%)"};
 
   &::before {
     content: "";
     position: absolute;
     inset: 0;
-    padding: 1px;
+    padding: 1.5px;
     border-radius: inherit;
 
-    background: linear-gradient(
-      90deg,
-      transparent 0%,
-      transparent 40%,
-      rgba(255, 255, 255, 0.5) 50%,
-      transparent 60%,
-      transparent 100%
-    );
+    background: ${(props) =>
+      props.theme.mode === "light"
+        ? `linear-gradient(
+            90deg,
+            transparent 0%,
+            transparent 40%,
+            rgba(100, 160, 255, 0.5) 50%,
+            transparent 60%,
+            transparent 100%
+          )`
+        : `linear-gradient(
+            90deg,
+            transparent 0%,
+            transparent 40%,
+            rgba(255, 255, 255, 0.5) 50%,
+            transparent 60%,
+            transparent 100%
+          )`};
     background-size: 300% 100%;
 
     -webkit-mask: linear-gradient(#000 0 0) content-box,
@@ -74,14 +90,24 @@ const GlowBorderWrapper = styled.div`
     inset: 0;
     border-radius: inherit;
 
-    background: linear-gradient(
-      90deg,
-      transparent 0%,
-      transparent 42%,
-      rgba(255, 255, 255, 0.03) 50%,
-      transparent 58%,
-      transparent 100%
-    );
+    background: ${(props) =>
+      props.theme.mode === "light"
+        ? `linear-gradient(
+            90deg,
+            transparent 0%,
+            transparent 42%,
+            rgba(100, 160, 255, 0.03) 50%,
+            transparent 58%,
+            transparent 100%
+          )`
+        : `linear-gradient(
+            90deg,
+            transparent 0%,
+            transparent 42%,
+            rgba(255, 255, 255, 0.03) 50%,
+            transparent 58%,
+            transparent 100%
+          )`};
     background-size: 300% 100%;
 
     pointer-events: none;
