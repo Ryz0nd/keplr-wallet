@@ -2023,7 +2023,7 @@ const SpinnerSvg = styled.svg`
     }
   }
 
-  animation: spinnerRotate 0.85s cubic-bezier(0.2, 0.6, 0.7, 0.9) infinite;
+  animation: spinnerRotate 1s cubic-bezier(0.2, 0.6, 0.7, 0.9) infinite;
 `;
 
 const SpinnerIcon: FunctionComponent<{
