@@ -37,6 +37,67 @@ import { useFocusOnMount } from "../../../../hooks/use-focus-on-mount";
 import { FormattedMessage, useIntl } from "react-intl";
 import { Tooltip } from "../../../../components/tooltip";
 
+const GlowBorderWrapper = styled.div`
+  position: relative;
+  border-radius: 0.375rem;
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    padding: 1px;
+    border-radius: inherit;
+
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      transparent 40%,
+      rgba(255, 255, 255, 0.5) 50%,
+      transparent 60%,
+      transparent 100%
+    );
+    background-size: 300% 100%;
+
+    -webkit-mask: linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+
+    pointer-events: none;
+    z-index: 2;
+    animation: borderSlide 2s ease-in-out infinite;
+  }
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      transparent 42%,
+      rgba(255, 255, 255, 0.03) 50%,
+      transparent 58%,
+      transparent 100%
+    );
+    background-size: 300% 100%;
+
+    pointer-events: none;
+    animation: borderSlide 2s ease-in-out infinite;
+  }
+
+  @keyframes borderSlide {
+    0% {
+      background-position: 100% 0;
+    }
+    100% {
+      background-position: 0% 0;
+    }
+  }
+`;
+
 const Styles = {
   TextInput: styled.input`
     font-weight: 600;
@@ -100,6 +161,8 @@ export const SwapAssetInfo: FunctionComponent<{
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
 
+    const [isLoading] = useState(true);
+
     const price = (() => {
       return priceStore.calculatePrice(amountConfig.amount[0]);
     })();
@@ -140,7 +203,7 @@ export const SwapAssetInfo: FunctionComponent<{
 
     const intl = useIntl();
 
-    return (
+    const content = (
       <Box
         padding="1rem"
         paddingBottom="0.75rem"
@@ -704,6 +767,12 @@ export const SwapAssetInfo: FunctionComponent<{
         </Modal>
       </Box>
     );
+
+    if (isLoading) {
+      return <GlowBorderWrapper>{content}</GlowBorderWrapper>;
+    }
+
+    return content;
   }
 );
 
