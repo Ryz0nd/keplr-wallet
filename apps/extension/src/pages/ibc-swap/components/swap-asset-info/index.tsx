@@ -12,7 +12,7 @@ import {
   Subtitle2,
   Subtitle3,
 } from "../../../../components/typography";
-import styled, { css, useTheme } from "styled-components";
+import styled, { css, keyframes, useTheme } from "styled-components";
 import { ColorPalette } from "../../../../styles";
 import {
   ChainImageFallback,
@@ -46,9 +46,6 @@ const GlowBorderWrapper = styled.div<{ $isLoading: boolean }>`
     css`
       box-shadow: 0 0 0 1.5px
         ${props.theme.mode === "light" ? "#FEFEFE" : "#1D1D1F"};
-      background: ${props.theme.mode === "light"
-        ? "linear-gradient(270deg, #FEFEFE 0%, #E5F2FD 49.71%, #FEFEFE 100%)"
-        : "linear-gradient(90deg, #1D1D1F 0%, #242428 50%, #1D1D1F 100%)"};
 
       &::before {
         content: "";
@@ -88,6 +85,20 @@ const GlowBorderWrapper = styled.div<{ $isLoading: boolean }>`
     `}
 `;
 
+const glowSlideAnimation = keyframes`
+  0% {
+    background-position: 100% 0;
+    animation-timing-function: ease-in;
+  }
+  50% {
+    background-position: 50% 0;
+    animation-timing-function: linear;
+  }
+  100% {
+    background-position: 0% 0;
+  }
+`;
+
 const GlowOverlay = styled.div`
   z-index: -1;
   position: absolute;
@@ -101,21 +112,7 @@ const GlowOverlay = styled.div`
       : `linear-gradient(90deg, ${ColorPalette["gray-600"]} 0%, ${ColorPalette["gray-550"]} 50%, ${ColorPalette["gray-600"]} 100%)`};
   background-size: 300% 100%;
 
-  animation: borderSlide 1.5s infinite;
-
-  @keyframes borderSlide {
-    0% {
-      background-position: 100% 0;
-      animation-timing-function: ease-in;
-    }
-    50% {
-      background-position: 50% 0;
-      animation-timing-function: linear;
-    }
-    100% {
-      background-position: 0% 0;
-    }
-  }
+  animation: ${glowSlideAnimation} 1.5s infinite;
 `;
 
 const Styles = {
@@ -245,7 +242,7 @@ export const SwapAssetInfo: FunctionComponent<{
           paddingBottom="0.75rem"
           backgroundColor={
             isLoadingWithGlowEffect
-              ? undefined
+              ? "transparent"
               : theme.mode === "light"
               ? ColorPalette.white
               : ColorPalette["gray-600"]
@@ -254,6 +251,7 @@ export const SwapAssetInfo: FunctionComponent<{
           style={{
             position: "relative",
             overflow: "hidden",
+            isolation: "isolate",
             boxShadow:
               theme.mode === "light"
                 ? "0px 1px 4px 0px rgba(43, 39, 55, 0.10)"
