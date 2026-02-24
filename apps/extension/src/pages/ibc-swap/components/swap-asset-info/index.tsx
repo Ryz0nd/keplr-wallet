@@ -55,9 +55,9 @@ const GlowBorderWrapper = styled.div<{ $isLoading: boolean }>`
         border-radius: inherit;
 
         background: ${props.theme.mode === "light"
-          ? `linear-gradient(270deg, ${ColorPalette.white} 0%, ${ColorPalette["blue-200"]} 49.71%, ${ColorPalette.white} 100%)`
-          : `linear-gradient(90deg, ${ColorPalette["gray-600"]} 0%, ${ColorPalette["gray-300"]} 50%, ${ColorPalette["gray-600"]} 100%)`};
-        background-size: 300% 100%;
+          ? `linear-gradient(270deg, ${ColorPalette.white} 0%, ${ColorPalette.white} 25%, ${ColorPalette["blue-200"]} 50%, ${ColorPalette.white} 75%, ${ColorPalette.white} 100%)`
+          : `linear-gradient(90deg, ${ColorPalette["gray-600"]} 0%, ${ColorPalette["gray-600"]} 25%, ${ColorPalette["gray-300"]} 50%, ${ColorPalette["gray-600"]} 75%, ${ColorPalette["gray-600"]} 100%)`};
+        background-size: 400% 100%;
 
         -webkit-mask: linear-gradient(#000 0 0) content-box,
           linear-gradient(#000 0 0);
@@ -108,9 +108,9 @@ const GlowOverlay = styled.div`
 
   background: ${(props) =>
     props.theme.mode === "light"
-      ? `linear-gradient(270deg, ${ColorPalette.white} 0%, ${ColorPalette["blue-100"]} 49.71%, ${ColorPalette.white} 100%)`
-      : `linear-gradient(90deg, ${ColorPalette["gray-600"]} 0%, ${ColorPalette["gray-550"]} 50%, ${ColorPalette["gray-600"]} 100%)`};
-  background-size: 300% 100%;
+      ? `linear-gradient(270deg, ${ColorPalette.white} 0%, ${ColorPalette.white} 25%, ${ColorPalette["blue-100"]} 50%, ${ColorPalette.white} 75%, ${ColorPalette.white} 100%)`
+      : `linear-gradient(90deg, ${ColorPalette["gray-600"]} 0%, ${ColorPalette["gray-600"]} 25%, ${ColorPalette["gray-550"]} 50%, ${ColorPalette["gray-600"]} 75%, ${ColorPalette["gray-600"]} 100%)`};
+  background-size: 400% 100%;
 
   animation: ${glowSlideAnimation} 1.5s infinite;
 `;
