@@ -1990,19 +1990,15 @@ const ArrowsUpDownIcon: FunctionComponent<{
 const SpinnerSvg = styled.svg`
   @keyframes spinnerRotate {
     0% {
-      transform: rotate(0deg);
+      transform: rotate(75deg);
       animation-timing-function: ease-in;
     }
-    50% {
-      transform: rotate(180deg);
-      animation-timing-function: ease-out;
-    }
     100% {
-      transform: rotate(360deg);
+      transform: rotate(435deg);
     }
   }
 
-  animation: spinnerRotate 1s infinite;
+  animation: spinnerRotate 0.85s infinite;
 `;
 
 const SpinnerIcon: FunctionComponent<{
