@@ -58,8 +58,8 @@ const GlowBorderWrapper = styled.div<{ $isLoading: boolean }>`
         border-radius: inherit;
 
         background: ${props.theme.mode === "light"
-          ? `linear-gradient(270deg, transparent 0%, ${ColorPalette["blue-200"]} 49.71%, transparent 100%)`
-          : `linear-gradient(90deg, transparent 0%, ${ColorPalette["gray-300"]} 50%, transparent 100%)`};
+          ? `linear-gradient(270deg, ${ColorPalette.white} 0%, ${ColorPalette["blue-200"]} 49.71%, ${ColorPalette.white} 100%)`
+          : `linear-gradient(90deg, ${ColorPalette["gray-600"]} 0%, ${ColorPalette["gray-300"]} 50%, ${ColorPalette["gray-600"]} 100%)`};
         background-size: 300% 100%;
 
         -webkit-mask: linear-gradient(#000 0 0) content-box,
@@ -69,21 +69,6 @@ const GlowBorderWrapper = styled.div<{ $isLoading: boolean }>`
 
         pointer-events: none;
         z-index: 2;
-        animation: borderSlide 1.5s infinite;
-      }
-
-      &::after {
-        content: "";
-        position: absolute;
-        inset: 0;
-        border-radius: inherit;
-
-        background: ${props.theme.mode === "light"
-          ? `linear-gradient(270deg, transparent 0%, ${ColorPalette["blue-100"]} 49.71%, transparent 100%)`
-          : `linear-gradient(90deg, transparent 0%, ${ColorPalette["gray-550"]} 50%, transparent 100%)`};
-        background-size: 300% 100%;
-
-        pointer-events: none;
         animation: borderSlide 1.5s infinite;
       }
 
@@ -101,6 +86,36 @@ const GlowBorderWrapper = styled.div<{ $isLoading: boolean }>`
         }
       }
     `}
+`;
+
+const GlowOverlay = styled.div`
+  z-index: -1;
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+
+  background: ${(props) =>
+    props.theme.mode === "light"
+      ? `linear-gradient(270deg, ${ColorPalette.white} 0%, ${ColorPalette["blue-100"]} 49.71%, ${ColorPalette.white} 100%)`
+      : `linear-gradient(90deg, ${ColorPalette["gray-600"]} 0%, ${ColorPalette["gray-550"]} 50%, ${ColorPalette["gray-600"]} 100%)`};
+  background-size: 300% 100%;
+
+  animation: borderSlide 1.5s infinite;
+
+  @keyframes borderSlide {
+    0% {
+      background-position: 100% 0;
+      animation-timing-function: ease-in;
+    }
+    50% {
+      background-position: 50% 0;
+      animation-timing-function: linear;
+    }
+    100% {
+      background-position: 0% 0;
+    }
+  }
 `;
 
 const Styles = {
@@ -229,18 +244,23 @@ export const SwapAssetInfo: FunctionComponent<{
           padding="1rem"
           paddingBottom="0.75rem"
           backgroundColor={
-            theme.mode === "light"
+            isLoadingWithGlowEffect
+              ? undefined
+              : theme.mode === "light"
               ? ColorPalette.white
               : ColorPalette["gray-600"]
           }
           borderRadius="0.375rem"
           style={{
+            position: "relative",
+            overflow: "hidden",
             boxShadow:
               theme.mode === "light"
                 ? "0px 1px 4px 0px rgba(43, 39, 55, 0.10)"
                 : undefined,
           }}
         >
+          {isLoadingWithGlowEffect ? <GlowOverlay /> : null}
           <XAxis alignY="center">
             <Gutter size="0.25rem" />
             <Subtitle3
