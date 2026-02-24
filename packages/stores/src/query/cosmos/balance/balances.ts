@@ -48,7 +48,8 @@ export class ObservableQueryCosmosBalancesImplParent extends ObservableChainQuer
     super.onReceiveResponse(response);
 
     const chainInfo = this.chainGetter.getChain(this.chainId);
-    const denoms = response.data.balances.map((coin) => coin.denom);
+    const balances = response.data.balances ?? [];
+    const denoms = balances.map((coin) => coin.denom);
     chainInfo.addUnknownDenoms(...denoms);
   }
 }
@@ -75,7 +76,7 @@ export class ObservableQueryCosmosBalancesImpl
 
     return StoreUtils.getBalanceFromCurrency(
       currency,
-      this.response.data.balances
+      this.response.data.balances ?? []
     );
   }
 
