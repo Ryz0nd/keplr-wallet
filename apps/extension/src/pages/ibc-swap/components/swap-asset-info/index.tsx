@@ -336,18 +336,74 @@ export const SwapAssetInfo: FunctionComponent<{
                 );
               }
             })()}
-            <div
-              style={{
-                flex: 1,
-              }}
-            />
             {type === "from" ? (
-              <Box
-                cursor="pointer"
-                onClick={(e) => {
-                  e.preventDefault();
+              <React.Fragment>
+                <div
+                  style={{
+                    flex: 1,
+                  }}
+                />
+                <Box
+                  cursor="pointer"
+                  onClick={(e) => {
+                    e.preventDefault();
 
-                  amountConfig.setFraction(1);
+                    amountConfig.setFraction(1);
+                  }}
+                >
+                  <Body3
+                    color={
+                      theme.mode === "light"
+                        ? ColorPalette["gray-300"]
+                        : ColorPalette["gray-200"]
+                    }
+                  >
+                    {intl.formatMessage(
+                      {
+                        id: "page.ibc-swap.components.swap-asset-info.max-asset",
+                      },
+                      {
+                        asset: (() => {
+                          const bal = queriesStore
+                            .get(senderConfig.chainId)
+                            .queryBalances.getQueryBech32Address(
+                              senderConfig.sender
+                            )
+                            .getBalance(amountConfig.currency);
+
+                          if (!bal) {
+                            return new CoinPretty(
+                              amountConfig.currency,
+                              new Dec(0)
+                            )
+                              .hideIBCMetadata(true)
+                              .toString();
+                          }
+
+                          return uiConfigStore.hideStringIfPrivacyMode(
+                            bal.balance
+                              .maxDecimals(6)
+                              .trim(true)
+                              .shrink(true)
+                              .inequalitySymbol(true)
+                              .hideIBCMetadata(true)
+                              .toString(),
+                            2
+                          );
+                        })(),
+                      }
+                    )}
+                  </Body3>
+                </Box>
+              </React.Fragment>
+            ) : decorateUpperAmountTextIfTypeIsTo ? (
+              <Box
+                style={{
+                  flex: 1,
+                  minWidth: 0,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
                 }}
               >
                 <Body3
@@ -356,52 +412,12 @@ export const SwapAssetInfo: FunctionComponent<{
                       ? ColorPalette["gray-300"]
                       : ColorPalette["gray-200"]
                   }
-                >
-                  {intl.formatMessage(
-                    {
-                      id: "page.ibc-swap.components.swap-asset-info.max-asset",
-                    },
-                    {
-                      asset: (() => {
-                        const bal = queriesStore
-                          .get(senderConfig.chainId)
-                          .queryBalances.getQueryBech32Address(
-                            senderConfig.sender
-                          )
-                          .getBalance(amountConfig.currency);
-
-                        if (!bal) {
-                          return new CoinPretty(
-                            amountConfig.currency,
-                            new Dec(0)
-                          )
-                            .hideIBCMetadata(true)
-                            .toString();
-                        }
-
-                        return uiConfigStore.hideStringIfPrivacyMode(
-                          bal.balance
-                            .maxDecimals(6)
-                            .trim(true)
-                            .shrink(true)
-                            .inequalitySymbol(true)
-                            .hideIBCMetadata(true)
-                            .toString(),
-                          2
-                        );
-                      })(),
-                    }
-                  )}
-                </Body3>
-              </Box>
-            ) : decorateUpperAmountTextIfTypeIsTo ? (
-              <Box>
-                <Body3
-                  color={
-                    theme.mode === "light"
-                      ? ColorPalette["gray-300"]
-                      : ColorPalette["gray-200"]
-                  }
+                  style={{
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                    textAlign: "end",
+                  }}
                 >
                   {decorateUpperAmountTextIfTypeIsTo}
                 </Body3>
