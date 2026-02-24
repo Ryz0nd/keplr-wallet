@@ -194,7 +194,8 @@ export const SwapAssetInfo: FunctionComponent<{
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
 
-    const [isLoading] = useState(true);
+    const isLoadingWithGlowEffect =
+      type === "to" && amountConfig.isFetchingOutAmount;
 
     const price = (() => {
       return priceStore.calculatePrice(amountConfig.amount[0]);
@@ -237,7 +238,7 @@ export const SwapAssetInfo: FunctionComponent<{
     const intl = useIntl();
 
     return (
-      <GlowBorderWrapper $isLoading={isLoading}>
+      <GlowBorderWrapper $isLoading={isLoadingWithGlowEffect}>
         <Box
           padding="1rem"
           paddingBottom="0.75rem"
