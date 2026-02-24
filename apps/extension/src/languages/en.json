@@ -466,6 +466,8 @@
   "page.ibc-swap.components.swap-not-available-modal.title": "Swap Not Available",
   "page.ibc-swap.components.swap-not-available-modal.paragraph": "Swap is currently not available for this token.",
   "page.ibc-swap.button.terms-of-use.title": "Terms of Use",
+  "page.ibc-swap.loading.first": "Finding the best route…",
+  "page.ibc-swap.loading.second": "Checking a few more routes…",
 
   "page.history.title": "History",
 

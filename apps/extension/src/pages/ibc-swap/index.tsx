@@ -499,9 +499,17 @@ export const IBCSwapPage: FunctionComponent = observer(() => {
 
   useEffect(() => {
     if (swapConfigs.amountConfig.isFetchingOutAmount) {
-      setDecorateUpperAmountTextIfTypeIsTo("Finding the best route...");
+      setDecorateUpperAmountTextIfTypeIsTo(
+        intl.formatMessage({
+          id: "page.ibc-swap.loading.first",
+        })
+      );
       const timer = setTimeout(() => {
-        setDecorateUpperAmountTextIfTypeIsTo("Checking a few more routes...");
+        setDecorateUpperAmountTextIfTypeIsTo(
+          intl.formatMessage({
+            id: "page.ibc-swap.loading.second",
+          })
+        );
       }, 5000);
       return () => clearTimeout(timer);
     } else {
