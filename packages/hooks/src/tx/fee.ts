@@ -14,7 +14,11 @@ import { CoinPretty, Dec, DecUtils, Int } from "@keplr-wallet/unit";
 import { Currency, FeeCurrency, StdFee } from "@keplr-wallet/types";
 import { computedFn } from "mobx-utils";
 import { useState } from "react";
-import { InsufficientFeeError, ShouldTopUpWarning } from "./errors";
+import {
+  InsufficientFeeError,
+  InsufficientAmountError,
+  ShouldTopUpWarning,
+} from "./errors";
 import { QueriesStore } from "./internal";
 import { DenomHelper } from "@keplr-wallet/common";
 import { EthereumQueriesImpl } from "@keplr-wallet/stores-eth";
@@ -1300,6 +1304,14 @@ export class FeeConfig extends TxChainSetter implements IFeeConfig {
 
       // 모든 fee currency가 부족할 경우에만 topup 사용이 가능
       const shouldTopUp = (() => {
+        // amount 자체가 잔액을 초과하는 경우는 topup 대상이 아님
+        if (
+          this.amountConfig.uiProperties.error instanceof
+          InsufficientAmountError
+        ) {
+          return false;
+        }
+
         const queryBalances = this.queriesStore
           .get(this.chainId)
           .queryBalances.getQueryBech32Address(this.senderConfig.sender);
