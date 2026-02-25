@@ -898,7 +898,7 @@ export class HugeQueriesStore {
           price: this.priceStore.calculatePrice(totalStakedAmount),
           isFetching: queryStakingInfo.isFetching,
           error: queryStakingInfo.error,
-          stakingUrl: "https://dashboard.endur.fi/stake",
+          stakingUrl: "https://voyager.online/staking",
         });
       }
     }
@@ -1000,8 +1000,8 @@ export class HugeQueriesStore {
             completeTime: unbonding.completeTime * 1000, // required to convert unix timestamp to ms or iso string
             isFetching: queryUnbonding.isFetching,
             error: queryUnbonding.error,
-            stakingUrl: "https://dashboard.endur.fi/stake",
-            omitCompleteTimeFraction: true, // endur.fi와 동일하게 표기하기 위한 옵션
+            stakingUrl: "https://voyager.online/staking",
+            omitCompleteTimeFraction: true, // voyager와 동일하게 표기하기 위한 옵션
           });
         }
       }

@@ -44,7 +44,7 @@ export const useStakableTokens = () => {
 
   const getStakingUrl = (viewToken: ViewToken): string | undefined => {
     if ("starknet" in viewToken.chainInfo) {
-      return "https://dashboard.endur.fi/stake";
+      return "https://voyager.online/staking";
     }
     const chainInfo = chainStore.getChain(viewToken.chainInfo.chainId);
     return (
