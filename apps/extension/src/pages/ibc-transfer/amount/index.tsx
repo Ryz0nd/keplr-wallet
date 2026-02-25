@@ -83,9 +83,7 @@ export const IBCTransferAmountView: FunctionComponent<{
           <VerticalCollapseTransition collapsed={!shouldTopUp}>
             <FeeCoverageDescription isTopUpAvailable={isTopUpAvailable} />
           </VerticalCollapseTransition>
-          <VerticalCollapseTransition
-            collapsed={requiredStaking == null}
-          >
+          <VerticalCollapseTransition collapsed={requiredStaking == null}>
             {requiredStaking != null &&
             coinDenom != null &&
             stakingChainId != null &&

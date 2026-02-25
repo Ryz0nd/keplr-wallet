@@ -190,7 +190,8 @@ export function useTopUp({
           coinDenom: feeConfig.topUpStatus.coinDenom,
           coinMinimalDenom: feeConfig.topUpStatus.coinMinimalDenom,
           requiredStaking: feeConfig.topUpStatus.requiredStaking,
-          additionalStakingNeeded: feeConfig.topUpStatus.additionalStakingNeeded,
+          additionalStakingNeeded:
+            feeConfig.topUpStatus.additionalStakingNeeded,
         }
       : {}),
   };
