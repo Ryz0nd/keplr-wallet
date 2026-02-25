@@ -14,7 +14,8 @@ export class IndexedDBKVStore implements KVStore {
       request.onerror = (event) => {
         event.stopPropagation();
 
-        reject(event.target);
+        const error = (event.target as IDBRequest).error;
+        reject(new Error(error?.message ?? "Unknown IndexedDB error on get"));
       };
       request.onsuccess = () => {
         if (!request.result) {
@@ -36,7 +37,10 @@ export class IndexedDBKVStore implements KVStore {
         request.onerror = (event) => {
           event.stopPropagation();
 
-          reject(event.target);
+          const error = (event.target as IDBRequest).error;
+          reject(
+            new Error(error?.message ?? "Unknown IndexedDB error on delete")
+          );
         };
         request.onsuccess = () => {
           resolve();
@@ -54,7 +58,8 @@ export class IndexedDBKVStore implements KVStore {
         request.onerror = (event) => {
           event.stopPropagation();
 
-          reject(event.target);
+          const error = (event.target as IDBRequest).error;
+          reject(new Error(error?.message ?? "Unknown IndexedDB error on put"));
         };
         request.onsuccess = () => {
           resolve();
@@ -72,7 +77,10 @@ export class IndexedDBKVStore implements KVStore {
       request.onerror = (event) => {
         event.stopPropagation();
 
-        reject(event.target);
+        const error = (event.target as IDBRequest).error;
+        reject(
+          new Error(error?.message ?? "Unknown IndexedDB error on getAllKeys")
+        );
       };
       request.onsuccess = () => {
         resolve(request.result as string[]);
@@ -100,7 +108,10 @@ export class IndexedDBKVStore implements KVStore {
       request.onerror = (event) => {
         event.stopPropagation();
         IndexedDBKVStore.dbPromiseMap.delete(prefix);
-        reject(event.target);
+        const error = (event.target as IDBRequest).error;
+        reject(
+          new Error(error?.message ?? "Unknown IndexedDB error on openDB")
+        );
       };
 
       request.onupgradeneeded = (event) => {

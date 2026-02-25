@@ -36,9 +36,20 @@ export class DebounceActionTimer<ARGS, R> {
       const requests = this.requests.slice();
       const responses = this.handler(requests);
       if (typeof responses === "object" && "then" in responses) {
-        Promise.resolve(responses).then((responses) => {
-          this.handleResponses(requests, responses);
-        });
+        Promise.resolve(responses)
+          .then((responses) => {
+            this.handleResponses(requests, responses);
+          })
+          .catch((e) => {
+            console.error("DebounceActionTimer handler failed", e);
+            this.handleResponses(
+              requests,
+              requests.map(() => ({
+                status: "rejected" as const,
+                reason: e,
+              }))
+            );
+          });
       } else {
         this.handleResponses(requests, responses);
       }
