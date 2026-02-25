@@ -108,7 +108,7 @@ const GlowOverlay = styled.div`
 
   background: ${(props) =>
     props.theme.mode === "light"
-      ? `linear-gradient(270deg, ${ColorPalette.white} 0%, ${ColorPalette.white} 25%, ${ColorPalette["blue-100"]} 50%, ${ColorPalette.white} 75%, ${ColorPalette.white} 100%)`
+      ? `linear-gradient(270deg, ${ColorPalette.white} 0%, ${ColorPalette.white} 25%, #E0F1FF 50%, ${ColorPalette.white} 75%, ${ColorPalette.white} 100%)`
       : `linear-gradient(90deg, ${ColorPalette["gray-600"]} 0%, ${ColorPalette["gray-600"]} 25%, ${ColorPalette["gray-550"]} 50%, ${ColorPalette["gray-600"]} 75%, ${ColorPalette["gray-600"]} 100%)`};
   background-size: 400% 100%;
 
