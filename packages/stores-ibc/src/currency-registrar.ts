@@ -132,7 +132,9 @@ export class IBCCurrencyRegistrar {
       originChainInfo: IChainInfoImpl | undefined,
       counterpartyChainInfo: IChainInfoImpl | undefined,
       originCurrency: AppCurrency | undefined
-    ) => string = IBCCurrencyRegistrar.defaultCoinDenomGenerator
+    ) => string = IBCCurrencyRegistrar.defaultCoinDenomGenerator,
+    protected readonly cw20BaseURL: string = "",
+    protected readonly cw20URI: string = ""
   ) {
     this.chainStore.registerCurrencyRegistrar(
       this.ibcCurrencyRegistrar.bind(this)
@@ -563,7 +565,6 @@ export class IBCCurrencyRegistrar {
                 originChainInfo.features?.includes("secretwasm");
 
               if (!isSecret20Currency) {
-                let isFetching = false;
                 // If the origin currency is ics20-cw20.
                 let cw20Currency = originChainInfo.currencies.find(
                   (cur) =>
@@ -574,27 +575,51 @@ export class IBCCurrencyRegistrar {
                   !cw20Currency &&
                   this.chainStore.hasChain(originChainInfo.chainId)
                 ) {
-                  const originQueries = this.queriesStore.get(
-                    originChainInfo.chainId
+                  const contractAddress = denomTrace.denom.replace("cw20:", "");
+                  const cw20CurrencyRes = this.getCW20TokenInfo(
+                    originChainInfo.chainId,
+                    contractAddress
                   );
-                  if (originQueries.cosmwasm) {
-                    const contractAddress = denomTrace.denom.replace(
-                      "cw20:",
-                      ""
-                    );
-                    const contractInfo =
-                      originQueries.cosmwasm.querycw20ContractInfo.getQueryContract(
-                        contractAddress
-                      );
-                    isFetching = contractInfo.isFetching;
-                    if (contractInfo.response) {
-                      cw20Currency = {
-                        type: "cw20",
+                  if (cw20CurrencyRes.isFetching) {
+                    isGlobalFetching = true;
+                  }
+                  if (cw20CurrencyRes.res) {
+                    cw20Currency = {
+                      type: "cw20",
+                      contractAddress,
+                      coinDecimals: cw20CurrencyRes.res.coinDecimals,
+                      coinDenom: cw20CurrencyRes.res.coinDenom,
+                      coinMinimalDenom: `cw20:${contractAddress}:${cw20CurrencyRes.res.coinDenom}`,
+                      coinGeckoId: cw20CurrencyRes.res.coinGeckoId,
+                      coinImageUrl: cw20CurrencyRes.res.coinImageUrl,
+                    };
+                  }
+                  if (
+                    !cw20CurrencyRes.isFetching &&
+                    !cw20CurrencyRes.fromCache
+                  ) {
+                    if (cw20Currency) {
+                      this.setCacheTokenInfo(
+                        originChainInfo.chainId,
                         contractAddress,
-                        coinDecimals: contractInfo.response.data.decimals,
-                        coinDenom: contractInfo.response.data.symbol,
-                        coinMinimalDenom: `cw20:${contractAddress}:${contractInfo.response.data.name}`,
-                      };
+                        {
+                          notFound: undefined,
+                          coinDenom: cw20Currency.coinDenom,
+                          coinDecimals: cw20Currency.coinDecimals,
+                          coinGeckoId: cw20Currency.coinGeckoId,
+                          coinImageUrl: cw20Currency.coinImageUrl,
+                          timestamp: Date.now(),
+                        }
+                      );
+                    } else if (cw20CurrencyRes.notFound) {
+                      this.setCacheTokenInfo(
+                        originChainInfo.chainId,
+                        contractAddress,
+                        {
+                          notFound: true,
+                          timestamp: Date.now(),
+                        }
+                      );
                     }
                   }
                 }
@@ -616,12 +641,11 @@ export class IBCCurrencyRegistrar {
                       originChainId: originChainInfo.chainId,
                       originCurrency: cw20Currency,
                     },
-                    done: fromCache && !isFetching,
+                    done: !isGlobalFetching,
                   };
                 }
               } else {
-                let isSecret20Fetching = false;
-                // If the origin currency is ics20-cw20.
+                // If the origin currency is ics20-secret20.
                 let secret20Currency = originChainInfo.currencies.find(
                   (cur) =>
                     denomTrace &&
@@ -631,28 +655,51 @@ export class IBCCurrencyRegistrar {
                   !secret20Currency &&
                   this.chainStore.hasChain(originChainInfo.chainId)
                 ) {
-                  const originQueries = this.queriesStore.get(
-                    originChainInfo.chainId
+                  const contractAddress = denomTrace.denom.replace("cw20:", "");
+                  const secret20CurrencyRes = this.getCW20TokenInfo(
+                    originChainInfo.chainId,
+                    contractAddress
                   );
-                  if (originQueries.secret) {
-                    const contractAddress = denomTrace.denom.replace(
-                      "cw20:",
-                      ""
-                    );
-                    const contractInfo =
-                      originQueries.secret.querySecret20ContractInfo.getQueryContract(
-                        contractAddress
-                      );
-                    isSecret20Fetching = contractInfo.isFetching;
-                    if (contractInfo.response) {
-                      secret20Currency = {
-                        type: "secret20",
+                  if (secret20CurrencyRes.isFetching) {
+                    isGlobalFetching = true;
+                  }
+                  if (secret20CurrencyRes.res) {
+                    secret20Currency = {
+                      type: "secret20",
+                      contractAddress,
+                      coinDecimals: secret20CurrencyRes.res.coinDecimals,
+                      coinDenom: secret20CurrencyRes.res.coinDenom,
+                      coinMinimalDenom: `secret20:${contractAddress}:${secret20CurrencyRes.res.coinDenom}`,
+                      coinGeckoId: secret20CurrencyRes.res.coinGeckoId,
+                      coinImageUrl: secret20CurrencyRes.res.coinImageUrl,
+                    };
+                  }
+                  if (
+                    !secret20CurrencyRes.isFetching &&
+                    !secret20CurrencyRes.fromCache
+                  ) {
+                    if (secret20Currency) {
+                      this.setCacheTokenInfo(
+                        originChainInfo.chainId,
                         contractAddress,
-                        coinDecimals:
-                          contractInfo.response.data.token_info.decimals,
-                        coinDenom: contractInfo.response.data.token_info.symbol,
-                        coinMinimalDenom: `secret20:${contractAddress}:${contractInfo.response.data.token_info.name}`,
-                      };
+                        {
+                          notFound: undefined,
+                          coinDenom: secret20Currency.coinDenom,
+                          coinDecimals: secret20Currency.coinDecimals,
+                          coinGeckoId: secret20Currency.coinGeckoId,
+                          coinImageUrl: secret20Currency.coinImageUrl,
+                          timestamp: Date.now(),
+                        }
+                      );
+                    } else if (secret20CurrencyRes.notFound) {
+                      this.setCacheTokenInfo(
+                        originChainInfo.chainId,
+                        contractAddress,
+                        {
+                          notFound: true,
+                          timestamp: Date.now(),
+                        }
+                      );
                     }
                   }
                 }
@@ -674,7 +721,7 @@ export class IBCCurrencyRegistrar {
                       originChainId: originChainInfo.chainId,
                       originCurrency: secret20Currency,
                     },
-                    done: fromCache && !isSecret20Fetching,
+                    done: !isGlobalFetching,
                   };
                 }
               }
@@ -925,6 +972,106 @@ export class IBCCurrencyRegistrar {
         isFetching: false,
         fromCache: false,
         notFound: false,
+      };
+    }
+  }
+
+  protected getCW20TokenInfo(
+    chainId: string,
+    contractAddress: string
+  ): {
+    res:
+      | {
+          coinDenom: string;
+          coinDecimals: number;
+          coinGeckoId: string | undefined;
+          coinImageUrl: string | undefined;
+        }
+      | undefined;
+    isFetching: boolean;
+    fromCache: boolean;
+    notFound: boolean;
+  } {
+    const { res: cached, staled } = this.getCacheTokenInfo(
+      chainId,
+      contractAddress
+    );
+    if (cached) {
+      if (cached.notFound) {
+        return {
+          res: undefined,
+          isFetching: false,
+          fromCache: true,
+          notFound: true,
+        };
+      }
+      if (!staled) {
+        return {
+          res: {
+            coinDenom: cached.coinDenom,
+            coinDecimals: cached.coinDecimals,
+            coinGeckoId: cached.coinGeckoId,
+            coinImageUrl: cached.coinImageUrl,
+          },
+          isFetching: false,
+          fromCache: true,
+          notFound: false,
+        };
+      }
+    }
+
+    if (!this.cw20BaseURL) {
+      return {
+        res: undefined,
+        isFetching: false,
+        fromCache: false,
+        notFound: false,
+      };
+    }
+
+    const query = this.queriesStore.simpleQuery.queryGet<{
+      coinMinimalDenom: string;
+      coinDenom: string;
+      coinDecimals: number;
+      coinGeckoId: string | undefined;
+      coinImageUrl: string | undefined;
+    }>(
+      this.cw20BaseURL,
+      this.cw20URI
+        .replace("{chainId}", chainId)
+        .replace("{contractAddress}", encodeURIComponent(contractAddress))
+    );
+
+    const isFetching = query.isFetching;
+
+    if (query.response) {
+      return {
+        res: {
+          coinDenom: query.response.data.coinDenom,
+          coinDecimals: query.response.data.coinDecimals,
+          coinGeckoId: query.response.data.coinGeckoId,
+          coinImageUrl: query.response.data.coinImageUrl,
+        },
+        isFetching,
+        fromCache: false,
+        notFound: false,
+      };
+    } else {
+      const notFound = query.error?.status === 404;
+      return {
+        res: notFound
+          ? undefined
+          : cached
+          ? {
+              coinDenom: cached.coinDenom,
+              coinDecimals: cached.coinDecimals,
+              coinGeckoId: cached.coinGeckoId,
+              coinImageUrl: cached.coinImageUrl,
+            }
+          : undefined,
+        isFetching,
+        fromCache: false,
+        notFound,
       };
     }
   }
