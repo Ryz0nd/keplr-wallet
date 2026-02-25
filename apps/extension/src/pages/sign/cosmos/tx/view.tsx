@@ -54,6 +54,7 @@ import {
   FeeCoverageBox,
   FeeCoverageDescription,
   FeeCoverageBackground,
+  StakingRequirementDescription,
 } from "../../../../components/top-up";
 import { useTopUp } from "../../../../hooks/use-topup";
 import { StepIndicator } from "../../../../components/step-indicator";
@@ -422,6 +423,10 @@ export const CosmosTxView: FunctionComponent<{
     remainingText,
     executeTopUpIfAvailable,
     topUpError,
+    requiredStaking,
+    coinDenom,
+    stakingChainId,
+    validatorAddress,
   } = useTopUp({
     feeConfig,
     senderConfig,
@@ -885,6 +890,19 @@ export const CosmosTxView: FunctionComponent<{
           ) : (
             <FeeCoverageDescription isTopUpAvailable={isTopUpAvailable} />
           )}
+        </VerticalCollapseTransition>
+        <VerticalCollapseTransition collapsed={requiredStaking == null}>
+          {requiredStaking != null &&
+          coinDenom != null &&
+          stakingChainId != null &&
+          validatorAddress != null ? (
+            <StakingRequirementDescription
+              requiredStaking={requiredStaking}
+              coinDenom={coinDenom}
+              stakingChainId={stakingChainId}
+              validatorAddress={validatorAddress}
+            />
+          ) : null}
         </VerticalCollapseTransition>
 
         {isSendAuthzGrant ? (

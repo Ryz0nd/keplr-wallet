@@ -1301,6 +1301,8 @@ export class FeeConfig extends TxChainSetter implements IFeeConfig {
         remainingTimeMs,
         stakingChainId,
         validatorAddress,
+        coinDenom,
+        coinMinimalDenom,
         requiredStaking,
         additionalStakingNeeded,
       } = topUpStatus;
@@ -1370,6 +1372,8 @@ export class FeeConfig extends TxChainSetter implements IFeeConfig {
         topUpOverrideStdFee,
         stakingChainId,
         validatorAddress,
+        coinDenom,
+        coinMinimalDenom,
         requiredStaking,
         additionalStakingNeeded,
       };
@@ -1389,6 +1393,12 @@ export class FeeConfig extends TxChainSetter implements IFeeConfig {
     remainingTimeMs?: number;
     topUpOverrideStdFee?: StdFee;
     isTopUpAvailable: boolean;
+    stakingChainId?: string;
+    validatorAddress?: string;
+    coinDenom?: string;
+    coinMinimalDenom?: string;
+    requiredStaking?: number;
+    additionalStakingNeeded?: number;
   } {
     // always call getTopUpStatus() to ensure topUpQuery is observed
     const status = this.getTopUpStatus();
@@ -1405,6 +1415,12 @@ export class FeeConfig extends TxChainSetter implements IFeeConfig {
       remainingTimeMs: undefined,
       topUpOverrideStdFee: undefined,
       isTopUpAvailable: false,
+      stakingChainId: status.stakingChainId,
+      validatorAddress: status.validatorAddress,
+      coinDenom: status.coinDenom,
+      coinMinimalDenom: status.coinMinimalDenom,
+      requiredStaking: status.requiredStaking,
+      additionalStakingNeeded: status.additionalStakingNeeded,
     };
   }
 

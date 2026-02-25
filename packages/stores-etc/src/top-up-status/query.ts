@@ -10,6 +10,8 @@ export type TopUpStatus = {
   remainingTimeMs?: number;
   stakingChainId?: string;
   validatorAddress?: string;
+  coinDenom?: string;
+  coinMinimalDenom?: string;
   requiredStaking?: number;
   additionalStakingNeeded?: number;
 };

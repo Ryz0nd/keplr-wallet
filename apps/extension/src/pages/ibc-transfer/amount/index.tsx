@@ -15,7 +15,10 @@ import { MemoInput } from "../../../components/input/memo-input";
 import { FeeControl } from "../../../components/input/fee-control";
 import { useIntl } from "react-intl";
 import { VerticalCollapseTransition } from "../../../components/transition/vertical-collapse";
-import { FeeCoverageDescription } from "../../../components/top-up";
+import {
+  FeeCoverageDescription,
+  StakingRequirementDescription,
+} from "../../../components/top-up";
 
 export const IBCTransferAmountView: FunctionComponent<{
   amountConfig: IAmountConfig;
@@ -27,6 +30,10 @@ export const IBCTransferAmountView: FunctionComponent<{
 
   shouldTopUp: boolean;
   isTopUpAvailable: boolean;
+  requiredStaking?: number;
+  coinDenom?: string;
+  stakingChainId?: string;
+  validatorAddress?: string;
 }> = observer(
   ({
     amountConfig,
@@ -38,6 +45,10 @@ export const IBCTransferAmountView: FunctionComponent<{
 
     shouldTopUp,
     isTopUpAvailable,
+    requiredStaking,
+    coinDenom,
+    stakingChainId,
+    validatorAddress,
   }) => {
     const intl = useIntl();
 
@@ -71,6 +82,21 @@ export const IBCTransferAmountView: FunctionComponent<{
           </VerticalCollapseTransition>
           <VerticalCollapseTransition collapsed={!shouldTopUp}>
             <FeeCoverageDescription isTopUpAvailable={isTopUpAvailable} />
+          </VerticalCollapseTransition>
+          <VerticalCollapseTransition
+            collapsed={requiredStaking == null}
+          >
+            {requiredStaking != null &&
+            coinDenom != null &&
+            stakingChainId != null &&
+            validatorAddress != null ? (
+              <StakingRequirementDescription
+                requiredStaking={requiredStaking}
+                coinDenom={coinDenom}
+                stakingChainId={stakingChainId}
+                validatorAddress={validatorAddress}
+              />
+            ) : null}
           </VerticalCollapseTransition>
         </Stack>
       </Box>

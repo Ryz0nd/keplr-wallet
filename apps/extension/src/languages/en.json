@@ -906,6 +906,7 @@
   "components.top-up.covered-by-keplr": "Covered by Keplr",
   "components.top-up.keep-window-open": "Keep this window open during the transaction",
   "components.top-up.wait-time": "Next free tx in {time}",
+  "components.top-up.description.staking-required": "This tx is free when you <link>stake {amount} {coinDenom} with Keplr</link>",
 
   "button.confirm": "Confirm",
   "button.ok": "OK",

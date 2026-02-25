@@ -813,6 +813,7 @@
   "components.top-up.covered-by-keplr": "Keplr가 대신 지불",
   "components.top-up.keep-window-open": "거래 진행 중에는 이 창을 열어두세요",
   "components.top-up.wait-time": "다음 수수료 지원까지 {time}",
+  "components.top-up.description.staking-required": "이 트랜잭션은 <link>Keplr에 {amount} {coinDenom} 스테이킹</link>하면 무료입니다",
 
   "button.confirm": "확인",
   "button.ok": "확인",

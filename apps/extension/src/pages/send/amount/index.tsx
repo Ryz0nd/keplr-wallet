@@ -104,7 +104,10 @@ import { usePreviousDistinct } from "../../../hooks/use-previous";
 import { SwapFeeInfoForBridgeOnSend } from "./swap-fee-info";
 import { useEffectOnce } from "../../../hooks/use-effect-once";
 import { usePageSimpleBar } from "../../../hooks/page-simplebar";
-import { FeeCoverageDescription } from "../../../components/top-up";
+import {
+  FeeCoverageDescription,
+  StakingRequirementDescription,
+} from "../../../components/top-up";
 import { useTopUp } from "../../../hooks/use-topup";
 import { getShouldTopUpSignOptions } from "../../../utils/should-top-up-sign-options";
 
@@ -875,7 +878,15 @@ export const SendAmountPage: FunctionComponent = observer(() => {
     }
   })();
 
-  const { shouldTopUp, remainingText, isTopUpAvailable } = useTopUp({
+  const {
+    shouldTopUp,
+    remainingText,
+    isTopUpAvailable,
+    requiredStaking,
+    coinDenom,
+    stakingChainId,
+    validatorAddress,
+  } = useTopUp({
     feeConfig,
     senderConfig,
   });
@@ -2276,6 +2287,21 @@ export const SendAmountPage: FunctionComponent = observer(() => {
           <Gutter size="0" />
           <VerticalCollapseTransition collapsed={!shouldTopUp}>
             <FeeCoverageDescription isTopUpAvailable={isTopUpAvailable} />
+          </VerticalCollapseTransition>
+          <VerticalCollapseTransition
+            collapsed={requiredStaking == null}
+          >
+            {requiredStaking != null &&
+            coinDenom != null &&
+            stakingChainId != null &&
+            validatorAddress != null ? (
+              <StakingRequirementDescription
+                requiredStaking={requiredStaking}
+                coinDenom={coinDenom}
+                stakingChainId={stakingChainId}
+                validatorAddress={validatorAddress}
+              />
+            ) : null}
           </VerticalCollapseTransition>
           <Gutter size="0" />
 

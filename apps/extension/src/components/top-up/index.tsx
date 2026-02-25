@@ -37,6 +37,57 @@ export const FeeCoverageDescription: FunctionComponent<{
   );
 };
 
+export const StakingRequirementDescription: FunctionComponent<{
+  requiredStaking: number;
+  coinDenom: string;
+  stakingChainId: string;
+  validatorAddress: string;
+}> = ({ requiredStaking, coinDenom, stakingChainId, validatorAddress }) => {
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "0.25rem",
+        lineHeight: "155%",
+        padding: "0.25rem 0",
+      }}
+    >
+      <Subtitle4
+        color={ColorPalette["gray-300"]}
+        style={{ textAlign: "center" }}
+      >
+        <FormattedMessage id="components.top-up.description.no-fees" />
+        <React.Fragment>
+          <br />
+          <span style={{ color: ColorPalette["blue-500"] }}>
+            <FormattedMessage
+              id="components.top-up.description.staking-required"
+              values={{
+                amount: requiredStaking.toLocaleString(),
+                coinDenom,
+                link: (chunks: React.ReactNode) => (
+                  <a
+                    href={`https://wallet.keplr.app/chains/cosmos-hub?modal=staking&chain=${stakingChainId}&validator_address=${validatorAddress}&step_id=3&action_id=stake`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      color: ColorPalette["blue-500"],
+                      textDecoration: "underline",
+                    }}
+                  >
+                    {chunks}
+                  </a>
+                ),
+              }}
+            />
+          </span>
+        </React.Fragment>
+      </Subtitle4>
+    </div>
+  );
+};
+
 export const FeeCoverageBox = ({ feeConfig }: { feeConfig: IFeeConfig }) => {
   const theme = useTheme();
   const { priceStore } = useStore();

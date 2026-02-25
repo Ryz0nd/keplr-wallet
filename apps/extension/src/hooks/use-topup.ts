@@ -20,6 +20,12 @@ export interface TopUpResult {
   topUpCompleted: boolean;
   executeTopUpIfAvailable: () => Promise<void>;
   topUpError: Error | undefined;
+  stakingChainId?: string;
+  validatorAddress?: string;
+  coinDenom?: string;
+  coinMinimalDenom?: string;
+  requiredStaking?: number;
+  additionalStakingNeeded?: number;
 }
 
 export function useTopUp({
@@ -177,5 +183,11 @@ export function useTopUp({
     topUpCompleted,
     executeTopUpIfAvailable,
     topUpError,
+    stakingChainId: feeConfig.topUpStatus.stakingChainId,
+    validatorAddress: feeConfig.topUpStatus.validatorAddress,
+    coinDenom: feeConfig.topUpStatus.coinDenom,
+    coinMinimalDenom: feeConfig.topUpStatus.coinMinimalDenom,
+    requiredStaking: feeConfig.topUpStatus.requiredStaking,
+    additionalStakingNeeded: feeConfig.topUpStatus.additionalStakingNeeded,
   };
 }

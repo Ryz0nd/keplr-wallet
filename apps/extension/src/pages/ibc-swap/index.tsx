@@ -64,7 +64,10 @@ import { TextButtonProps } from "../../components/button-text";
 import { UnsignedEVMTransactionWithErc20Approvals } from "@keplr-wallet/stores-eth";
 import { InsufficientFeeError } from "@keplr-wallet/hooks";
 import { getSwapWarnings } from "./utils/swap-warnings";
-import { FeeCoverageDescription } from "../../components/top-up";
+import {
+  FeeCoverageDescription,
+  StakingRequirementDescription,
+} from "../../components/top-up";
 import { useTopUp } from "../../hooks/use-topup";
 import { useInsufficientFeeAnalytics } from "../../hooks/analytics/use-insufficient-fee-analytics";
 import { getShouldTopUpSignOptions } from "../../utils/should-top-up-sign-options";
@@ -452,7 +455,15 @@ export const IBCSwapPage: FunctionComponent = observer(() => {
   /**
    * Topup related below
    */
-  const { shouldTopUp, isTopUpAvailable, remainingText } = useTopUp({
+  const {
+    shouldTopUp,
+    isTopUpAvailable,
+    remainingText,
+    requiredStaking,
+    coinDenom,
+    stakingChainId,
+    validatorAddress,
+  } = useTopUp({
     feeConfig: swapConfigs.feeConfig,
     senderConfig: swapConfigs.senderConfig,
   });
@@ -1524,6 +1535,19 @@ export const IBCSwapPage: FunctionComponent = observer(() => {
         </VerticalCollapseTransition>
         <VerticalCollapseTransition collapsed={!shouldTopUp}>
           <FeeCoverageDescription isTopUpAvailable={isTopUpAvailable} />
+        </VerticalCollapseTransition>
+        <VerticalCollapseTransition collapsed={requiredStaking == null}>
+          {requiredStaking != null &&
+          coinDenom != null &&
+          stakingChainId != null &&
+          validatorAddress != null ? (
+            <StakingRequirementDescription
+              requiredStaking={requiredStaking}
+              coinDenom={coinDenom}
+              stakingChainId={stakingChainId}
+              validatorAddress={validatorAddress}
+            />
+          ) : null}
         </VerticalCollapseTransition>
 
         <VerticalCollapseTransition
