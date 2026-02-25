@@ -1,4 +1,4 @@
-import { FeeConfig } from "@keplr-wallet/hooks";
+import { FeeConfig, InsufficientFeeError } from "@keplr-wallet/hooks";
 import { SenderConfig } from "@keplr-wallet/hooks";
 import { useStore } from "../stores";
 import { useEffect, useState } from "react";
@@ -183,11 +183,15 @@ export function useTopUp({
     topUpCompleted,
     executeTopUpIfAvailable,
     topUpError,
-    stakingChainId: feeConfig.topUpStatus.stakingChainId,
-    validatorAddress: feeConfig.topUpStatus.validatorAddress,
-    coinDenom: feeConfig.topUpStatus.coinDenom,
-    coinMinimalDenom: feeConfig.topUpStatus.coinMinimalDenom,
-    requiredStaking: feeConfig.topUpStatus.requiredStaking,
-    additionalStakingNeeded: feeConfig.topUpStatus.additionalStakingNeeded,
+    ...(feeConfig.uiProperties.error instanceof InsufficientFeeError
+      ? {
+          stakingChainId: feeConfig.topUpStatus.stakingChainId,
+          validatorAddress: feeConfig.topUpStatus.validatorAddress,
+          coinDenom: feeConfig.topUpStatus.coinDenom,
+          coinMinimalDenom: feeConfig.topUpStatus.coinMinimalDenom,
+          requiredStaking: feeConfig.topUpStatus.requiredStaking,
+          additionalStakingNeeded: feeConfig.topUpStatus.additionalStakingNeeded,
+        }
+      : {}),
   };
 }
