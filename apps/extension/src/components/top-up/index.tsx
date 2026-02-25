@@ -23,7 +23,7 @@ export const FeeCoverageDescription: FunctionComponent<{
         color={ColorPalette["gray-300"]}
         style={{ textAlign: "center" }}
       >
-        <FormattedMessage id="components.top-up.description.no-fees" />
+        <FormattedMessage id="components.top-up.description.we-cover-upper" />
         {isTopUpAvailable ? (
           <React.Fragment>
             <br />
@@ -57,33 +57,29 @@ export const StakingRequirementDescription: FunctionComponent<{
         color={ColorPalette["gray-300"]}
         style={{ textAlign: "center" }}
       >
-        <FormattedMessage id="components.top-up.description.no-fees" />
-        <React.Fragment>
-          <br />
-          <span style={{ color: ColorPalette["blue-500"] }}>
-            <FormattedMessage
-              id="components.top-up.description.staking-required"
-              values={{
-                amount: requiredStaking.toLocaleString(),
-                coinDenom,
-                link: (chunks: React.ReactNode) => (
-                  <a
-                    href={`https://wallet.keplr.app/chains/cosmos-hub?modal=staking&chain=${stakingChainId}&validator_address=${validatorAddress}&step_id=3&action_id=stake`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      color: ColorPalette["blue-500"],
-                      textDecoration: "underline",
-                    }}
-                  >
-                    {chunks}
-                  </a>
-                ),
-              }}
-            />
-          </span>
-        </React.Fragment>
+        <FormattedMessage
+          id="components.top-up.description.staking-required"
+          values={{
+            amount: requiredStaking.toLocaleString(),
+            coinDenom,
+          }}
+        />
       </Subtitle4>
+      <a
+        href={`https://wallet.keplr.app/chains/cosmos-hub?modal=staking&chain=${stakingChainId}&validator_address=${validatorAddress}&step_id=3&action_id=stake`}
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{
+          display: "inline-block",
+          color: ColorPalette["blue-500"],
+          fontSize: "0.75rem",
+          fontWeight: 600,
+          textDecoration: "underline",
+          textAlign: "center",
+        }}
+      >
+        <FormattedMessage id="components.top-up.description.stake-now" />
+      </a>
     </div>
   );
 };
