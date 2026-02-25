@@ -1296,7 +1296,14 @@ export class FeeConfig extends TxChainSetter implements IFeeConfig {
     ).topUpStatus;
 
     if (topUpStatus != null) {
-      const { isTopUpAvailable, remainingTimeMs } = topUpStatus;
+      const {
+        isTopUpAvailable,
+        remainingTimeMs,
+        stakingChainId,
+        validatorAddress,
+        requiredStaking,
+        additionalStakingNeeded,
+      } = topUpStatus;
 
       // 모든 fee currency가 부족할 경우에만 topup 사용이 가능
       const shouldTopUp = (() => {
@@ -1361,6 +1368,10 @@ export class FeeConfig extends TxChainSetter implements IFeeConfig {
         isTopUpAvailable,
         remainingTimeMs,
         topUpOverrideStdFee,
+        stakingChainId,
+        validatorAddress,
+        requiredStaking,
+        additionalStakingNeeded,
       };
     }
 
