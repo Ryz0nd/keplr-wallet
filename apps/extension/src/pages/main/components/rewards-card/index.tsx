@@ -323,28 +323,12 @@ const ClaimAllButton: FunctionComponent<ClaimAllButtonProps> = ({
   }, []);
 
   return (
-    <Box
-      onHoverStateChange={(hovered) => {
-        if (claimAllDisabled) {
-          return;
-        }
-        if (!hovered) {
-          setIsPressed(false);
-        }
-        setIsHover(hovered);
-      }}
-      cursor={claimAllDisabled ? "not-allowed" : "pointer"}
-      opacity={shouldDimClaimAllButton ? COMMON_HOVER_OPACITY : undefined}
-      onMouseDown={() => {
-        if (claimAllDisabled) {
-          return;
-        }
-        setIsPressed(true);
-      }}
-      onClick={handleClick}
-    >
+    <Box opacity={shouldDimClaimAllButton ? COMMON_HOVER_OPACITY : undefined}>
       <XAxis alignY="center">
-        <SlidingIconContainer $isActive={!claimAllDisabled && isHover}>
+        <SlidingIconContainer
+          $isActive={!claimAllDisabled && isHover}
+          style={{ pointerEvents: "none" }}
+        >
           <Box padding="0.125rem">
             <CheckIcon
               width="0.75rem"
@@ -359,25 +343,47 @@ const ClaimAllButton: FunctionComponent<ClaimAllButtonProps> = ({
             />
           </Box>
         </SlidingIconContainer>
-        <Gutter size="0.25rem" />
-        <Subtitle3
-          color={
-            claimAllDisabled
-              ? ColorPalette["gray-300"]
-              : theme.mode === "light"
-              ? ColorPalette["blue-400"]
-              : ColorPalette["blue-300"]
-          }
+        <div style={{ pointerEvents: "none" }}>
+          <Gutter size="0.25rem" />
+        </div>
+        <Box
+          onHoverStateChange={(hovered) => {
+            if (claimAllDisabled) {
+              return;
+            }
+            if (!hovered) {
+              setIsPressed(false);
+            }
+            setIsHover(hovered);
+          }}
+          cursor={claimAllDisabled ? "not-allowed" : "pointer"}
+          onMouseDown={() => {
+            if (claimAllDisabled) {
+              return;
+            }
+            setIsPressed(true);
+          }}
+          onClick={handleClick}
         >
-          <ClaimTextWrapper $width={labelWidth}>
-            <ClaimAllText ref={claimTextRef} $visible={!isHover}>
-              {claimLabel}
-            </ClaimAllText>
-            <ApproveText ref={approveTextRef} $visible={isHover}>
-              {approveLabel}
-            </ApproveText>
-          </ClaimTextWrapper>
-        </Subtitle3>
+          <Subtitle3
+            color={
+              claimAllDisabled
+                ? ColorPalette["gray-300"]
+                : theme.mode === "light"
+                ? ColorPalette["blue-400"]
+                : ColorPalette["blue-300"]
+            }
+          >
+            <ClaimTextWrapper $width={labelWidth}>
+              <ClaimAllText ref={claimTextRef} $visible={!isHover}>
+                {claimLabel}
+              </ClaimAllText>
+              <ApproveText ref={approveTextRef} $visible={isHover}>
+                {approveLabel}
+              </ApproveText>
+            </ClaimTextWrapper>
+          </Subtitle3>
+        </Box>
       </XAxis>
     </Box>
   );
