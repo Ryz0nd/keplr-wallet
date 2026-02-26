@@ -1537,6 +1537,15 @@ const SwapV2HistoryViewItem: FunctionComponent<{
     };
   }, [history]);
 
+  const isRefundSucceedWhenFailed = useMemo(() => {
+    return (
+      (history.status === SwapV2TxStatus.FAILED ||
+        !!history.trackError ||
+        !!history.additionalTrackError) &&
+      !!history.assetLocationInfo
+    );
+  }, [history]);
+
   const hasExecutableTx = useMemo(() => {
     if (!txExecution || !history.backgroundExecutionId) {
       return false;
@@ -2147,10 +2156,7 @@ const SwapV2HistoryViewItem: FunctionComponent<{
               }
 
               if (failedRouteIndex >= 0) {
-                if (
-                  history.status === SwapV2TxStatus.FAILED &&
-                  history.assetLocationInfo
-                ) {
+                if (isRefundSucceedWhenFailed) {
                   return intl.formatMessage({
                     id: "page.main.components.ibc-history-view.ibc-swap.item.refund.succeed",
                   });
@@ -2293,9 +2299,10 @@ const SwapV2HistoryViewItem: FunctionComponent<{
 
             if (failedRouteIndex >= 0) {
               return intl.formatMessage({
-                id: historyCompleted
-                  ? "page.main.components.ibc-history-view.ibc-swap.failed.complete"
-                  : "page.main.components.ibc-history-view.ibc-swap.failed.in-progress",
+                id:
+                  historyCompleted || isRefundSucceedWhenFailed
+                    ? "page.main.components.ibc-history-view.ibc-swap.failed.complete"
+                    : "page.main.components.ibc-history-view.ibc-swap.failed.in-progress",
               });
             }
 
