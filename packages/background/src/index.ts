@@ -351,7 +351,14 @@ export function init(
   PhishingList.init(router, phishingListService);
   AutoLocker.init(router, autoLockAccountService);
   Analytics.init(router, analyticsService);
-  KeyRingV2.init(router, keyRingV2Service);
+  KeyRingV2.init(
+    router,
+    keyRingV2Service,
+    permissionService,
+    chainsService,
+    keyRingCosmosService,
+    keyRingStarknetService
+  );
   KeyRingCosmos.init(
     router,
     keyRingCosmosService,

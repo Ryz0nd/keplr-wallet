@@ -26,11 +26,24 @@ import {
   ExportKeyRingVaultsMsg,
   SearchKeyRingsMsg,
   AppendLedgerExtendedKeysMsg,
+  GetAllWalletsMsg,
+  SwitchAccountMsg,
 } from "./messages";
 import { ROUTE } from "./constants";
 import { getHandler } from "./handler";
+import type { PermissionService } from "../permission/service";
+import type { ChainsService } from "../chains/service";
+import type { KeyRingCosmosService } from "../keyring-cosmos/service";
+import type { KeyRingStarknetService } from "../keyring-starknet/service";
 
-export function init(router: Router, service: KeyRingService): void {
+export function init(
+  router: Router,
+  service: KeyRingService,
+  permissionService: PermissionService,
+  chainsService: ChainsService,
+  keyRingCosmosService: KeyRingCosmosService,
+  keyRingStarknetService: KeyRingStarknetService
+): void {
   router.registerMessage(GetIsLockedMsg);
   router.registerMessage(GetKeyRingStatusMsg);
   router.registerMessage(GetKeyRingStatusOnlyMsg);
@@ -56,6 +69,17 @@ export function init(router: Router, service: KeyRingService): void {
   router.registerMessage(ShowSensitiveLegacyKeyRingDataMsg);
   router.registerMessage(ExportKeyRingVaultsMsg);
   router.registerMessage(SearchKeyRingsMsg);
+  router.registerMessage(GetAllWalletsMsg);
+  router.registerMessage(SwitchAccountMsg);
 
-  router.addHandler(ROUTE, getHandler(service));
+  router.addHandler(
+    ROUTE,
+    getHandler(
+      service,
+      permissionService,
+      chainsService,
+      keyRingCosmosService,
+      keyRingStarknetService
+    )
+  );
 }
