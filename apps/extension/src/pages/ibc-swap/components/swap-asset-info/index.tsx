@@ -66,21 +66,7 @@ const GlowBorderWrapper = styled.div<{ $isLoading: boolean }>`
 
         pointer-events: none;
         z-index: 2;
-        animation: borderSlide 1.5s infinite;
-      }
-
-      @keyframes borderSlide {
-        0% {
-          background-position: 100% 0;
-          animation-timing-function: ease-in;
-        }
-        50% {
-          background-position: 50% 0;
-          animation-timing-function: linear;
-        }
-        100% {
-          background-position: 0% 0;
-        }
+        animation: ${glowSlideAnimation} 1.5s infinite;
       }
     `}
 `;

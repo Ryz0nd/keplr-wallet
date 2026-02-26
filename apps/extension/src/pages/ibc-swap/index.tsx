@@ -37,7 +37,7 @@ import { MainHeaderLayout } from "../main/layouts/header";
 import { XAxis } from "../../components/axis";
 import { Body3, H4, Subtitle4 } from "../../components/typography";
 import { SlippageModal } from "./components/slippage-modal";
-import styled, { useTheme } from "styled-components";
+import styled, { keyframes, useTheme } from "styled-components";
 import { GuideBox } from "../../components/guide-box";
 import { VerticalCollapseTransition } from "../../components/transition/vertical-collapse";
 import { usePageSimpleBar } from "../../hooks/page-simplebar";
@@ -2013,17 +2013,18 @@ const ArrowsUpDownIcon: FunctionComponent<{
   );
 };
 
-const SpinnerSvg = styled.svg`
-  @keyframes spinnerRotate {
-    0% {
-      transform: rotate(75deg);
-    }
-    100% {
-      transform: rotate(435deg);
-    }
+const spinnerRotateAnimation = keyframes`
+  0% {
+    transform: rotate(75deg);
   }
+  100% {
+    transform: rotate(435deg);
+  }
+`;
 
-  animation: spinnerRotate 1s cubic-bezier(0.2, 0.6, 0.7, 0.9) infinite;
+const SpinnerSvg = styled.svg`
+  animation: ${spinnerRotateAnimation} 1s cubic-bezier(0.2, 0.6, 0.7, 0.9)
+    infinite;
 `;
 
 const SpinnerIcon: FunctionComponent<{
