@@ -47,4 +47,5 @@ packages/proto-types/proto-types-gen/src
 storybook-static
 build-storybook.log
 
-.claude
+.claude/*
+!.claude/settings.json
