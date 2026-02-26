@@ -427,6 +427,9 @@
   "page.ibc-swap.components.swap-not-available-modal.title": "兑换不可用",
   "page.ibc-swap.components.swap-not-available-modal.paragraph": "当前无法兑换此代币。",
 
+  "page.switch-account.title": "切换账户请求",
+  "page.switch-account.description": "请求切换到账户：{name}",
+
   "page.permission.unknown-permission": "未知权限",
   "page.permission.requesting-connection-title": "请求连接",
   "page.permission.paragraph": "通过允许此请求，网站将：{br}• 获取你的Keplr钱包上的所有链的列表",

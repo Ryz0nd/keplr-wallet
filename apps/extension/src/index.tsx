@@ -123,6 +123,7 @@ import { HistoryDetailPage } from "./pages/history-detail";
 import { StakePage } from "./pages/stake";
 import { StakeExplorePage } from "./pages/stake/explore";
 import { StakeEmptyPage } from "./pages/stake/empty";
+import { SwitchAccountPage } from "./pages/switch-account";
 
 configure({
   enforceActions: "always", // Make mobx to strict mode.
@@ -512,6 +513,7 @@ const RoutesAfterReady: FunctionComponent = observer(() => {
                 element={<SettingContactsAdd />}
               />
               <Route path="/permission" element={<PermissionPage />} />
+              <Route path="/switch-account" element={<SwitchAccountPage />} />
               <Route path="/sign-cosmos" element={<SignCosmosTxPage />} />
               <Route
                 path="/sign-cosmos-adr36"

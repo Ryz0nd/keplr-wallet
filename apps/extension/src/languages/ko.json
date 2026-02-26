@@ -464,6 +464,9 @@
 
   "page.history.title": "활동내역",
 
+  "page.switch-account.title": "계정 전환 요청",
+  "page.switch-account.description": "'{name}' 계정으로 전환을 요청합니다",
+
   "page.permission.unknown-permission": "알수없는 권한",
   "page.permission.requesting-connection-title": "연결 요청",
   "page.permission.paragraph": "승인시 해당 웹사이트에서 아래와 같은 권한을 받습니다 :{br}• 유저의 케플러 지갑에 있는 모든 체인 리스트 조회, 사용",

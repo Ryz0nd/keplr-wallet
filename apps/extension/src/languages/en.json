@@ -469,6 +469,9 @@
 
   "page.history.title": "History",
 
+  "page.switch-account.title": "Switch Account Request",
+  "page.switch-account.description": "Wants to switch to account: {name}",
+
   "page.permission.unknown-permission": "Unknown permission",
   "page.permission.requesting-connection-title": "Requesting Connection",
   "page.permission.paragraph": "By approving this request, the website will:{br}• Get the list of all chains from your Keplr Wallet",
