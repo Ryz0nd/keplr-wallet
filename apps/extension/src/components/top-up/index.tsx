@@ -66,7 +66,7 @@ export const StakingRequirementDescription: FunctionComponent<{
         />
       </Subtitle4>
       <a
-        href={`https://wallet.keplr.app/chains/cosmos-hub?modal=staking&chain=${stakingChainId}&validator_address=${validatorAddress}&step_id=3&action_id=stake`}
+        href={`https://wallet.keplr.app/chains/cosmos-hub?modal=staking&chain=${encodeURIComponent(stakingChainId)}&validator_address=${encodeURIComponent(validatorAddress)}&step_id=3&action_id=stake`}
         target="_blank"
         rel="noopener noreferrer"
         style={{
