@@ -415,6 +415,21 @@ export class MockKeplr implements Keplr {
     throw new Error("Not yet implemented");
   }
 
+  getAllWallets(): Promise<
+    {
+      id: string;
+      name: string;
+      isSelected: boolean;
+      addresses: { [chainId: string]: string };
+    }[]
+  > {
+    throw new Error("Not yet implemented");
+  }
+
+  switchAccount(_id: string): Promise<void> {
+    throw new Error("Not yet implemented");
+  }
+
   sendEthereumTx(_chainId: string, _tx: Uint8Array): Promise<string> {
     throw new Error("Not yet implemented");
   }

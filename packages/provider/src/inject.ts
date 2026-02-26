@@ -1017,6 +1017,21 @@ export class InjectedKeplr implements IKeplr, KeplrCoreTypes {
     ]);
   }
 
+  async getAllWallets(): Promise<
+    {
+      id: string;
+      name: string;
+      isSelected: boolean;
+      addresses: { [chainId: string]: string };
+    }[]
+  > {
+    return await this.requestMethod("getAllWallets", []);
+  }
+
+  async switchAccount(id: string): Promise<void> {
+    await this.requestMethod("switchAccount", [id]);
+  }
+
   async __core__privilageSignAminoWithdrawRewards(
     chainId: string,
     signer: string,
