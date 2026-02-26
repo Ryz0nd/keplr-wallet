@@ -1000,6 +1000,45 @@ export class Keplr implements IKeplr, KeplrCoreTypes {
     });
   }
 
+  async getAllWallets(): Promise<
+    {
+      id: string;
+      name: string;
+      isSelected: boolean;
+      addresses: { [chainId: string]: string };
+    }[]
+  > {
+    return await sendSimpleMessage(
+      this.requester,
+      BACKGROUND_PORT,
+      "keyring-v2",
+      "get-all-wallets",
+      {}
+    );
+  }
+
+  async switchAccount(id: string): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      let f = false;
+      sendSimpleMessage(
+        this.requester,
+        BACKGROUND_PORT,
+        "keyring-v2",
+        "switch-account",
+        { id }
+      )
+        .then(resolve)
+        .catch(reject)
+        .finally(() => (f = true));
+
+      setTimeout(() => {
+        if (!f) {
+          this.protectedTryOpenSidePanelIfEnabled();
+        }
+      }, 300);
+    });
+  }
+
   async __core__privilageSignAminoWithdrawRewards(
     chainId: string,
     signer: string,
