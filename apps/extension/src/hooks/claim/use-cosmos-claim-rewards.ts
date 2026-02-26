@@ -185,109 +185,121 @@ export const useCosmosClaimRewards = () => {
             }
           | undefined;
 
-        const feeCurrencies = await (async () => {
-          if (chainInfo.hasFeature("feemarket")) {
-            const queryFeeMarketGasPrices =
-              queriesStore.get(chainId).cosmos.queryFeeMarketGasPrices;
-            await queryFeeMarketGasPrices.waitFreshResponse();
+        const feeCurrencies = (
+          await (async () => {
+            if (chainInfo.hasFeature("feemarket")) {
+              const queryFeeMarketGasPrices =
+                queriesStore.get(chainId).cosmos.queryFeeMarketGasPrices;
+              await queryFeeMarketGasPrices.waitFreshResponse();
 
-            const result: FeeCurrency[] = [];
+              const result: FeeCurrency[] = [];
 
-            for (const gasPrice of queryFeeMarketGasPrices.gasPrices) {
-              //현재 findCurrencyAsync 내부에서 모르는 체인과 관련 된 토큰이 들어 올시 비동기가 끝나지 않는 문제가 존재함
-              //해서 일단 임시방편으로 ibc 토큰은 무시하도록 처리
-              if (gasPrice.denom.split("/")[0] === "ibc") {
-                continue;
-              }
-
-              const currency = await chainInfo.findCurrencyAsync(
-                gasPrice.denom
-              );
-              if (currency) {
-                let multiplication = {
-                  low: 1.1,
-                  average: 1.2,
-                  high: 1.3,
-                };
-
-                const multificationConfig = queriesStore.simpleQuery.queryGet<{
-                  [str: string]:
-                    | {
-                        low: number;
-                        average: number;
-                        high: number;
-                      }
-                    | undefined;
-                }>("https://config-lambda.keplr.app", "/feemarket/info.json");
-                await multificationConfig.waitFreshResponse();
-
-                if (multificationConfig.response) {
-                  const _default =
-                    multificationConfig.response.data["__default__"];
-                  if (
-                    _default &&
-                    _default.low != null &&
-                    typeof _default.low === "number" &&
-                    _default.average != null &&
-                    typeof _default.average === "number" &&
-                    _default.high != null &&
-                    typeof _default.high === "number"
-                  ) {
-                    multiplication = {
-                      low: _default.low,
-                      average: _default.average,
-                      high: _default.high,
-                    };
-                  }
-                  const specific =
-                    multificationConfig.response.data[
-                      chainInfo.chainIdentifier
-                    ];
-                  if (
-                    specific &&
-                    specific.low != null &&
-                    typeof specific.low === "number" &&
-                    specific.average != null &&
-                    typeof specific.average === "number" &&
-                    specific.high != null &&
-                    typeof specific.high === "number"
-                  ) {
-                    multiplication = {
-                      low: specific.low,
-                      average: specific.average,
-                      high: specific.high,
-                    };
-                  }
+              for (const gasPrice of queryFeeMarketGasPrices.gasPrices) {
+                //현재 findCurrencyAsync 내부에서 모르는 체인과 관련 된 토큰이 들어 올시 비동기가 끝나지 않는 문제가 존재함
+                //해서 일단 임시방편으로 ibc 토큰은 무시하도록 처리
+                if (gasPrice.denom.split("/")[0] === "ibc") {
+                  continue;
                 }
 
-                result.push({
-                  ...currency,
-                  gasPriceStep: {
-                    low: parseFloat(
-                      new Dec(multiplication.low)
-                        .mul(gasPrice.amount)
-                        .toString()
-                    ),
-                    average: parseFloat(
-                      new Dec(multiplication.average)
-                        .mul(gasPrice.amount)
-                        .toString()
-                    ),
-                    high: parseFloat(
-                      new Dec(multiplication.high)
-                        .mul(gasPrice.amount)
-                        .toString()
-                    ),
-                  },
-                });
-              }
-            }
+                const currency = await chainInfo.findCurrencyAsync(
+                  gasPrice.denom
+                );
+                if (currency) {
+                  let multiplication = {
+                    low: 1.1,
+                    average: 1.2,
+                    high: 1.3,
+                  };
 
-            return result;
-          } else {
-            return chainInfo.feeCurrencies;
+                  const multificationConfig =
+                    queriesStore.simpleQuery.queryGet<{
+                      [str: string]:
+                        | {
+                            low: number;
+                            average: number;
+                            high: number;
+                          }
+                        | undefined;
+                    }>(
+                      "https://config-lambda.keplr.app",
+                      "/feemarket/info.json"
+                    );
+                  await multificationConfig.waitFreshResponse();
+
+                  if (multificationConfig.response) {
+                    const _default =
+                      multificationConfig.response.data["__default__"];
+                    if (
+                      _default &&
+                      _default.low != null &&
+                      typeof _default.low === "number" &&
+                      _default.average != null &&
+                      typeof _default.average === "number" &&
+                      _default.high != null &&
+                      typeof _default.high === "number"
+                    ) {
+                      multiplication = {
+                        low: _default.low,
+                        average: _default.average,
+                        high: _default.high,
+                      };
+                    }
+                    const specific =
+                      multificationConfig.response.data[
+                        chainInfo.chainIdentifier
+                      ];
+                    if (
+                      specific &&
+                      specific.low != null &&
+                      typeof specific.low === "number" &&
+                      specific.average != null &&
+                      typeof specific.average === "number" &&
+                      specific.high != null &&
+                      typeof specific.high === "number"
+                    ) {
+                      multiplication = {
+                        low: specific.low,
+                        average: specific.average,
+                        high: specific.high,
+                      };
+                    }
+                  }
+
+                  result.push({
+                    ...currency,
+                    gasPriceStep: {
+                      low: parseFloat(
+                        new Dec(multiplication.low)
+                          .mul(gasPrice.amount)
+                          .toString()
+                      ),
+                      average: parseFloat(
+                        new Dec(multiplication.average)
+                          .mul(gasPrice.amount)
+                          .toString()
+                      ),
+                      high: parseFloat(
+                        new Dec(multiplication.high)
+                          .mul(gasPrice.amount)
+                          .toString()
+                      ),
+                    },
+                  });
+                }
+              }
+
+              return result;
+            } else {
+              return chainInfo.feeCurrencies;
+            }
+          })()
+        ).filter((feeCurrency) => {
+          if (chainInfo.chainId.startsWith("atomone-")) {
+            return feeCurrency.coinMinimalDenom === "uphoton";
           }
-        })();
+          return true;
+        });
+
         for (const chainFeeCurrency of feeCurrencies) {
           const currency = await chainInfo.findCurrencyAsync(
             chainFeeCurrency.coinMinimalDenom

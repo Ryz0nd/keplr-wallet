@@ -9,7 +9,7 @@
     ]
   },
   "scripts": {
-    "postinstall": "zx ./scripts/post-install.mjs",
+    "postinstall": "zx ./scripts/post-install.mjs && yarn prepare",
     "bootstrap": "lerna bootstrap",
     "dev": "lerna run dev --parallel",
     "clean": "lerna run clean && rm -rf node_modules && rm -rf build",
