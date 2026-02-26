@@ -664,7 +664,10 @@ export class RootStore {
       1 * 3600 * 1000,
       this.chainStore,
       this.accountStore,
-      this.queriesStore
+      this.queriesStore,
+      undefined,
+      process.env["KEPLR_EXT_TX_HISTORY_BASE_URL"] || "",
+      "/chain-registry/yacar/cw20/{chainId}/cw20:{contractAddress}"
     );
     this.lsmCurrencyRegistrar = new LSMCurrencyRegistrar(
       new ExtensionKVStore("store_lsm_currency_registrar"),
