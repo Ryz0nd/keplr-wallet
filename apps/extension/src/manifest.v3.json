@@ -29,7 +29,8 @@
     "unlimitedStorage",
     "sidePanel",
     "activeTab",
-    "scripting"
+    "scripting",
+    "webNavigation"
   ],
   "host_permissions": ["http://*/*", "https://*/*"],
   "content_scripts": [

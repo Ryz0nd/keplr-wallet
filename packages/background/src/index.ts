@@ -107,6 +107,7 @@ export function init(
   initFn: () => Promise<void>;
   keyRingService: KeyRingV2.KeyRingService;
   analyticsService: Analytics.AnalyticsService;
+  phishingListService: PhishingList.PhishingListService;
 } {
   const analyticsService = new Analytics.AnalyticsService(
     storeCreator("background.analytics"),
@@ -433,5 +434,6 @@ export function init(
     },
     keyRingService: keyRingV2Service,
     analyticsService: analyticsService,
+    phishingListService: phishingListService,
   };
 }
