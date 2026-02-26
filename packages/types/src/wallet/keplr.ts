@@ -337,6 +337,18 @@ export interface Keplr {
     psbtsHexes: string[],
     options?: SignPsbtOptions
   ): Promise<string[]>;
+
+  getAllWallets(): Promise<
+    {
+      id: string;
+      name: string;
+      isSelected: boolean;
+      addresses: { [chainId: string]: string };
+    }[]
+  >;
+
+  switchAccount(id: string): Promise<void>;
+
   readonly ethereum: IEthereumProvider;
 
   readonly starknet: IStarknetProvider;
