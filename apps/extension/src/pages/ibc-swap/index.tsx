@@ -37,7 +37,7 @@ import { MainHeaderLayout } from "../main/layouts/header";
 import { XAxis } from "../../components/axis";
 import { Body3, H4, Subtitle4 } from "../../components/typography";
 import { SlippageModal } from "./components/slippage-modal";
-import styled, { useTheme } from "styled-components";
+import styled, { keyframes, useTheme } from "styled-components";
 import { GuideBox } from "../../components/guide-box";
 import { VerticalCollapseTransition } from "../../components/transition/vertical-collapse";
 import { usePageSimpleBar } from "../../hooks/page-simplebar";
@@ -491,6 +491,31 @@ export const IBCSwapPage: FunctionComponent = observer(() => {
     swapConfigs.amountConfig.outChainId,
     uiConfigStore.ibcSwapConfig.celestiaDisabled
   );
+
+  const [
+    decorateUpperAmountTextIfTypeIsTo,
+    setDecorateUpperAmountTextIfTypeIsTo,
+  ] = useState("");
+
+  useEffect(() => {
+    if (swapConfigs.amountConfig.isFetchingOutAmount) {
+      setDecorateUpperAmountTextIfTypeIsTo(
+        intl.formatMessage({
+          id: "page.ibc-swap.loading.first",
+        })
+      );
+      const timer = setTimeout(() => {
+        setDecorateUpperAmountTextIfTypeIsTo(
+          intl.formatMessage({
+            id: "page.ibc-swap.loading.second",
+          })
+        );
+      }, 5000);
+      return () => clearTimeout(timer);
+    } else {
+      setDecorateUpperAmountTextIfTypeIsTo("");
+    }
+  }, [swapConfigs.amountConfig.isFetchingOutAmount]);
 
   return (
     <MainHeaderLayout
@@ -1402,6 +1427,7 @@ export const IBCSwapPage: FunctionComponent = observer(() => {
               top: "50%",
               left: "50%",
               transform: "translate(-50%,-50%)",
+              zIndex: 10,
             }}
           >
             <Box
@@ -1473,15 +1499,27 @@ export const IBCSwapPage: FunctionComponent = observer(() => {
                 );
               }}
             >
-              <ArrowsUpDownIcon
-                width="1.5rem"
-                height="1.5rem"
-                color={
-                  theme.mode === "light"
-                    ? ColorPalette["gray-400"]
-                    : ColorPalette["gray-10"]
-                }
-              />
+              {swapConfigs.amountConfig.isFetchingOutAmount ? (
+                <SpinnerIcon
+                  width="1.5rem"
+                  height="1.5rem"
+                  color={
+                    theme.mode === "light"
+                      ? ColorPalette["gray-400"]
+                      : ColorPalette["gray-10"]
+                  }
+                />
+              ) : (
+                <ArrowsUpDownIcon
+                  width="1.5rem"
+                  height="1.5rem"
+                  color={
+                    theme.mode === "light"
+                      ? ColorPalette["gray-400"]
+                      : ColorPalette["gray-10"]
+                  }
+                />
+              )}
             </Box>
           </div>
         </Box>
@@ -1490,6 +1528,7 @@ export const IBCSwapPage: FunctionComponent = observer(() => {
           type="to"
           senderConfig={swapConfigs.senderConfig}
           amountConfig={swapConfigs.amountConfig}
+          decorateUpperAmountTextIfTypeIsTo={decorateUpperAmountTextIfTypeIsTo}
           onDestinationChainSelect={(chainId, coinMinimalDenom) => {
             setSearchParams(
               (prev) => {
@@ -1969,6 +2008,57 @@ const ArrowsUpDownIcon: FunctionComponent<{
         clipRule="evenodd"
       />
     </svg>
+  );
+};
+
+const spinnerRotateAnimation = keyframes`
+  0% {
+    transform: rotate(75deg);
+  }
+  100% {
+    transform: rotate(435deg);
+  }
+`;
+
+const SpinnerSvg = styled.svg`
+  animation: ${spinnerRotateAnimation} 1s cubic-bezier(0.2, 0.6, 0.7, 0.9)
+    infinite;
+`;
+
+const SpinnerIcon: FunctionComponent<{
+  width: string;
+  height: string;
+  color: string;
+}> = ({ width, height, color }) => {
+  return (
+    <SpinnerSvg
+      xmlns="http://www.w3.org/2000/svg"
+      xmlSpace="preserve"
+      fillRule="evenodd"
+      clipRule="evenodd"
+      width={width}
+      height={height}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="none"
+    >
+      <circle
+        cx="12"
+        cy="12"
+        r="10"
+        fill="none"
+        stroke={color}
+        strokeOpacity="0.2"
+        strokeWidth="3.7"
+      />
+      <path
+        fill="none"
+        stroke={color}
+        strokeLinecap="round"
+        strokeWidth="3.7"
+        d="M2 12C2 6.477 6.477 2 12 2"
+      />
+    </SpinnerSvg>
   );
 };
 

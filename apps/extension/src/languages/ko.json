@@ -461,6 +461,8 @@
   "page.ibc-swap.components.swap-not-available-modal.title": "교환 불가능",
   "page.ibc-swap.components.swap-not-available-modal.paragraph": "현재 이 토큰에 대한 교환이 불가능합니다.",
   "page.ibc-swap.button.terms-of-use.title": "이용약관",
+  "page.ibc-swap.loading.first": "가장 좋은 경로를 찾고 있어요…",
+  "page.ibc-swap.loading.second": "조금만 더 확인할게요…",
 
   "page.history.title": "활동내역",
 

@@ -12,7 +12,7 @@ import {
   Subtitle2,
   Subtitle3,
 } from "../../../../components/typography";
-import styled, { useTheme } from "styled-components";
+import styled, { css, keyframes, useTheme } from "styled-components";
 import { ColorPalette } from "../../../../styles";
 import {
   ChainImageFallback,
@@ -37,10 +37,80 @@ import { useFocusOnMount } from "../../../../hooks/use-focus-on-mount";
 import { FormattedMessage, useIntl } from "react-intl";
 import { Tooltip } from "../../../../components/tooltip";
 
+const GlowBorderWrapper = styled.div<{ $isLoading: boolean }>`
+  position: relative;
+  border-radius: 0.375rem;
+
+  ${(props) =>
+    props.$isLoading &&
+    css`
+      box-shadow: 0 0 0 1.5px
+        ${props.theme.mode === "light" ? "#FEFEFE" : "#1D1D1F"};
+
+      &::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        padding: 1.5px;
+        border-radius: inherit;
+
+        background: ${props.theme.mode === "light"
+          ? `linear-gradient(270deg, ${ColorPalette.white} 0%, ${ColorPalette.white} 25%, ${ColorPalette["blue-200"]} 50%, ${ColorPalette.white} 75%, ${ColorPalette.white} 100%)`
+          : `linear-gradient(90deg, ${ColorPalette["gray-600"]} 0%, ${ColorPalette["gray-600"]} 25%, ${ColorPalette["gray-300"]} 50%, ${ColorPalette["gray-600"]} 75%, ${ColorPalette["gray-600"]} 100%)`};
+        background-size: 400% 100%;
+
+        -webkit-mask: linear-gradient(#000 0 0) content-box,
+          linear-gradient(#000 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+
+        pointer-events: none;
+        z-index: 2;
+        animation: ${glowSlideAnimation} 1.5s infinite;
+      }
+    `}
+`;
+
+const glowSlideAnimation = keyframes`
+  0% {
+    background-position: 100% 0;
+    animation-timing-function: ease-in;
+  }
+  50% {
+    background-position: 50% 0;
+    animation-timing-function: linear;
+  }
+  100% {
+    background-position: 0% 0;
+  }
+`;
+
+const GlowOverlay = styled.div`
+  z-index: -1;
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+
+  background: ${(props) =>
+    props.theme.mode === "light"
+      ? `linear-gradient(270deg, ${ColorPalette.white} 0%, ${ColorPalette.white} 25%, #E0F1FF 50%, ${ColorPalette.white} 75%, ${ColorPalette.white} 100%)`
+      : `linear-gradient(90deg, ${ColorPalette["gray-600"]} 0%, ${ColorPalette["gray-600"]} 25%, ${ColorPalette["gray-550"]} 50%, ${ColorPalette["gray-600"]} 75%, ${ColorPalette["gray-600"]} 100%)`};
+  background-size: 400% 100%;
+
+  animation: ${glowSlideAnimation} 1.5s infinite;
+`;
+
 const Styles = {
-  TextInput: styled.input`
+  TextInput: styled.input<{ $isLoading: boolean }>`
     font-weight: 600;
     font-size: 1.25rem;
+
+    ${(props) =>
+      props.$isLoading &&
+      css`
+        opacity: 0.5;
+      `}
 
     width: 100%;
 
@@ -81,12 +151,20 @@ export const SwapAssetInfo: FunctionComponent<{
   senderConfig: ISenderConfig;
   amountConfig: SwapAmountConfig;
 
+  decorateUpperAmountTextIfTypeIsTo?: string;
+
   onDestinationChainSelect?: (
     chainId: string,
     coinMinimalDenom: string
   ) => void;
 }> = observer(
-  ({ type, senderConfig, amountConfig, onDestinationChainSelect }) => {
+  ({
+    type,
+    senderConfig,
+    amountConfig,
+    decorateUpperAmountTextIfTypeIsTo,
+    onDestinationChainSelect,
+  }) => {
     const {
       chainStore,
       queriesStore,
@@ -99,6 +177,9 @@ export const SwapAssetInfo: FunctionComponent<{
 
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
+
+    const isLoadingWithGlowEffect =
+      type === "to" && amountConfig.isFetchingOutAmount;
 
     const price = (() => {
       return priceStore.calculatePrice(amountConfig.amount[0]);
@@ -141,343 +222,433 @@ export const SwapAssetInfo: FunctionComponent<{
     const intl = useIntl();
 
     return (
-      <Box
-        padding="1rem"
-        paddingBottom="0.75rem"
-        backgroundColor={
-          theme.mode === "light" ? ColorPalette.white : ColorPalette["gray-600"]
-        }
-        borderRadius="0.375rem"
-        style={{
-          boxShadow:
-            theme.mode === "light"
-              ? "0px 1px 4px 0px rgba(43, 39, 55, 0.10)"
-              : undefined,
-        }}
-      >
-        <XAxis alignY="center">
-          <Gutter size="0.25rem" />
-          <Subtitle3
-            color={
+      <GlowBorderWrapper $isLoading={isLoadingWithGlowEffect}>
+        <Box
+          padding="1rem"
+          paddingBottom="0.75rem"
+          backgroundColor={
+            isLoadingWithGlowEffect
+              ? "transparent"
+              : theme.mode === "light"
+              ? ColorPalette.white
+              : ColorPalette["gray-600"]
+          }
+          borderRadius="0.375rem"
+          style={{
+            position: "relative",
+            overflow: "hidden",
+            isolation: "isolate",
+            boxShadow:
               theme.mode === "light"
-                ? ColorPalette["gray-300"]
-                : ColorPalette["gray-200"]
-            }
-          >
-            {type === "from"
-              ? intl.formatMessage({
-                  id: "page.ibc-swap.components.swap-asset-info.from",
-                })
-              : intl.formatMessage({
-                  id: "page.ibc-swap.components.swap-asset-info.to",
-                })}
-          </Subtitle3>
-          {type === "to" ? (
-            <React.Fragment>
-              <Gutter size="0.25rem" />
-              <Box height="1px" alignX="center" alignY="center">
-                <Tooltip
-                  content={intl.formatMessage({
-                    id: "page.ibc-swap.components.swap-asset-info.quote-slippage-information-paragraph",
+                ? "0px 1px 4px 0px rgba(43, 39, 55, 0.10)"
+                : undefined,
+          }}
+        >
+          {isLoadingWithGlowEffect ? <GlowOverlay /> : null}
+          <XAxis alignY="center">
+            <Gutter size="0.25rem" />
+            <Subtitle3
+              color={
+                theme.mode === "light"
+                  ? ColorPalette["gray-300"]
+                  : ColorPalette["gray-200"]
+              }
+            >
+              {type === "from"
+                ? intl.formatMessage({
+                    id: "page.ibc-swap.components.swap-asset-info.from",
+                  })
+                : intl.formatMessage({
+                    id: "page.ibc-swap.components.swap-asset-info.to",
                   })}
-                >
-                  <Box width="1rem" height="1rem">
-                    <InformationOutlineIcon
-                      width="1rem"
-                      height="1rem"
-                      color={
-                        theme.mode === "light"
-                          ? ColorPalette["gray-200"]
-                          : ColorPalette["gray-300"]
-                      }
-                    />
-                  </Box>
-                </Tooltip>
-              </Box>
-            </React.Fragment>
-          ) : null}
-
-          {(() => {
-            if (
-              (type === "from" && amountConfig.isFetchingInAmount) ||
-              (type === "to" && amountConfig.isFetchingOutAmount)
-            ) {
-              /* 로딩 아이콘이 부모의 height에 영향을 끼치지 않게 하기 위한 트릭 구조임 */
-              return (
-                <Box
-                  height="1px"
-                  alignX="center"
-                  alignY="center"
-                  marginLeft="0.25rem"
-                >
-                  <Box width="1rem" height="1rem">
-                    <LoadingIcon
-                      width="1rem"
-                      height="1rem"
-                      color={
-                        theme.mode === "light"
-                          ? ColorPalette["gray-200"]
-                          : ColorPalette["gray-300"]
-                      }
-                    />
-                  </Box>
+            </Subtitle3>
+            {type === "to" ? (
+              <React.Fragment>
+                <Gutter size="0.25rem" />
+                <Box height="1px" alignX="center" alignY="center">
+                  <Tooltip
+                    content={intl.formatMessage({
+                      id: "page.ibc-swap.components.swap-asset-info.quote-slippage-information-paragraph",
+                    })}
+                  >
+                    <Box width="1rem" height="1rem">
+                      <InformationOutlineIcon
+                        width="1rem"
+                        height="1rem"
+                        color={
+                          theme.mode === "light"
+                            ? ColorPalette["gray-200"]
+                            : ColorPalette["gray-300"]
+                        }
+                      />
+                    </Box>
+                  </Tooltip>
                 </Box>
-              );
-            }
-          })()}
-          <div
-            style={{
-              flex: 1,
-            }}
-          />
-          {type === "from" ? (
+              </React.Fragment>
+            ) : null}
+
+            {(() => {
+              if (type === "from" && amountConfig.isFetchingInAmount) {
+                /* 로딩 아이콘이 부모의 height에 영향을 끼치지 않게 하기 위한 트릭 구조임 */
+                return (
+                  <Box
+                    height="1px"
+                    alignX="center"
+                    alignY="center"
+                    marginLeft="0.25rem"
+                  >
+                    <Box width="1rem" height="1rem">
+                      <LoadingIcon
+                        width="1rem"
+                        height="1rem"
+                        color={
+                          theme.mode === "light"
+                            ? ColorPalette["gray-200"]
+                            : ColorPalette["gray-300"]
+                        }
+                      />
+                    </Box>
+                  </Box>
+                );
+              }
+            })()}
+            {type === "from" ? (
+              <React.Fragment>
+                <div
+                  style={{
+                    flex: 1,
+                  }}
+                />
+                <Box
+                  cursor="pointer"
+                  onClick={(e) => {
+                    e.preventDefault();
+
+                    amountConfig.setFraction(1);
+                  }}
+                >
+                  <Body3
+                    color={
+                      theme.mode === "light"
+                        ? ColorPalette["gray-300"]
+                        : ColorPalette["gray-200"]
+                    }
+                  >
+                    {intl.formatMessage(
+                      {
+                        id: "page.ibc-swap.components.swap-asset-info.max-asset",
+                      },
+                      {
+                        asset: (() => {
+                          const bal = queriesStore
+                            .get(senderConfig.chainId)
+                            .queryBalances.getQueryBech32Address(
+                              senderConfig.sender
+                            )
+                            .getBalance(amountConfig.currency);
+
+                          if (!bal) {
+                            return new CoinPretty(
+                              amountConfig.currency,
+                              new Dec(0)
+                            )
+                              .hideIBCMetadata(true)
+                              .toString();
+                          }
+
+                          return uiConfigStore.hideStringIfPrivacyMode(
+                            bal.balance
+                              .maxDecimals(6)
+                              .trim(true)
+                              .shrink(true)
+                              .inequalitySymbol(true)
+                              .hideIBCMetadata(true)
+                              .toString(),
+                            2
+                          );
+                        })(),
+                      }
+                    )}
+                  </Body3>
+                </Box>
+              </React.Fragment>
+            ) : decorateUpperAmountTextIfTypeIsTo ? (
+              <Box
+                style={{
+                  flex: 1,
+                  minWidth: 0,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                <Body3
+                  color={
+                    theme.mode === "light"
+                      ? ColorPalette["gray-300"]
+                      : ColorPalette["gray-200"]
+                  }
+                  style={{
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                    textAlign: "end",
+                  }}
+                >
+                  {decorateUpperAmountTextIfTypeIsTo}
+                </Body3>
+              </Box>
+            ) : null}
+          </XAxis>
+
+          <Gutter size="0.75rem" />
+
+          <XAxis alignY="center">
+            <Gutter size="0.25rem" />
+            {renderPriceSymbol ? (
+              <PriceSymbol
+                show={isPriceBased}
+                onTransitionEnd={() => {
+                  if (!isPriceBased) {
+                    setRenderPriceSymbol(false);
+                  }
+                }}
+              />
+            ) : null}
+            <Styles.TextInput
+              ref={textInputRef}
+              $isLoading={isLoadingWithGlowEffect}
+              value={
+                type === "from"
+                  ? (() => {
+                      if (isPriceBased) {
+                        if (amountConfig.fraction != 0) {
+                          return price
+                            ?.toDec()
+                            .toString(price?.options.maxDecimals);
+                        }
+                        return priceValue;
+                      } else {
+                        return amountConfig.value;
+                      }
+                    })()
+                  : amountConfig.outAmount
+                      .maxDecimals(6)
+                      .trim(true)
+                      .shrink(true)
+                      .inequalitySymbol(true)
+                      .hideDenom(true)
+                      .toString()
+              }
+              placeholder="0"
+              type={type === "from" ? "number" : undefined}
+              onChange={(e) => {
+                e.preventDefault();
+
+                if (type === "from") {
+                  if (isPriceBased) {
+                    if (price) {
+                      let value = e.target.value;
+                      if (value.startsWith(".")) {
+                        value = "0" + value;
+                      }
+                      if (value.trim().length === 0) {
+                        amountConfig.setValue("");
+                        setPriceValue(value);
+                        return;
+                      }
+                      if (/^\d+(\.\d+)*$/.test(value)) {
+                        let dec: Dec;
+                        try {
+                          dec = new Dec(value);
+                        } catch (e) {
+                          console.log(e);
+                          return;
+                        }
+                        if (dec.lte(new Dec(0))) {
+                          setPriceValue(value);
+                          return;
+                        }
+
+                        const onePrice = priceStore.calculatePrice(
+                          new CoinPretty(
+                            amountConfig.amount[0].currency,
+                            DecUtils.getTenExponentN(
+                              amountConfig.amount[0].currency.coinDecimals
+                            )
+                          )
+                        );
+
+                        if (!onePrice) {
+                          // Can't be happen
+                          return;
+                        }
+                        const onePriceDec = onePrice.toDec();
+                        const expectedAmount = dec.quo(onePriceDec);
+
+                        setPriceValue(value);
+                        amountConfig.setValue(
+                          expectedAmount.toString(
+                            amountConfig.amount[0].currency.coinDecimals
+                          )
+                        );
+                      }
+                    }
+                  } else {
+                    amountConfig.setValue(e.target.value);
+                  }
+                }
+              }}
+              autoComplete="off"
+              readOnly={type !== "from"}
+            />
+            <Gutter size="0.5rem" />
             <Box
+              paddingLeft="0.62rem"
+              paddingRight="0.75rem"
+              height="2.25rem"
+              alignY="center"
+              borderRadius="99999999px"
+              backgroundColor={
+                theme.mode === "light"
+                  ? ColorPalette.white
+                  : ColorPalette["gray-500"]
+              }
+              hover={{
+                backgroundColor:
+                  theme.mode === "light"
+                    ? ColorPalette["gray-10"]
+                    : ColorPalette["gray-550"],
+              }}
+              borderWidth="1px"
+              borderColor={
+                theme.mode === "light"
+                  ? ColorPalette["gray-100"]
+                  : "transparent"
+              }
               cursor="pointer"
               onClick={(e) => {
                 e.preventDefault();
 
-                amountConfig.setFraction(1);
+                if (type === "from") {
+                  const outChainId = searchParams.get("outChainId");
+                  const outCoinMinimalDenom = searchParams.get(
+                    "outCoinMinimalDenom"
+                  );
+                  // from에 대한 currency를 선택하고 나면 이미 input 값의 의미(?) 자체가 크게 변했기 때문에
+                  // 다른 state는 유지할 필요가 없다. query string을 단순하게 to에 대한 currency만 유지한다.
+                  navigate(
+                    `/send/select-asset?isIBCSwap=true&navigateReplace=true&navigateTo=${encodeURIComponent(
+                      `/ibc-swap?chainId={chainId}&coinMinimalDenom={coinMinimalDenom}${(() => {
+                        let q = "";
+                        if (outChainId) {
+                          q += `outChainId=${outChainId}`;
+                        }
+                        if (outCoinMinimalDenom) {
+                          if (q.length > 0) {
+                            q += "&";
+                          }
+                          q += `outCoinMinimalDenom=${outCoinMinimalDenom}`;
+                        }
+                        if (q.length > 0) {
+                          q = `&${q}`;
+                        }
+                        return q;
+                      })()}&entryPoint=select_from_asset`
+                    )}`
+                  );
+                } else {
+                  // to에 대한 currency를 선택할 때 from에서 선택한 currency와 다른 state들은 여전히 유지시켜야한다.
+                  // 그러므로 query string을 최대한 유지한다.
+                  const qs = Object.fromEntries(searchParams.entries());
+                  delete qs["outChainId"];
+                  delete qs["outCoinMinimalDenom"];
+                  navigate(
+                    `/ibc-swap/select-destination?${(() => {
+                      if (amountConfig.amount.length === 1) {
+                        return `excludeKey=${encodeURIComponent(
+                          `${amountConfig.chainInfo.chainIdentifier}/${amountConfig.amount[0].currency.coinMinimalDenom}`
+                        )}&`;
+                      }
+
+                      return "";
+                    })()}navigateReplace=true&navigateTo=${encodeURIComponent(
+                      `/ibc-swap?outChainId={chainId}&outCoinMinimalDenom={coinMinimalDenom}${(() => {
+                        let q = "";
+                        for (const [key, value] of Object.entries(qs)) {
+                          q += `&${key}=${value}`;
+                        }
+                        return q;
+                      })()}&entryPoint=select_to_asset`
+                    )}&inChainId=${amountConfig.chainInfo.chainId}&inDenom=${
+                      amountConfig.amount[0].currency.coinMinimalDenom
+                    }`
+                  );
+                }
               }}
             >
-              <Body3
-                color={
-                  theme.mode === "light"
-                    ? ColorPalette["gray-300"]
-                    : ColorPalette["gray-200"]
-                }
-              >
-                {intl.formatMessage(
-                  {
-                    id: "page.ibc-swap.components.swap-asset-info.max-asset",
-                  },
-                  {
-                    asset: (() => {
-                      const bal = queriesStore
-                        .get(senderConfig.chainId)
-                        .queryBalances.getQueryBech32Address(
-                          senderConfig.sender
-                        )
-                        .getBalance(amountConfig.currency);
+              <XAxis alignY="center">
+                {(() => {
+                  const currency = type === "from" ? fromCurrency : outCurrency;
 
-                      if (!bal) {
-                        return new CoinPretty(amountConfig.currency, new Dec(0))
-                          .hideIBCMetadata(true)
-                          .toString();
-                      }
-
-                      return uiConfigStore.hideStringIfPrivacyMode(
-                        bal.balance
-                          .maxDecimals(6)
-                          .trim(true)
-                          .shrink(true)
-                          .inequalitySymbol(true)
-                          .hideIBCMetadata(true)
-                          .toString(),
-                        2
-                      );
-                    })(),
-                  }
-                )}
-              </Body3>
-            </Box>
-          ) : null}
-        </XAxis>
-
-        <Gutter size="0.75rem" />
-
-        <XAxis alignY="center">
-          <Gutter size="0.25rem" />
-          {renderPriceSymbol ? (
-            <PriceSymbol
-              show={isPriceBased}
-              onTransitionEnd={() => {
-                if (!isPriceBased) {
-                  setRenderPriceSymbol(false);
-                }
-              }}
-            />
-          ) : null}
-          <Styles.TextInput
-            ref={textInputRef}
-            value={
-              type === "from"
-                ? (() => {
-                    if (isPriceBased) {
-                      if (amountConfig.fraction != 0) {
-                        return price
-                          ?.toDec()
-                          .toString(price?.options.maxDecimals);
-                      }
-                      return priceValue;
-                    } else {
-                      return amountConfig.value;
-                    }
-                  })()
-                : amountConfig.outAmount
-                    .maxDecimals(6)
-                    .trim(true)
-                    .shrink(true)
-                    .inequalitySymbol(true)
-                    .hideDenom(true)
-                    .toString()
-            }
-            placeholder="0"
-            type={type === "from" ? "number" : undefined}
-            onChange={(e) => {
-              e.preventDefault();
-
-              if (type === "from") {
-                if (isPriceBased) {
-                  if (price) {
-                    let value = e.target.value;
-                    if (value.startsWith(".")) {
-                      value = "0" + value;
-                    }
-                    if (value.trim().length === 0) {
-                      amountConfig.setValue("");
-                      setPriceValue(value);
-                      return;
-                    }
-                    if (/^\d+(\.\d+)*$/.test(value)) {
-                      let dec: Dec;
-                      try {
-                        dec = new Dec(value);
-                      } catch (e) {
-                        console.log(e);
-                        return;
-                      }
-                      if (dec.lte(new Dec(0))) {
-                        setPriceValue(value);
-                        return;
-                      }
-
-                      const onePrice = priceStore.calculatePrice(
-                        new CoinPretty(
-                          amountConfig.amount[0].currency,
-                          DecUtils.getTenExponentN(
-                            amountConfig.amount[0].currency.coinDecimals
-                          )
-                        )
-                      );
-
-                      if (!onePrice) {
-                        // Can't be happen
-                        return;
-                      }
-                      const onePriceDec = onePrice.toDec();
-                      const expectedAmount = dec.quo(onePriceDec);
-
-                      setPriceValue(value);
-                      amountConfig.setValue(
-                        expectedAmount.toString(
-                          amountConfig.amount[0].currency.coinDecimals
-                        )
+                  if (type === "to") {
+                    if (
+                      chainStore
+                        .getChain(amountConfig.outChainId)
+                        .findCurrency(outCurrency.coinMinimalDenom) == null
+                    ) {
+                      return (
+                        <LoadingIcon
+                          width="1rem"
+                          height="1rem"
+                          color={
+                            theme.mode === "light"
+                              ? ColorPalette["gray-500"]
+                              : ColorPalette["gray-200"]
+                          }
+                        />
                       );
                     }
                   }
-                } else {
-                  amountConfig.setValue(e.target.value);
-                }
-              }
-            }}
-            autoComplete="off"
-            readOnly={type !== "from"}
-          />
-          <Gutter size="0.5rem" />
-          <Box
-            paddingLeft="0.62rem"
-            paddingRight="0.75rem"
-            height="2.25rem"
-            alignY="center"
-            borderRadius="99999999px"
-            backgroundColor={
-              theme.mode === "light"
-                ? ColorPalette.white
-                : ColorPalette["gray-500"]
-            }
-            hover={{
-              backgroundColor:
-                theme.mode === "light"
-                  ? ColorPalette["gray-10"]
-                  : ColorPalette["gray-550"],
-            }}
-            borderWidth="1px"
-            borderColor={
-              theme.mode === "light" ? ColorPalette["gray-100"] : "transparent"
-            }
-            cursor="pointer"
-            onClick={(e) => {
-              e.preventDefault();
 
-              if (type === "from") {
-                const outChainId = searchParams.get("outChainId");
-                const outCoinMinimalDenom = searchParams.get(
-                  "outCoinMinimalDenom"
-                );
-                // from에 대한 currency를 선택하고 나면 이미 input 값의 의미(?) 자체가 크게 변했기 때문에
-                // 다른 state는 유지할 필요가 없다. query string을 단순하게 to에 대한 currency만 유지한다.
-                navigate(
-                  `/send/select-asset?isIBCSwap=true&navigateReplace=true&navigateTo=${encodeURIComponent(
-                    `/ibc-swap?chainId={chainId}&coinMinimalDenom={coinMinimalDenom}${(() => {
-                      let q = "";
-                      if (outChainId) {
-                        q += `outChainId=${outChainId}`;
-                      }
-                      if (outCoinMinimalDenom) {
-                        if (q.length > 0) {
-                          q += "&";
+                  return (
+                    <React.Fragment>
+                      {/* Currency가 없을 경우엔 대충 fallback 이미지로 처리한다 */}
+                      {!currency ? (
+                        <RawImageFallback
+                          src={undefined}
+                          alt="empty"
+                          size="1.25rem"
+                        />
+                      ) : (
+                        <CurrencyImageFallback
+                          chainInfo={
+                            type === "from" ? fromChainInfo : toChainInfo
+                          }
+                          currency={currency}
+                          size="1.25rem"
+                        />
+                      )}
+                      <Gutter size="0.5rem" />
+                      <Subtitle2
+                        color={
+                          theme.mode === "light"
+                            ? ColorPalette["gray-600"]
+                            : ColorPalette["gray-10"]
                         }
-                        q += `outCoinMinimalDenom=${outCoinMinimalDenom}`;
-                      }
-                      if (q.length > 0) {
-                        q = `&${q}`;
-                      }
-                      return q;
-                    })()}&entryPoint=select_from_asset`
-                  )}`
-                );
-              } else {
-                // to에 대한 currency를 선택할 때 from에서 선택한 currency와 다른 state들은 여전히 유지시켜야한다.
-                // 그러므로 query string을 최대한 유지한다.
-                const qs = Object.fromEntries(searchParams.entries());
-                delete qs["outChainId"];
-                delete qs["outCoinMinimalDenom"];
-                navigate(
-                  `/ibc-swap/select-destination?${(() => {
-                    if (amountConfig.amount.length === 1) {
-                      return `excludeKey=${encodeURIComponent(
-                        `${amountConfig.chainInfo.chainIdentifier}/${amountConfig.amount[0].currency.coinMinimalDenom}`
-                      )}&`;
-                    }
-
-                    return "";
-                  })()}navigateReplace=true&navigateTo=${encodeURIComponent(
-                    `/ibc-swap?outChainId={chainId}&outCoinMinimalDenom={coinMinimalDenom}${(() => {
-                      let q = "";
-                      for (const [key, value] of Object.entries(qs)) {
-                        q += `&${key}=${value}`;
-                      }
-                      return q;
-                    })()}&entryPoint=select_to_asset`
-                  )}&inChainId=${amountConfig.chainInfo.chainId}&inDenom=${
-                    amountConfig.amount[0].currency.coinMinimalDenom
-                  }`
-                );
-              }
-            }}
-          >
-            <XAxis alignY="center">
-              {(() => {
-                const currency = type === "from" ? fromCurrency : outCurrency;
-
-                if (type === "to") {
-                  if (
-                    chainStore
-                      .getChain(amountConfig.outChainId)
-                      .findCurrency(outCurrency.coinMinimalDenom) == null
-                  ) {
-                    return (
-                      <LoadingIcon
+                      >
+                        {(() => {
+                          if (currency) {
+                            return new CoinPretty(currency, new Dec(0))
+                              .hideAmount(true)
+                              .hideIBCMetadata(true)
+                              .toString();
+                          }
+                          return "Unknown";
+                        })()}
+                      </Subtitle2>
+                      <Gutter size="0.25rem" />
+                      <AllowLowIcon
                         width="1rem"
                         height="1rem"
                         color={
@@ -486,223 +657,174 @@ export const SwapAssetInfo: FunctionComponent<{
                             : ColorPalette["gray-200"]
                         }
                       />
-                    );
-                  }
-                }
+                    </React.Fragment>
+                  );
+                })()}
+              </XAxis>
+            </Box>
+          </XAxis>
 
-                return (
-                  <React.Fragment>
-                    {/* Currency가 없을 경우엔 대충 fallback 이미지로 처리한다 */}
-                    {!currency ? (
-                      <RawImageFallback
-                        src={undefined}
-                        alt="empty"
-                        size="1.25rem"
-                      />
-                    ) : (
-                      <CurrencyImageFallback
-                        chainInfo={
-                          type === "from" ? fromChainInfo : toChainInfo
-                        }
-                        currency={currency}
-                        size="1.25rem"
-                      />
-                    )}
-                    <Gutter size="0.5rem" />
-                    <Subtitle2
+          <Gutter size="0.4rem" />
+
+          <XAxis alignY="center">
+            {(() => {
+              if (type === "from" && !price) {
+                return null;
+              }
+              if (type === "to") {
+                if (!priceStore.calculatePrice(amountConfig.outAmount)) {
+                  return null;
+                }
+              }
+
+              return (
+                <Box
+                  cursor={type === "from" ? "pointer" : undefined}
+                  onClick={(e) => {
+                    e.preventDefault();
+
+                    if (type !== "from") {
+                      return;
+                    }
+
+                    if (!isPriceBased) {
+                      if (price!.toDec().lte(new Dec(0))) {
+                        setPriceValue("");
+                      } else {
+                        setPriceValue(
+                          price!
+                            .toDec()
+                            .toString(price!.options.maxDecimals)
+                            .toString()
+                        );
+                      }
+                    }
+                    setIsPriceBased(!isPriceBased);
+
+                    textInputRef.current?.focus();
+                  }}
+                >
+                  <XAxis alignY="center">
+                    {type === "from" ? (
+                      <React.Fragment>
+                        <SwitchPriceBaseIcon
+                          width="1.25rem"
+                          height="1.25rem"
+                          color={
+                            theme.mode === "light"
+                              ? ColorPalette["gray-400"]
+                              : ColorPalette["gray-300"]
+                          }
+                        />
+                        <Gutter size="0.15rem" />
+                      </React.Fragment>
+                    ) : null}
+                    <Body3
                       color={
                         theme.mode === "light"
-                          ? ColorPalette["gray-600"]
-                          : ColorPalette["gray-10"]
+                          ? ColorPalette["gray-400"]
+                          : ColorPalette["gray-300"]
                       }
                     >
                       {(() => {
-                        if (currency) {
-                          return new CoinPretty(currency, new Dec(0))
-                            .hideAmount(true)
+                        if (isPriceBased) {
+                          return amountConfig.amount[0]
+                            .trim(true)
+                            .maxDecimals(6)
+                            .inequalitySymbol(true)
+                            .shrink(true)
                             .hideIBCMetadata(true)
                             .toString();
+                        } else {
+                          if (type === "from") {
+                            return price!.toString();
+                          } else {
+                            const p = priceStore.calculatePrice(
+                              amountConfig.outAmount
+                            );
+                            if (!p) {
+                              return null;
+                            }
+                            return p.toString();
+                          }
                         }
-                        return "Unknown";
                       })()}
-                    </Subtitle2>
-                    <Gutter size="0.25rem" />
-                    <AllowLowIcon
-                      width="1rem"
-                      height="1rem"
-                      color={
-                        theme.mode === "light"
-                          ? ColorPalette["gray-500"]
-                          : ColorPalette["gray-200"]
-                      }
-                    />
-                  </React.Fragment>
-                );
-              })()}
-            </XAxis>
-          </Box>
-        </XAxis>
+                    </Body3>
+                  </XAxis>
+                </Box>
+              );
+            })()}
+            <div
+              style={{
+                flex: 1,
+              }}
+            />
+            <Body3 color={ColorPalette["gray-300"]}>
+              {intl.formatMessage(
+                {
+                  id: "page.ibc-swap.components.swap-asset-info.on-chain-name",
+                },
+                {
+                  chainName: (() => {
+                    const chainInfo =
+                      type === "from" ? fromChainInfo : toChainInfo;
+                    return chainInfo.chainName;
+                  })(),
+                }
+              )}
+            </Body3>
+            {(() => {
+              if (type === "to") {
+                return (
+                  <React.Fragment>
+                    <Gutter size="0.15rem" />
+                    <Box
+                      cursor="pointer"
+                      onClick={(e) => {
+                        e.preventDefault();
 
-        <Gutter size="0.4rem" />
+                        analyticsAmplitudeStore.logEvent(
+                          "swap_dest_chain_btn_clicked"
+                        );
 
-        <XAxis alignY="center">
-          {(() => {
-            if (type === "from" && !price) {
-              return null;
-            }
-            if (type === "to") {
-              if (!priceStore.calculatePrice(amountConfig.outAmount)) {
-                return null;
-              }
-            }
-
-            return (
-              <Box
-                cursor={type === "from" ? "pointer" : undefined}
-                onClick={(e) => {
-                  e.preventDefault();
-
-                  if (type !== "from") {
-                    return;
-                  }
-
-                  if (!isPriceBased) {
-                    if (price!.toDec().lte(new Dec(0))) {
-                      setPriceValue("");
-                    } else {
-                      setPriceValue(
-                        price!
-                          .toDec()
-                          .toString(price!.options.maxDecimals)
-                          .toString()
-                      );
-                    }
-                  }
-                  setIsPriceBased(!isPriceBased);
-
-                  textInputRef.current?.focus();
-                }}
-              >
-                <XAxis alignY="center">
-                  {type === "from" ? (
-                    <React.Fragment>
-                      <SwitchPriceBaseIcon
-                        width="1.25rem"
-                        height="1.25rem"
+                        setIsSelectDestinationModalOpen(true);
+                      }}
+                    >
+                      <CogIcon
+                        width="0.875rem"
+                        height="0.875rem"
                         color={
                           theme.mode === "light"
-                            ? ColorPalette["gray-400"]
-                            : ColorPalette["gray-300"]
+                            ? ColorPalette["gray-200"]
+                            : ColorPalette["gray-400"]
                         }
                       />
-                      <Gutter size="0.15rem" />
-                    </React.Fragment>
-                  ) : null}
-                  <Body3
-                    color={
-                      theme.mode === "light"
-                        ? ColorPalette["gray-400"]
-                        : ColorPalette["gray-300"]
-                    }
-                  >
-                    {(() => {
-                      if (isPriceBased) {
-                        return amountConfig.amount[0]
-                          .trim(true)
-                          .maxDecimals(6)
-                          .inequalitySymbol(true)
-                          .shrink(true)
-                          .hideIBCMetadata(true)
-                          .toString();
-                      } else {
-                        if (type === "from") {
-                          return price!.toString();
-                        } else {
-                          const p = priceStore.calculatePrice(
-                            amountConfig.outAmount
-                          );
-                          if (!p) {
-                            return null;
-                          }
-                          return p.toString();
-                        }
-                      }
-                    })()}
-                  </Body3>
-                </XAxis>
-              </Box>
-            );
-          })()}
-          <div
-            style={{
-              flex: 1,
-            }}
-          />
-          <Body3 color={ColorPalette["gray-300"]}>
-            {intl.formatMessage(
-              {
-                id: "page.ibc-swap.components.swap-asset-info.on-chain-name",
-              },
-              {
-                chainName: (() => {
-                  const chainInfo =
-                    type === "from" ? fromChainInfo : toChainInfo;
-                  return chainInfo.chainName;
-                })(),
+                    </Box>
+                  </React.Fragment>
+                );
               }
-            )}
-          </Body3>
-          {(() => {
-            if (type === "to") {
-              return (
-                <React.Fragment>
-                  <Gutter size="0.15rem" />
-                  <Box
-                    cursor="pointer"
-                    onClick={(e) => {
-                      e.preventDefault();
+            })()}
+            <Gutter size="0.25rem" />
+          </XAxis>
 
-                      analyticsAmplitudeStore.logEvent(
-                        "swap_dest_chain_btn_clicked"
-                      );
-
-                      setIsSelectDestinationModalOpen(true);
-                    }}
-                  >
-                    <CogIcon
-                      width="0.875rem"
-                      height="0.875rem"
-                      color={
-                        theme.mode === "light"
-                          ? ColorPalette["gray-200"]
-                          : ColorPalette["gray-400"]
-                      }
-                    />
-                  </Box>
-                </React.Fragment>
-              );
-            }
-          })()}
-          <Gutter size="0.25rem" />
-        </XAxis>
-
-        <Modal
-          isOpen={isSelectDestinationModalOpen}
-          close={() => setIsSelectDestinationModalOpen(false)}
-          align="bottom"
-        >
-          <SelectDestinationChainModal
-            amountConfig={amountConfig}
+          <Modal
+            isOpen={isSelectDestinationModalOpen}
             close={() => setIsSelectDestinationModalOpen(false)}
-            onDestinationChainSelect={
-              onDestinationChainSelect ||
-              (() => {
-                // noop
-              })
-            }
-          />
-        </Modal>
-      </Box>
+            align="bottom"
+          >
+            <SelectDestinationChainModal
+              amountConfig={amountConfig}
+              close={() => setIsSelectDestinationModalOpen(false)}
+              onDestinationChainSelect={
+                onDestinationChainSelect ||
+                (() => {
+                  // noop
+                })
+              }
+            />
+          </Modal>
+        </Box>
+      </GlowBorderWrapper>
     );
   }
 );
