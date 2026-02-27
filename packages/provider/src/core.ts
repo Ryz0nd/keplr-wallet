@@ -1008,13 +1008,25 @@ export class Keplr implements IKeplr, KeplrCoreTypes {
       addresses: { [chainId: string]: string };
     }[]
   > {
-    return await sendSimpleMessage(
-      this.requester,
-      BACKGROUND_PORT,
-      "keyring-v2",
-      "get-all-wallets",
-      {}
-    );
+    return new Promise((resolve, reject) => {
+      let f = false;
+      sendSimpleMessage(
+        this.requester,
+        BACKGROUND_PORT,
+        "keyring-v2",
+        "get-all-wallets",
+        {}
+      )
+        .then(resolve)
+        .catch(reject)
+        .finally(() => (f = true));
+
+      setTimeout(() => {
+        if (!f) {
+          this.protectedTryOpenSidePanelIfEnabled();
+        }
+      }, 300);
+    });
   }
 
   async switchAccount(id: string): Promise<void> {
@@ -1472,7 +1484,7 @@ export class Keplr implements IKeplr, KeplrCoreTypes {
                     transform: translateY(0%) translateX(0);
                   }
                 }
-                    
+
                 @keyframes tada {
                   0% {
                     transform: scale3d(1, 1, 1);
@@ -1490,7 +1502,7 @@ export class Keplr implements IKeplr, KeplrCoreTypes {
                     transform: scale3d(1, 1, 1);
                   }
                 }
-                  
+
             `;
 
               const isLightMode =
