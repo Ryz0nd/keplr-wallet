@@ -433,6 +433,7 @@
   "page.permission.unknown-permission": "未知权限",
   "page.permission.requesting-connection-title": "请求连接",
   "page.permission.paragraph": "通过允许此请求，网站将：{br}• 获取你的Keplr钱包上的所有链的列表",
+  "page.permission.get-all-keyring-infos.paragraph": "通过允许此请求，网站将：{br}• 获取你的Keplr钱包上的所有钱包列表",
 
   "page.permission.basic-access.select-chain-title": "连接",
   "page.permission.basic-access-for-bitcoin.select-chain-paragraph": "选择要连接的比特币链。",
