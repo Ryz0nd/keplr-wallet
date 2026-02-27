@@ -8,6 +8,12 @@ import { computed, makeObservable } from "mobx";
 export type TopUpStatus = {
   isTopUpAvailable: boolean;
   remainingTimeMs?: number;
+  stakingChainId?: string;
+  validatorAddress?: string;
+  coinDenom?: string;
+  coinMinimalDenom?: string;
+  requiredStaking?: number;
+  additionalStakingNeeded?: number;
 };
 
 export type StatusResponse = TopUpStatus | { error: string };

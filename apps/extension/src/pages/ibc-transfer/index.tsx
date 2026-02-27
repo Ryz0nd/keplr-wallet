@@ -128,7 +128,15 @@ export const IBCTransferPage: FunctionComponent = observer(() => {
 
   const historyType = "ibc-transfer";
 
-  const { shouldTopUp, remainingText, isTopUpAvailable } = useTopUp({
+  const {
+    shouldTopUp,
+    remainingText,
+    isTopUpAvailable,
+    requiredStaking,
+    coinDenom,
+    stakingChainId,
+    validatorAddress,
+  } = useTopUp({
     feeConfig: ibcTransferConfigs.feeConfig,
     senderConfig: ibcTransferConfigs.senderConfig,
   });
@@ -301,6 +309,10 @@ export const IBCTransferPage: FunctionComponent = observer(() => {
             gasSimulator={gasSimulator}
             shouldTopUp={shouldTopUp}
             isTopUpAvailable={isTopUpAvailable}
+            requiredStaking={requiredStaking}
+            coinDenom={coinDenom}
+            stakingChainId={stakingChainId}
+            validatorAddress={validatorAddress}
           />
         )}
       </Box>

@@ -809,12 +809,14 @@
   "components.fee-info.bridge-fee": "브릿지 수수료",
   "components.fee-info.swap-provider": "제공자",
 
-  "components.top-up.description.no-fees": "수수료가 없나요? 걱정 마세요! ✨",
-  "components.top-up.description.we-cover": "케플러팀이 대신 내드릴게요 :)",
+  "components.top-up.description.we-cover-upper": "케플러에 위임해주셔서 감사합니다!",
+  "components.top-up.description.we-cover": "이번 수수료는 저희가 낼게요 😉",
   "components.top-up.tx-fee": "트랜잭션 수수료",
   "components.top-up.covered-by-keplr": "Keplr가 대신 지불",
   "components.top-up.keep-window-open": "거래 진행 중에는 이 창을 열어두세요",
   "components.top-up.wait-time": "다음 수수료 지원까지 {time}",
+  "components.top-up.description.staking-required": "Keplr에 {coinDenom} {amount}개를 위임하면 수수료 무료!",
+  "components.top-up.description.stake-now": "지금 위임하기",
 
   "button.confirm": "확인",
   "button.ok": "확인",

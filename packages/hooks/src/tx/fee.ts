@@ -1300,7 +1300,16 @@ export class FeeConfig extends TxChainSetter implements IFeeConfig {
     ).topUpStatus;
 
     if (topUpStatus != null) {
-      const { isTopUpAvailable, remainingTimeMs } = topUpStatus;
+      const {
+        isTopUpAvailable,
+        remainingTimeMs,
+        stakingChainId,
+        validatorAddress,
+        coinDenom,
+        coinMinimalDenom,
+        requiredStaking,
+        additionalStakingNeeded,
+      } = topUpStatus;
 
       // 모든 fee currency가 부족할 경우에만 topup 사용이 가능
       const shouldTopUp = (() => {
@@ -1373,6 +1382,12 @@ export class FeeConfig extends TxChainSetter implements IFeeConfig {
         isTopUpAvailable,
         remainingTimeMs,
         topUpOverrideStdFee,
+        stakingChainId,
+        validatorAddress,
+        coinDenom,
+        coinMinimalDenom,
+        requiredStaking,
+        additionalStakingNeeded,
       };
     }
 
@@ -1390,6 +1405,12 @@ export class FeeConfig extends TxChainSetter implements IFeeConfig {
     remainingTimeMs?: number;
     topUpOverrideStdFee?: StdFee;
     isTopUpAvailable: boolean;
+    stakingChainId?: string;
+    validatorAddress?: string;
+    coinDenom?: string;
+    coinMinimalDenom?: string;
+    requiredStaking?: number;
+    additionalStakingNeeded?: number;
   } {
     // always call getTopUpStatus() to ensure topUpQuery is observed
     const status = this.getTopUpStatus();
@@ -1406,6 +1427,12 @@ export class FeeConfig extends TxChainSetter implements IFeeConfig {
       remainingTimeMs: undefined,
       topUpOverrideStdFee: undefined,
       isTopUpAvailable: false,
+      stakingChainId: status.stakingChainId,
+      validatorAddress: status.validatorAddress,
+      coinDenom: status.coinDenom,
+      coinMinimalDenom: status.coinMinimalDenom,
+      requiredStaking: status.requiredStaking,
+      additionalStakingNeeded: status.additionalStakingNeeded,
     };
   }
 

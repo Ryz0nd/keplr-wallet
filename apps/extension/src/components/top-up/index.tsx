@@ -23,7 +23,7 @@ export const FeeCoverageDescription: FunctionComponent<{
         color={ColorPalette["gray-300"]}
         style={{ textAlign: "center" }}
       >
-        <FormattedMessage id="components.top-up.description.no-fees" />
+        <FormattedMessage id="components.top-up.description.we-cover-upper" />
         {isTopUpAvailable ? (
           <React.Fragment>
             <br />
@@ -33,6 +33,57 @@ export const FeeCoverageDescription: FunctionComponent<{
           </React.Fragment>
         ) : null}
       </Subtitle4>
+    </div>
+  );
+};
+
+export const StakingRequirementDescription: FunctionComponent<{
+  requiredStaking: number;
+  coinDenom: string;
+  stakingChainId: string;
+  validatorAddress: string;
+}> = ({ requiredStaking, coinDenom, stakingChainId, validatorAddress }) => {
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "0.25rem",
+        lineHeight: "155%",
+        padding: "0.25rem 0",
+      }}
+    >
+      <Subtitle4
+        color={ColorPalette["gray-300"]}
+        style={{ textAlign: "center" }}
+      >
+        <FormattedMessage
+          id="components.top-up.description.staking-required"
+          values={{
+            amount: requiredStaking.toLocaleString(),
+            coinDenom,
+          }}
+        />
+      </Subtitle4>
+      <a
+        href={`https://wallet.keplr.app/chains/cosmos-hub?modal=staking&chain=${encodeURIComponent(
+          stakingChainId
+        )}&validator_address=${encodeURIComponent(
+          validatorAddress
+        )}&step_id=3&action_id=stake`}
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{
+          display: "inline-block",
+          color: ColorPalette["blue-500"],
+          fontSize: "0.75rem",
+          fontWeight: 600,
+          textDecoration: "underline",
+          textAlign: "center",
+        }}
+      >
+        <FormattedMessage id="components.top-up.description.stake-now" />
+      </a>
     </div>
   );
 };

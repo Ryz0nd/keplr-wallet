@@ -751,11 +751,13 @@
   "components.fee-info.bridge-fee": "桥接费用",
   "components.fee-info.swap-provider": "提供者",
 
-  "components.top-up.description.no-fees": "没有手续费？别担心！✨",
-  "components.top-up.description.we-cover": "我们会帮您支付 :)",
+  "components.top-up.description.we-cover-upper": "感谢你在 Keplr 进行质押！",
+  "components.top-up.description.we-cover": "这笔手续费由我们承担 😉",
   "components.top-up.tx-fee": "交易手续费",
   "components.top-up.covered-by-keplr": "由 Keplr 支付",
   "components.top-up.keep-window-open": "交易期间请保持此窗口打开",
+  "components.top-up.description.staking-required": "在 Keplr 验证者质押 {amount} {coinDenom}，即可享受手续费支持！",
+  "components.top-up.description.stake-now": "立即质押",
   "components.top-up.wait-time": "下次免费交易在 {time}",
 
   "button.confirm": "确定",
