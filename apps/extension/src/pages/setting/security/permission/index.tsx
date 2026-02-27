@@ -302,6 +302,10 @@ const OriginView: FunctionComponent<{
                         switch (globalPermission.type) {
                           case "get-chain-infos":
                             return "Get chain infos";
+                          case "get-all-keyring-infos":
+                            return "Get all wallets";
+                          case "get-current-keyring-info":
+                            return "Get current wallet";
                           default:
                             return `Unknown: ${globalPermission.type}`;
                         }

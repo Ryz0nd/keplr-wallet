@@ -5,6 +5,7 @@ import { PermissionBasicAccessPage } from "./basic-access";
 import { GlobalPermissionData, PermissionData } from "@keplr-wallet/background";
 import { Splash } from "../../components/splash";
 import { GlobalPermissionGetChainInfosPage } from "./get-chain-infos";
+import { GlobalPermissionGetAllKeyRingInfosPage } from "./get-all-keyring-infos";
 import { useInteractionInfo } from "../../hooks";
 import { FormattedMessage } from "react-intl";
 import { PermissionBasicAccessForEVMPage } from "./basic-access-for-evm";
@@ -117,6 +118,11 @@ export const PermissionPage: FunctionComponent = observer(() => {
       case "get-chain-infos": {
         return (
           <GlobalPermissionGetChainInfosPage data={globalPermissionData} />
+        );
+      }
+      case "get-all-keyring-infos": {
+        return (
+          <GlobalPermissionGetAllKeyRingInfosPage data={globalPermissionData} />
         );
       }
       default: {
