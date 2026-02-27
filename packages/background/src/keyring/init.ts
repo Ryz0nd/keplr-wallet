@@ -32,6 +32,7 @@ import {
 import { ROUTE } from "./constants";
 import { getHandler } from "./handler";
 import type { PermissionService } from "../permission/service";
+import type { PermissionInteractiveService } from "../permission-interactive/service";
 import type { ChainsService } from "../chains/service";
 import type { KeyRingCosmosService } from "../keyring-cosmos/service";
 import type { KeyRingStarknetService } from "../keyring-starknet/service";
@@ -40,6 +41,7 @@ export function init(
   router: Router,
   service: KeyRingService,
   permissionService: PermissionService,
+  permissionInteractiveService: PermissionInteractiveService,
   chainsService: ChainsService,
   keyRingCosmosService: KeyRingCosmosService,
   keyRingStarknetService: KeyRingStarknetService
@@ -77,6 +79,7 @@ export function init(
     getHandler(
       service,
       permissionService,
+      permissionInteractiveService,
       chainsService,
       keyRingCosmosService,
       keyRingStarknetService

@@ -40,16 +40,19 @@ import { getBasicAccessPermissionType } from "../permission/types";
 import { ChainsService } from "../chains/service";
 import type { KeyRingCosmosService } from "../keyring-cosmos/service";
 import type { KeyRingStarknetService } from "../keyring-starknet/service";
+import type { PermissionInteractiveService } from "../permission-interactive/service";
 
 export const getHandler: (
   service: KeyRingService,
   permissionService: PermissionService,
+  permissionInteractiveService: PermissionInteractiveService,
   chainsService: ChainsService,
   keyRingCosmosService: KeyRingCosmosService,
   keyRingStarknetService: KeyRingStarknetService
 ) => Handler = (
   service,
   permissionService,
+  permissionInteractiveService,
   chainsService,
   keyRingCosmosService,
   keyRingStarknetService
@@ -155,6 +158,7 @@ export const getHandler: (
         return handleGetAllWalletsMsg(
           service,
           permissionService,
+          permissionInteractiveService,
           chainsService,
           keyRingCosmosService,
           keyRingStarknetService
@@ -466,19 +470,19 @@ const handleSearchKeyRingsMsg: (
 const handleGetAllWalletsMsg: (
   service: KeyRingService,
   permissionService: PermissionService,
+  permissionInteractiveService: PermissionInteractiveService,
   chainsService: ChainsService,
   keyRingCosmosService: KeyRingCosmosService,
   keyRingStarknetService: KeyRingStarknetService
 ) => InternalHandler<GetAllWalletsMsg> = (
   service,
   permissionService,
+  permissionInteractiveService,
   chainsService,
   keyRingCosmosService,
   keyRingStarknetService
 ) => {
   return async (env, msg) => {
-    await service.ensureUnlockInteractive(env);
-
     const origin = msg.origin;
     const permittedChains = permissionService.getOriginPermittedChains(
       origin,
@@ -493,7 +497,14 @@ const handleGetAllWalletsMsg: (
       );
     }
 
-    const keyInfos = service.getKeyInfos();
+    const returnAll =
+      await permissionInteractiveService.checkOrGrantGetAllKeyRingInfosPermission(
+        env,
+        origin
+      );
+    const keyInfos = returnAll
+      ? service.getKeyInfos()
+      : service.getKeyInfos().filter((k) => k.isSelected);
     const wallets: {
       id: string;
       name: string;

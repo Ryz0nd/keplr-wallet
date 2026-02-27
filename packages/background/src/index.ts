@@ -355,6 +355,7 @@ export function init(
     router,
     keyRingV2Service,
     permissionService,
+    permissionInteractiveService,
     chainsService,
     keyRingCosmosService,
     keyRingStarknetService
