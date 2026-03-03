@@ -1,15 +1,19 @@
 import {
   ChainGetter,
+  ObservableJsonRpcBatchQuery,
+  JsonRpcBatchRequest,
   QueryError,
   QueryResponse,
   QuerySharedContext,
 } from "@keplr-wallet/stores";
 import { CoinPretty, Dec, Int } from "@keplr-wallet/unit";
-import { computed, makeObservable, observable, runInAction } from "mobx";
 import {
-  ObservableStarknetChainJsonRpcQuery,
-  ObservableStarknetChainJsonRpcQueryMap,
-} from "../starknet-chain-json-rpc";
+  computed,
+  makeObservable,
+  observable,
+  reaction,
+  runInAction,
+} from "mobx";
 import { ObservableQueryValidators } from "./validators";
 import { CairoUint256, selector } from "starknet";
 import { ClaimableReward, UnpoolDelegation } from "./types";
@@ -17,189 +21,19 @@ import { computedFn } from "mobx-utils";
 import { ERC20Currency } from "@keplr-wallet/types";
 
 const MIN_REQUIRED_LENGTH = 6;
+const BATCH_CHUNK_SIZE = 10;
 
-export class ObservableQueryPoolMemberInfo extends ObservableStarknetChainJsonRpcQuery<
-  string[]
-> {
-  constructor(
-    sharedContext: QuerySharedContext,
-    chainId: string,
-    chainGetter: ChainGetter,
-    poolAddress: string,
-    starknetHexAddress: string
-  ) {
-    super(sharedContext, chainId, chainGetter, "starknet_call", {
-      request: {
-        contract_address: poolAddress,
-        calldata: [starknetHexAddress],
-        entry_point_selector: selector.getSelectorFromName(
-          "pool_member_info_v1"
-        ),
-      },
-    });
-
-    makeObservable(this);
-  }
-
-  protected override canFetch(): boolean {
-    if (this.chainId === "starknet:SN_SEPOLIA") {
-      return false;
-    }
-
-    return super.canFetch();
-  }
-
-  @computed
-  get stakedAmount(): CoinPretty | undefined {
-    const currency = this.stakingCurrency;
-    if (!currency) {
-      return;
-    }
-
-    if (!this.response || !this.response.data) {
-      return new CoinPretty(currency, new Int(0)).ready(false);
-    }
-
-    /**
-     * v1 Expected response data structure:
-     * [
-     *    rewardAddress: ContractAddress,
-     *    amount: u128,
-     *    index: u128,
-     *    unclaimedRewards: u128,
-     *    commission: u16,
-     *    unpoolAmount: u128,
-     *    hasUnpoolTime: 0x1 or 0x0, (0x1 if unpoolTime is not None)
-     *    unpoolTime (optional): hex unix timestamp if hasUnpoolTime is 0x1
-     * ]
-     *
-     * v2 Expected response data structure:
-     *    index is removed from the response data of v1
-     *    else, it's the same as v1
-     */
-
-    if (this.response.data.length < MIN_REQUIRED_LENGTH) {
-      return new CoinPretty(currency, new Int(0)).ready(false);
-    }
-
-    const stakedBalance = new CairoUint256({
-      low: this.response.data[1], // low 128 bits as amount is u128
-      high: 0,
-    });
-
-    return new CoinPretty(currency, new Int(stakedBalance.toBigInt()));
-  }
-
-  @computed
-  get unclaimedRewards(): CoinPretty | undefined {
-    const currency = this.stakingCurrency;
-    if (!currency) {
-      return;
-    }
-
-    if (!this.response || !this.response.data) {
-      return new CoinPretty(currency, new Int(0)).ready(false);
-    }
-
-    if (this.response.data.length < MIN_REQUIRED_LENGTH) {
-      return new CoinPretty(currency, new Int(0)).ready(false);
-    }
-
-    const unclaimedRewards = new CairoUint256({
-      low: this.response.data[2],
-      high: 0,
-    });
-
-    return new CoinPretty(currency, new Int(unclaimedRewards.toBigInt()));
-  }
-
-  @computed
-  get unpoolAmount(): CoinPretty | undefined {
-    const currency = this.stakingCurrency;
-    if (!currency) {
-      return;
-    }
-
-    if (!this.response || !this.response.data) {
-      return new CoinPretty(currency, new Int(0)).ready(false);
-    }
-
-    if (this.response.data.length < MIN_REQUIRED_LENGTH) {
-      return new CoinPretty(currency, new Int(0)).ready(false);
-    }
-
-    const unpoolAmount = new CairoUint256({
-      low: this.response.data[4],
-      high: 0,
-    });
-
-    return new CoinPretty(currency, new Int(unpoolAmount.toBigInt()));
-  }
-
-  @computed
-  get unpoolTime(): number | undefined {
-    const modularChainInfo = this.chainGetter.getModularChain(this.chainId);
-    if (!("starknet" in modularChainInfo)) {
-      return;
-    }
-
-    if (!this.response || !this.response.data) {
-      return;
-    }
-
-    if (this.response.data.length < MIN_REQUIRED_LENGTH) {
-      return;
-    }
-
-    if (this.response.data[5] === "0x0") {
-      return parseInt(this.response.data[6], 16);
-    }
-
-    return undefined;
-  }
-
-  @computed
-  get commission(): number | undefined {
-    const modularChainInfo = this.chainGetter.getModularChain(this.chainId);
-    if (!("starknet" in modularChainInfo)) {
-      return;
-    }
-
-    if (!this.response || !this.response.data) {
-      return;
-    }
-
-    if (this.response.data.length < MIN_REQUIRED_LENGTH) {
-      return;
-    }
-
-    return parseInt(this.response.data[3], 16) / 100;
-  }
-
-  private get stakingCurrency(): ERC20Currency | undefined {
-    const modularChainInfo = this.chainGetter.getModularChain(this.chainId);
-    if (!("starknet" in modularChainInfo)) {
-      return;
-    }
-
-    return modularChainInfo.starknet.currencies.find(
-      (c) =>
-        c.coinMinimalDenom ===
-        `erc20:${modularChainInfo.starknet.strkContractAddress}`
-    );
-  }
-}
-
-export class ObservableQueryStakingInfo extends ObservableStarknetChainJsonRpcQueryMap<
-  string[]
-> {
+export class ObservableQueryStakingInfo {
+  protected readonly chainId: string;
+  protected readonly chainGetter: ChainGetter;
+  protected readonly sharedContext: QuerySharedContext;
   protected starknetHexAddress: string;
 
-  // TODO: change to observableQueryDelegations
-  // the api is not fully implemented yet, so just use queryValidators for now
-  // although it's not efficient (there are 106 validators and it queries all of them)
   @observable.shallow
   protected queryValidators: ObservableQueryValidators;
+
+  @observable.ref
+  protected batchQueries: ObservableJsonRpcBatchQuery<string[]>[] = [];
 
   constructor(
     sharedContext: QuerySharedContext,
@@ -208,19 +42,102 @@ export class ObservableQueryStakingInfo extends ObservableStarknetChainJsonRpcQu
     starknetHexAddress: string,
     queryValidators: ObservableQueryValidators
   ) {
-    super(sharedContext, chainId, chainGetter, (poolAddress: string) => {
-      return new ObservableQueryPoolMemberInfo(
-        sharedContext,
-        chainId,
-        chainGetter,
-        poolAddress,
-        starknetHexAddress
-      );
-    });
-    makeObservable(this);
-
+    this.sharedContext = sharedContext;
+    this.chainId = chainId;
+    this.chainGetter = chainGetter;
     this.starknetHexAddress = starknetHexAddress;
     this.queryValidators = queryValidators;
+
+    makeObservable(this);
+
+    // When validator pool addresses change, rebuild batch queries
+    reaction(
+      () => {
+        if (this.chainId === "starknet:SN_SEPOLIA") {
+          return "";
+        }
+        return this.queryValidators.validators
+          .filter((v) => v.pool_address)
+          .map((v) => v.pool_address!)
+          .join(",");
+      },
+      (poolAddressesKey) => {
+        if (poolAddressesKey) {
+          this.buildBatchQueries();
+        }
+      },
+      { fireImmediately: true }
+    );
+  }
+
+  protected buildBatchQueries(): void {
+    if (this.chainId === "starknet:SN_SEPOLIA") {
+      return;
+    }
+
+    const rpcUrl = this.getRpcUrl();
+    if (!rpcUrl) {
+      return;
+    }
+
+    const validators = this.queryValidators.validators;
+    const poolAddresses = validators
+      .filter((v) => v.pool_address)
+      .map((v) => v.pool_address!);
+
+    if (poolAddresses.length === 0) {
+      return;
+    }
+
+    const entryPointSelector = selector.getSelectorFromName(
+      "pool_member_info_v1"
+    );
+    const chunks = chunkArray(poolAddresses, BATCH_CHUNK_SIZE);
+
+    runInAction(() => {
+      this.batchQueries = chunks.map((chunk) => {
+        const requests: JsonRpcBatchRequest[] = chunk.map((poolAddr) => ({
+          method: "starknet_call",
+          params: {
+            block_id: "latest",
+            request: {
+              contract_address: poolAddr,
+              calldata: [this.starknetHexAddress],
+              entry_point_selector: entryPointSelector,
+            },
+          },
+          id: poolAddr,
+        }));
+
+        return new ObservableJsonRpcBatchQuery<string[]>(
+          this.sharedContext,
+          rpcUrl,
+          "",
+          requests
+        );
+      });
+    });
+  }
+
+  protected getPoolData(poolAddress: string): string[] | undefined {
+    for (const batchQuery of this.batchQueries) {
+      if (!batchQuery.response?.data) {
+        continue;
+      }
+      const data = batchQuery.response.data[poolAddress];
+      if (data) {
+        return data;
+      }
+    }
+    return undefined;
+  }
+
+  protected getRpcUrl(): string {
+    const modularChainInfo = this.chainGetter.getModularChain(this.chainId);
+    if ("starknet" in modularChainInfo) {
+      return modularChainInfo.starknet.rpc;
+    }
+    return "";
   }
 
   // only use for refreshing staking info
@@ -229,21 +146,8 @@ export class ObservableQueryStakingInfo extends ObservableStarknetChainJsonRpcQu
   > {
     const response = await this.queryValidators.waitFreshResponse();
     if (response) {
-      await Promise.all(
-        this.queryValidators.validators.map((validator) => {
-          if (!validator.pool_address) {
-            return Promise.resolve(undefined);
-          }
-
-          const queryPoolMemberInfo = this.getQueryPoolAddress(
-            validator.pool_address
-          );
-          if (queryPoolMemberInfo) {
-            return queryPoolMemberInfo.waitFreshResponse();
-          }
-          return Promise.resolve(undefined);
-        })
-      );
+      // reaction has already rebuilt batchQueries by this point
+      await Promise.all(this.batchQueries.map((q) => q.waitFreshResponse()));
     }
 
     return undefined;
@@ -254,24 +158,7 @@ export class ObservableQueryStakingInfo extends ObservableStarknetChainJsonRpcQu
       return true;
     }
 
-    const validators = this.queryValidators.validators;
-    if (validators.length === 0) {
-      return false;
-    }
-
-    return (
-      validators.some((validator) => {
-        if (!validator.pool_address) {
-          return false;
-        }
-
-        const queryPoolMemberInfo = this.getQueryPoolAddress(
-          validator.pool_address
-        );
-
-        return queryPoolMemberInfo?.isFetching;
-      }) ?? false
-    );
+    return this.batchQueries.some((q) => q.isFetching);
   }
 
   get error(): QueryError<any> | undefined {
@@ -279,12 +166,8 @@ export class ObservableQueryStakingInfo extends ObservableStarknetChainJsonRpcQu
       return this.queryValidators.error;
     }
 
-    return undefined; // ignore error from queryPoolMemberInfo (not critical)
+    return undefined; // ignore error from batch queries (partial failure OK)
   }
-
-  getQueryPoolAddress = computedFn((poolAddress: string) => {
-    return this.get(poolAddress) as ObservableQueryPoolMemberInfo;
-  });
 
   @computed
   get totalStakedAmount(): CoinPretty | undefined {
@@ -302,20 +185,19 @@ export class ObservableQueryStakingInfo extends ObservableStarknetChainJsonRpcQu
         continue;
       }
 
-      const queryPoolMemberInfo = this.getQueryPoolAddress(
-        validator.pool_address
+      const data = this.getPoolData(validator.pool_address);
+      if (!data || data.length < MIN_REQUIRED_LENGTH) {
+        continue;
+      }
+
+      const stakedBalance = new CairoUint256({
+        low: data[1],
+        high: 0,
+      });
+
+      totalStakedAmount = totalStakedAmount.add(
+        new CoinPretty(stakingCurrency, new Int(stakedBalance.toBigInt()))
       );
-
-      if (!queryPoolMemberInfo) {
-        continue;
-      }
-
-      const stakedAmount = queryPoolMemberInfo.stakedAmount;
-      if (!stakedAmount) {
-        continue;
-      }
-
-      totalStakedAmount = totalStakedAmount.add(stakedAmount);
     }
 
     return totalStakedAmount;
@@ -337,20 +219,19 @@ export class ObservableQueryStakingInfo extends ObservableStarknetChainJsonRpcQu
         continue;
       }
 
-      const queryPoolMemberInfo = this.getQueryPoolAddress(
-        validator.pool_address
+      const data = this.getPoolData(validator.pool_address);
+      if (!data || data.length < MIN_REQUIRED_LENGTH) {
+        continue;
+      }
+
+      const unclaimedRewards = new CairoUint256({
+        low: data[2],
+        high: 0,
+      });
+
+      amount = amount.add(
+        new CoinPretty(stakingCurrency, new Int(unclaimedRewards.toBigInt()))
       );
-
-      if (!queryPoolMemberInfo) {
-        continue;
-      }
-
-      const unclaimedRewards = queryPoolMemberInfo.unclaimedRewards;
-      if (!unclaimedRewards) {
-        continue;
-      }
-
-      amount = amount.add(unclaimedRewards);
     }
 
     return amount;
@@ -381,28 +262,30 @@ export class ObservableQueryStakingInfo extends ObservableStarknetChainJsonRpcQu
         continue;
       }
 
-      const queryPoolMemberInfo = this.getQueryPoolAddress(
-        validator.pool_address
+      const data = this.getPoolData(validator.pool_address);
+      if (!data || data.length < MIN_REQUIRED_LENGTH) {
+        continue;
+      }
+
+      const unclaimedRewards = new CairoUint256({
+        low: data[2],
+        high: 0,
+      });
+
+      const rewardAmount = new CoinPretty(
+        stakingCurrency,
+        new Int(unclaimedRewards.toBigInt())
       );
 
-      if (!queryPoolMemberInfo) {
-        continue;
-      }
-
-      const unclaimedRewards = queryPoolMemberInfo.unclaimedRewards;
-      if (!unclaimedRewards) {
-        continue;
-      }
-
-      if (unclaimedRewards.toDec().gt(new Dec(0))) {
+      if (rewardAmount.toDec().gt(new Dec(0))) {
         claimableRewards.push({
           validatorAddress: validator.operational_address,
           poolAddress: validator.pool_address,
           rewardAddress: validator.reward_address,
-          amount: unclaimedRewards,
+          amount: rewardAmount,
         });
 
-        amount = amount.add(unclaimedRewards);
+        amount = amount.add(rewardAmount);
       }
     }
 
@@ -437,20 +320,26 @@ export class ObservableQueryStakingInfo extends ObservableStarknetChainJsonRpcQu
         continue;
       }
 
-      const queryPoolMemberInfo = this.getQueryPoolAddress(
-        validator.pool_address
-      );
-
-      if (!queryPoolMemberInfo) {
+      const data = this.getPoolData(validator.pool_address);
+      if (!data || data.length < MIN_REQUIRED_LENGTH) {
         continue;
       }
 
-      const unpoolTime = queryPoolMemberInfo.unpoolTime;
-      const unpoolAmount = queryPoolMemberInfo.unpoolAmount;
+      const hasUnpoolTime = data[5] !== "0x0";
+      const unpoolTime = hasUnpoolTime ? parseInt(data[6], 16) : undefined;
+
+      const unpoolAmountValue = new CairoUint256({
+        low: data[4],
+        high: 0,
+      });
+
+      const unpoolAmount = new CoinPretty(
+        stakingCurrency,
+        new Int(unpoolAmountValue.toBigInt())
+      );
 
       if (
         !unpoolTime ||
-        !unpoolAmount ||
         unpoolAmount.toDec().lte(new Dec(0)) ||
         unpoolTime < Date.now() / 1000
       ) {
@@ -551,4 +440,12 @@ export class StakingInfoManager {
     }
     return this.stakingInfoByStarknetHexAddress.get(starknetHexAddress)!;
   });
+}
+
+function chunkArray<T>(array: T[], chunkSize: number): T[][] {
+  const chunks: T[][] = [];
+  for (let i = 0; i < array.length; i += chunkSize) {
+    chunks.push(array.slice(i, i + chunkSize));
+  }
+  return chunks;
 }
