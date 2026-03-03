@@ -337,8 +337,6 @@ export const useSwapAnalytics = ({
     const durationMs = requestStartedAtRef.current
       ? performance.now() - requestStartedAtRef.current
       : undefined;
-    requestStartedAtRef.current = undefined;
-
     logEvent("swap_quote_received", {
       quote_id: quoteId,
       duration_ms: durationMs,
@@ -357,6 +355,7 @@ export const useSwapAnalytics = ({
       route_duration_estimate_sec: estimated_time,
       swap_venues: swapVenues,
     });
+    requestStartedAtRef.current = undefined;
     quoteIdRef.current = quoteId;
     prevRouteKeyRef.current = currentKey;
     // eslint-disable-next-line react-hooks/exhaustive-deps
