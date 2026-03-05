@@ -1,0 +1,108 @@
+name: Cherry-pick to develop-mobile
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [develop]
+
+jobs:
+  cherry-pick:
+    if: >
+      github.event.pull_request.merged == true &&
+      contains(github.event.pull_request.labels.*.name, 'mobile-sync')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Cherry-pick and create PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          PR_TITLE=$(gh pr view "$PR_NUMBER" --json title --jq '.title')
+          MERGE_SHA=${{ github.event.pull_request.merge_commit_sha }}
+          BRANCH_NAME="cherry-pick/pr-${PR_NUMBER}-to-mobile"
+
+          git checkout develop-mobile
+          git checkout -b "$BRANCH_NAME"
+
+          # Detect merge strategy: squash (1 parent) vs merge commit (2 parents)
+          PARENT_COUNT=$(git cat-file -p "$MERGE_SHA" | grep -c "^parent")
+
+          FAILED=0
+          if [ "$PARENT_COUNT" -eq 1 ]; then
+            # Squash merge: single commit, cherry-pick it directly
+            echo "Detected squash merge, cherry-picking $MERGE_SHA"
+            if ! git cherry-pick "$MERGE_SHA"; then
+              FAILED=1
+              git cherry-pick --abort
+            fi
+          else
+            # Merge commit: cherry-pick individual PR commits
+            echo "Detected merge commit, cherry-picking individual commits"
+            COMMITS=$(gh pr view "$PR_NUMBER" --json commits --jq '.commits[].oid')
+            for COMMIT in $COMMITS; do
+              echo "Cherry-picking $COMMIT"
+              if ! git cherry-pick "$COMMIT"; then
+                FAILED=1
+                git cherry-pick --abort
+                break
+              fi
+            done
+          fi
+
+          if [ "$FAILED" -eq 1 ]; then
+            echo "Cherry-pick had conflicts, creating issue for manual resolution"
+            gh issue create \
+              --title "Cherry-pick PR #${PR_NUMBER} to develop-mobile (conflicts)" \
+              --body "$(cat <<EOF
+          PR #${PR_NUMBER} (**${PR_TITLE}**) failed to cherry-pick automatically due to conflicts.
+
+          ### Manual steps
+          \`\`\`bash
+          git checkout develop-mobile && git pull
+          git checkout -b cherry-pick/pr-${PR_NUMBER}-to-mobile
+
+          # For squash merge:
+          git cherry-pick ${MERGE_SHA}
+
+          # For merge commit (individual commits):
+          $(gh pr view "$PR_NUMBER" --json commits --jq '.commits[].oid' | sed 's/^/git cherry-pick /')
+
+          # Resolve conflicts, then:
+          git push -u origin cherry-pick/pr-${PR_NUMBER}-to-mobile
+          gh pr create --base develop-mobile --head cherry-pick/pr-${PR_NUMBER}-to-mobile \\
+            --title "cherry-pick: ${PR_TITLE} (#${PR_NUMBER})" \\
+            --body "Manual cherry-pick of #${PR_NUMBER} to develop-mobile."
+          \`\`\`
+          EOF
+          )"
+            exit 0
+          fi
+
+          git push -u origin "$BRANCH_NAME"
+          gh pr create \
+            --base develop-mobile \
+            --head "$BRANCH_NAME" \
+            --title "cherry-pick: ${PR_TITLE} (#${PR_NUMBER})" \
+            --body "$(cat <<EOF
+          Automated cherry-pick of #${PR_NUMBER} to develop-mobile.
+
+          **Original PR:** #${PR_NUMBER}
+          **Merge strategy:** $([ "$PARENT_COUNT" -eq 1 ] && echo "squash" || echo "merge commit")
+          EOF
+          )"
+
+          echo "PR created successfully"
