@@ -1698,7 +1698,6 @@ class StarknetProvider implements IStarknetProvider {
       this.isConnected = false;
       this.selectedAddress = undefined;
       this.account = undefined;
-      this.provider = undefined;
       this.chainId = undefined;
       this._currentChainId = undefined;
 
