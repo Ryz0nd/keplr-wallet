@@ -1689,10 +1689,35 @@ class StarknetProvider implements IStarknetProvider {
       throw new Error("Invalid parameter: `type` must be a string");
     }
 
-    return await this._requestMethod<T>("request", {
+    const result = await this._requestMethod<T>("request", {
       type,
       params,
     });
+
+    if (type === "wallet_disconnect") {
+      this.isConnected = false;
+      this.selectedAddress = undefined;
+      this.account = undefined;
+      this.provider = undefined;
+      this.chainId = undefined;
+      this._currentChainId = undefined;
+
+      this.onStateChange({
+        selectedAddress: null,
+        chainId: null,
+        rpc: null,
+      });
+
+      this._userWalletEvents.forEach((userWalletEvent) => {
+        if (userWalletEvent.type === "accountsChanged") {
+          userWalletEvent.handler([]);
+        } else if (userWalletEvent.type === "networkChanged") {
+          userWalletEvent.handler(undefined as any);
+        }
+      });
+    }
+
+    return result;
   }
   async enable(_options?: {
     starknetVersion?: "v4" | "v5";
