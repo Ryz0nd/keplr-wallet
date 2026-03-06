@@ -14,9 +14,9 @@ export class ObservableQueryValidators extends ObservableQuery<StarknetValidator
     sharedContext: QuerySharedContext,
     chainId: string,
     chainGetter: ChainGetter,
-    satelliteBaseURL: string
+    keplrApiBaseURL: string
   ) {
-    super(sharedContext, satelliteBaseURL, "v1/starknet/validators");
+    super(sharedContext, keplrApiBaseURL, "v1/starknet/validators");
     makeObservable(this);
 
     this.chainId = chainId;

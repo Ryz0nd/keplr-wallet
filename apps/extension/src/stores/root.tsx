@@ -434,7 +434,7 @@ export class RootStore {
       this.queriesStore.sharedContext,
       this.chainStore,
       TokenContractListURL,
-      process.env["KEPLR_EXT_TX_HISTORY_BASE_URL"]
+      process.env["KEPLR_API_ENDPOINT"] ?? ""
     );
 
     this.bitcoinQueriesStore = new BitcoinQueriesStore(
