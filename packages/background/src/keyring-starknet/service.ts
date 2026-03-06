@@ -303,6 +303,24 @@ export class KeyRingStarknetService {
             (await this.getStarknetKeySelected(currentChainId)).hexAddress,
           ];
         }
+        case "wallet_disconnect": {
+          const permittedChainIds =
+            this.permissionService.getOriginPermittedChains(
+              origin,
+              getBasicAccessPermissionType()
+            );
+
+          for (const permittedChainId of permittedChainIds) {
+            if (permittedChainId.startsWith("starknet:")) {
+              this.permissionService.removeAllTypePermissionToChainId(
+                permittedChainId,
+                [origin]
+              );
+            }
+          }
+
+          return true;
+        }
         case "wallet_getPermissions": {
           const currentChainId = this.getCurrentChainId(origin, chainId);
           if (currentChainId == null) {
