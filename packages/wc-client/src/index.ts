@@ -345,7 +345,7 @@ export class KeplrWalletConnectV2 implements Keplr {
     throw new Error("Not yet implemented");
   }
 
-  getAllWallets(): Promise<
+  async getAllWallets(): Promise<
     {
       id: string;
       name: string;
@@ -353,11 +353,37 @@ export class KeplrWalletConnectV2 implements Keplr {
       addresses: { [chainId: string]: string };
     }[]
   > {
-    throw new Error("Not yet implemented");
+    this.checkDeepLink();
+
+    const topic = this.getCurrentTopic();
+    const param = {
+      topic,
+      chainId: this.getNamespaceChainId(),
+      request: {
+        method: "keplr_getAllWallets",
+        params: {},
+      },
+    };
+
+    return await this.sendCustomRequest(param);
   }
 
-  switchAccount(_id: string): Promise<void> {
-    throw new Error("Not yet implemented");
+  async switchAccount(id: string): Promise<void> {
+    this.checkDeepLink();
+
+    const topic = this.getCurrentTopic();
+    const param = {
+      topic,
+      chainId: this.getNamespaceChainId(),
+      request: {
+        method: "keplr_switchAccount",
+        params: {
+          id,
+        },
+      },
+    };
+
+    await this.sendCustomRequest<void>(param);
   }
 
   disable(_chainIds?: string | string[]): Promise<void> {
