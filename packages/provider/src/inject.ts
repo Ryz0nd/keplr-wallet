@@ -1409,10 +1409,12 @@ class EthereumProvider extends EventEmitter implements IEthereumProvider {
       });
 
       this._isConnected = false;
+      this._currentChainId = null;
       this.chainId = null;
       this.selectedAddress = null;
       this.networkVersion = null;
 
+      this.emit("accountsChanged", []);
       this.emit("disconnect");
     }
   };
@@ -1460,12 +1462,25 @@ class EthereumProvider extends EventEmitter implements IEthereumProvider {
       await this._initProviderState();
     }
 
-    return await this._requestMethod<T>("request", {
+    const result = await this._requestMethod<T>("request", {
       method,
       params,
       providerId: this.eip6963ProviderInfo?.uuid,
       chainId,
     });
+
+    // Clear provider state after revoking permissions to prevent
+    // phantom connections from keplr_keystorechange events
+    if (method === "wallet_revokePermissions") {
+      this._isConnected = false;
+      this._currentChainId = null;
+      this.chainId = null;
+      this.selectedAddress = null;
+      this.networkVersion = null;
+      this.emit("accountsChanged", []);
+    }
+
+    return result;
   };
 
   enable = async (): Promise<string[]> => {
