@@ -433,7 +433,8 @@ export class RootStore {
     this.starknetQueriesStore = new StarknetQueriesStore(
       this.queriesStore.sharedContext,
       this.chainStore,
-      TokenContractListURL
+      TokenContractListURL,
+      process.env["KEPLR_API_ENDPOINT"] ?? ""
     );
 
     this.bitcoinQueriesStore = new BitcoinQueriesStore(
