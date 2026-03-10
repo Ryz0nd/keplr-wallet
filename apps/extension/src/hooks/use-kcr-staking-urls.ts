@@ -8,7 +8,6 @@ const KCR_STAKING_CHAIN_IDENTIFIERS = new Set([
   "allora-mainnet",
   "archway",
   "carbon",
-  "milkyway",
   "ununifi-beta",
   "vota-ash",
   "xrplevm_1440000",
