@@ -164,7 +164,10 @@ export const getHandler: (
           keyRingStarknetService
         )(env, msg as GetAllWalletsMsg);
       case SwitchAccountMsg:
-        return handleSwitchAccountMsg(service)(env, msg as SwitchAccountMsg);
+        return handleSwitchAccountMsg(service, permissionService)(
+          env,
+          msg as SwitchAccountMsg
+        );
       default:
         throw new KeplrError("keyring", 221, "Unknown msg type");
     }
@@ -561,10 +564,29 @@ const handleGetAllWalletsMsg: (
 };
 
 const handleSwitchAccountMsg: (
-  service: KeyRingService
-) => InternalHandler<SwitchAccountMsg> = (service) => {
+  service: KeyRingService,
+  permissionService: PermissionService
+) => InternalHandler<SwitchAccountMsg> = (service, permissionService) => {
   return async (env, msg) => {
+    if (msg.id === service.selectedVaultId) {
+      return;
+    }
+
     await service.ensureUnlockInteractive(env);
+
+    if (
+      !permissionService.hasGlobalPermission(
+        "get-all-keyring-infos",
+        msg.origin
+      )
+    ) {
+      throw new KeplrError(
+        "keyring",
+        511,
+        "Permission denied. The requested account is not accessible from this origin."
+      );
+    }
+
     await service.switchAccountInteractive(env, msg.id, msg.origin);
   };
 };
