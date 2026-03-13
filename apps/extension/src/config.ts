@@ -2986,58 +2986,6 @@ export const EmbedChainInfos: (ChainInfo | ModularChainInfo)[] = [
     isTestnet: true,
   },
   {
-    rpc: "https://rpc-nillion.keplr.app",
-    rest: "https://lcd-nillion.keplr.app",
-    chainId: "nillion-1",
-    chainName: "Nillion",
-    chainSymbolImageUrl:
-      "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/nillion/nil.png",
-    stakeCurrency: {
-      coinDenom: "NIL",
-      coinMinimalDenom: "unil",
-      coinDecimals: 6,
-      coinGeckoId: "nillion",
-      coinImageUrl:
-        "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/nillion/nil.png",
-    },
-    bip44: {
-      coinType: 118,
-    },
-    bech32Config: {
-      bech32PrefixAccAddr: "nillion",
-      bech32PrefixAccPub: "nillionpub",
-      bech32PrefixValAddr: "nillionvaloper",
-      bech32PrefixValPub: "nillionvaloperpub",
-      bech32PrefixConsAddr: "nillionvalcons",
-      bech32PrefixConsPub: "nillionvalconspub",
-    },
-    currencies: [
-      {
-        coinDenom: "NIL",
-        coinMinimalDenom: "unil",
-        coinDecimals: 6,
-        coinGeckoId: "nillion",
-        coinImageUrl:
-          "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/nillion/nil.png",
-      },
-    ],
-    feeCurrencies: [
-      {
-        coinDenom: "NIL",
-        coinMinimalDenom: "unil",
-        coinDecimals: 6,
-        coinImageUrl:
-          "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/nillion/nil.png",
-        gasPriceStep: {
-          low: 0.001,
-          average: 0.001,
-          high: 0.01,
-        },
-      },
-    ],
-    features: [],
-  },
-  {
     chainId: "bbn-1",
     chainName: "Babylon Genesis",
     chainSymbolImageUrl:
@@ -3143,68 +3091,6 @@ export const EmbedChainInfos: (ChainInfo | ModularChainInfo)[] = [
       "eth-secp256k1-initia",
       "evm-ledger-sign-plain-json",
     ],
-  },
-  {
-    rpc: "https://rpc.mainnet.milkyway.zone",
-    rest: "https://lcd.mainnet.milkyway.zone",
-    chainId: "milkyway",
-    chainName: "MilkyWay",
-    chainSymbolImageUrl:
-      "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/milkyway/chain.png",
-    nodeProvider: {
-      name: "MilkyWay Labs",
-      email: "development@milkyway.zone",
-    },
-    stakeCurrency: {
-      coinDenom: "MILK",
-      coinMinimalDenom: "umilk",
-      coinDecimals: 6,
-      coinImageUrl:
-        "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/milkyway/umilk.png",
-    },
-    bip44: {
-      coinType: 118,
-    },
-    bech32Config: {
-      bech32PrefixAccAddr: "milk",
-      bech32PrefixAccPub: "milkpub",
-      bech32PrefixValAddr: "milkvaloper",
-      bech32PrefixValPub: "milkvaloperpub",
-      bech32PrefixConsAddr: "milkvalcons",
-      bech32PrefixConsPub: "milkvalconspub",
-    },
-    currencies: [
-      {
-        coinDenom: "MILK",
-        coinMinimalDenom: "umilk",
-        coinDecimals: 6,
-        coinImageUrl:
-          "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/milkyway/umilk.png",
-      },
-      {
-        coinDenom: "milkBABY",
-        coinMinimalDenom:
-          "factory/milk1qg5ega6dykkxc307y25pecuufrjkxkaggkkxh7nad0vhyhtuhw3ssgcye4/umilkBBN",
-        coinDecimals: 6,
-        coinImageUrl:
-          "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/milkyway/milkbaby.png",
-      },
-    ],
-    feeCurrencies: [
-      {
-        coinDenom: "MILK",
-        coinMinimalDenom: "umilk",
-        coinDecimals: 6,
-        coinImageUrl:
-          "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/milkyway/milk.png",
-        gasPriceStep: {
-          low: 0.01,
-          average: 0.015,
-          high: 0.02,
-        },
-      },
-    ],
-    features: ["cosmwasm"],
   },
   {
     rpc: "https://rpc-atomone.keplr.app",
