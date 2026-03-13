@@ -144,7 +144,6 @@ export const BitcoinSendPage: FunctionComponent = observer(() => {
   const bitcoinQueries = bitcoinQueriesStore.get(chainId);
 
   const sender = account.bitcoinAddress?.bech32Address ?? "";
-  const paymentType = account.bitcoinAddress?.paymentType;
   const balance = bitcoinQueries.queryBitcoinBalance.getBalance(
     chainId,
     chainStore,
@@ -167,7 +166,7 @@ export const BitcoinSendPage: FunctionComponent = observer(() => {
     allowUnfilteredOnApiError,
     setAllowUnfilteredOnApiError,
     setAvailableBalanceOnce,
-  } = useGetUTXOs(chainId, sender, paymentType === "taproot", true);
+  } = useGetUTXOs(chainId, sender);
 
   const sendConfigs = useSendTxConfig(
     chainStore,

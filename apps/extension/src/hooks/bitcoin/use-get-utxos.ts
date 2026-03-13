@@ -5,12 +5,7 @@ import { CoinPretty, Dec } from "@keplr-wallet/unit";
 import { deriveAvailableUtxoState } from "./unisat-available-utxos";
 import { useGetAvailableUtxos } from "./use-get-available-utxos";
 
-export const useGetUTXOs = (
-  chainId: string,
-  address: string,
-  inscriptionProtected: boolean,
-  runesProtected: boolean
-) => {
+export const useGetUTXOs = (chainId: string, address: string) => {
   const [allowUnfilteredOnApiError, setAllowUnfilteredOnApiError] =
     useState(false);
   const { chainStore, bitcoinQueriesStore } = useStore();
@@ -30,10 +25,7 @@ export const useGetUTXOs = (
     error: uniSatApiError,
     isFetching: isFetchingUniSat,
     shouldUseUniSat,
-  } = useGetAvailableUtxos(
-    chainId,
-    inscriptionProtected || runesProtected ? address : ""
-  );
+  } = useGetAvailableUtxos(chainId, address);
 
   const queryUTXOs = bitcoinQueriesStore
     .get(chainId)

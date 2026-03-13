@@ -53,7 +53,6 @@ import {
   ValidatedPsbt,
   usePsbtsValidate,
 } from "../../../../hooks/bitcoin/use-psbt-validate";
-import { useBitcoinNetworkConfig } from "../../../../hooks/bitcoin/use-bitcoin-network-config";
 import { EthTxBase } from "../../../sign/components/eth-tx/render/tx-base";
 import { ItemLogo } from "../../../main/token-detail/msg-items/logo";
 import { Stack } from "../../../../components/stack";
@@ -160,8 +159,6 @@ export const SignBitcoinTxView: FunctionComponent<{
   // 외부에서 Bitcoin send 요청이 들어온 경우
   const hasPsbtCandidate = "psbtCandidate" in interactionData.data;
 
-  const { currentPaymentType } = useBitcoinNetworkConfig(chainId);
-
   const bitcoinAccount = bitcoinAccountStore.getAccount(chainId);
 
   // simulate 함수 안에서 불러오지 않고 커스텀 훅으로 대체해서
@@ -173,12 +170,7 @@ export const SignBitcoinTxView: FunctionComponent<{
     apiError,
     allowUnfilteredOnApiError,
     setAllowUnfilteredOnApiError,
-  } = useGetUTXOs(
-    chainId,
-    senderConfig.sender,
-    hasPsbtCandidate && currentPaymentType === "taproot",
-    hasPsbtCandidate
-  );
+  } = useGetUTXOs(chainId, hasPsbtCandidate ? senderConfig.sender : "");
 
   // bitcoin tx size는 amount, fee rate, recipient address type에 따라 달라진다.
   // 키는 요청의 고유한 값들을 조합하여 이전에 캐시된 psbt를 잘못 불러오는 것을 방지해야 한다.
