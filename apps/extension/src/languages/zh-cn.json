@@ -698,6 +698,7 @@
   "components.input.amount-input.max-button": "最大",
   "components.input.amount-input.available-balance-label": "可用余额：{balance}",
   "components.input.amount-input.available-balance-tooltip": "已考虑待处理交易和协议限制后的实际可用金额",
+  "components.input.amount-input.available-balance-tooltip-without-protocol-filter": "已考虑待处理交易后的实际可用金额",
   "components.input.amount-input.available-balance-tooltip-unfiltered": "已考虑待处理交易后的实际可用金额。协议资产可能未过滤。",
   "components.input.memo-input.memo-label": "备注",
   "components.input.memo-input.optional-placeholder": "选填",

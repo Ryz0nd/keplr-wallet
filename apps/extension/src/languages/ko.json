@@ -749,6 +749,7 @@
   "components.input.amount-input.max-button": "최대",
   "components.input.amount-input.available-balance-label": "사용 가능한 자산: {balance}",
   "components.input.amount-input.available-balance-tooltip": "현재 진행 중인 거래와 프로토콜이 제한하는 금액을 제외하고 실제 사용 가능한 잔액입니다.",
+  "components.input.amount-input.available-balance-tooltip-without-protocol-filter": "현재 진행 중인 거래를 제외하고 실제 사용 가능한 잔액입니다.",
   "components.input.amount-input.available-balance-tooltip-unfiltered": "현재 진행 중인 거래를 제외하고 실제 사용 가능한 잔액입니다. 프로토콜 자산이 필터링되지 않았을 수 있습니다.",
   "components.input.memo-input.memo-label": "메모",
   "components.input.memo-input.optional-placeholder": "선택사항",

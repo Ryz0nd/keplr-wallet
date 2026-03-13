@@ -843,6 +843,7 @@
   "components.input.amount-input.max-button": "Max",
   "components.input.amount-input.available-balance-label": "Available: {balance}",
   "components.input.amount-input.available-balance-tooltip": "Amount you can use right now after accounting for pending transactions or any holds on your wallet by the protocol.",
+  "components.input.amount-input.available-balance-tooltip-without-protocol-filter": "Amount you can use right now after accounting for pending transactions.",
   "components.input.amount-input.available-balance-tooltip-unfiltered": "Amount you can use right now after accounting for pending transactions. Protocol assets may not be filtered.",
   "components.input.memo-input.memo-label": "Memo",
   "components.input.memo-input.optional-placeholder": "Optional",
