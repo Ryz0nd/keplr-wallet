@@ -574,6 +574,18 @@ const handleSwitchAccountMsg: (
 
     await service.ensureUnlockInteractive(env);
 
+    const permittedChains = permissionService.getOriginPermittedChains(
+      msg.origin,
+      getBasicAccessPermissionType()
+    );
+    if (permittedChains.length === 0) {
+      throw new KeplrError(
+        "keyring",
+        510,
+        "No permitted chains. Call enable() first."
+      );
+    }
+
     if (
       !permissionService.hasGlobalPermission(
         "get-all-keyring-infos",
