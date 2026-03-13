@@ -27,9 +27,12 @@ export const useGetUTXOs = (chainId: string, address: string) => {
     shouldUseUniSat,
   } = useGetAvailableUtxos(chainId, address);
 
-  const queryUTXOs = bitcoinQueriesStore
-    .get(chainId)
-    .queryBitcoinUTXOs.getUTXOs(chainId, chainStore, address);
+  const queryUTXOs =
+    address !== ""
+      ? bitcoinQueriesStore
+          .get(chainId)
+          .queryBitcoinUTXOs.getUTXOs(chainId, chainStore, address)
+      : undefined;
 
   const confirmedUTXOs = queryUTXOs?.confirmedUTXOs || [];
 
