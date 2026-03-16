@@ -470,7 +470,6 @@
   "page.history.title": "History",
 
   "page.switch-account.title": "Switch Wallet",
-  "page.switch-account.description": "Wants to switch to account: {name}",
   "page.switch-account.from": "From",
   "page.switch-account.to": "To",
 

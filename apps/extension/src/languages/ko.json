@@ -465,7 +465,6 @@
   "page.history.title": "활동내역",
 
   "page.switch-account.title": "지갑 전환",
-  "page.switch-account.description": "'{name}' 계정으로 전환을 요청합니다",
   "page.switch-account.from": "From",
   "page.switch-account.to": "To",
 

@@ -428,7 +428,6 @@
   "page.ibc-swap.components.swap-not-available-modal.paragraph": "当前无法兑换此代币。",
 
   "page.switch-account.title": "切换钱包",
-  "page.switch-account.description": "请求切换到账户：{name}",
   "page.switch-account.from": "From",
   "page.switch-account.to": "To",
 
