@@ -50,8 +50,10 @@ import {
   PushBitcoinTransactionMsg,
 } from "@keplr-wallet/background";
 import { IPsbtInput, RemainderStatus } from "@keplr-wallet/stores-bitcoin";
+import { Network } from "@keplr-wallet/types";
 import { BitcoinGuideBox } from "../components/guide-box";
 import { UnfilteredUtxoWarning } from "../components/unfiltered-utxo-warning";
+import { useBitcoinNetworkConfig } from "../../../hooks/bitcoin/use-bitcoin-network-config";
 
 const Styles = {
   Flex1: styled.div`
@@ -97,6 +99,7 @@ export const BitcoinSendPage: FunctionComponent = observer(() => {
       }
       return r;
     })();
+  const { currentNetwork } = useBitcoinNetworkConfig(chainId);
   const modularChainInfo = chainStore.getModularChain(chainId);
   if (!("bitcoin" in modularChainInfo)) {
     throw new Error(`${modularChainInfo.chainId} is not bitcoin chain`);
@@ -141,7 +144,6 @@ export const BitcoinSendPage: FunctionComponent = observer(() => {
   const bitcoinQueries = bitcoinQueriesStore.get(chainId);
 
   const sender = account.bitcoinAddress?.bech32Address ?? "";
-  const paymentType = account.bitcoinAddress?.paymentType;
   const balance = bitcoinQueries.queryBitcoinBalance.getBalance(
     chainId,
     chainStore,
@@ -164,7 +166,7 @@ export const BitcoinSendPage: FunctionComponent = observer(() => {
     allowUnfilteredOnApiError,
     setAllowUnfilteredOnApiError,
     setAvailableBalanceOnce,
-  } = useGetUTXOs(chainId, sender, paymentType === "taproot", true);
+  } = useGetUTXOs(chainId, sender);
 
   const sendConfigs = useSendTxConfig(
     chainStore,
@@ -604,6 +606,10 @@ export const BitcoinSendPage: FunctionComponent = observer(() => {
             )}
             isLoading={!!isFetchingAvailableUTXOs}
             isUnfiltered={isAvailableBalanceUnfiltered}
+            isProtocolFiltered={
+              currentNetwork === Network.MAINNET ||
+              currentNetwork === Network.LIVENET
+            }
           />
           <BitcoinGuideBox isUnableToGetUTXOs={isUnableToGetUTXOs} />
 

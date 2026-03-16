@@ -30,265 +30,279 @@ export const AmountInput: FunctionComponent<{
   availableBalance: CoinPretty | undefined;
   isLoading: boolean;
   isUnfiltered?: boolean;
-}> = observer(({ amountConfig, availableBalance, isLoading, isUnfiltered }) => {
-  if (amountConfig.amount.length !== 1) {
-    throw new Error(
-      `Amount input component only handles single amount: ${amountConfig.amount
-        .map((a) => a.toString())
-        .join(",")}`
-    );
-  }
-
-  const { priceStore } = useStore();
-  const theme = useTheme();
-  const intl = useIntl();
-
-  const price = (() => {
-    return priceStore.calculatePrice(amountConfig.amount[0]);
-  })();
-  const [priceValue, setPriceValue] = useState("");
-  const [isPriceBased, setIsPriceBased] = useState(false);
-
-  const inputRef = useRef<HTMLInputElement | null>(null);
-
-  useEffect(() => {
-    // it frustrating when scrolling inside a number input field unintentionally changes its value
-    // we should prevent default behavior of the wheel event
-    const handleWheel = (e: WheelEvent) => {
-      e.preventDefault();
-    };
-
-    if (inputRef.current) {
-      inputRef.current.addEventListener("wheel", handleWheel, {
-        passive: false,
-      });
+  isProtocolFiltered?: boolean;
+}> = observer(
+  ({
+    amountConfig,
+    availableBalance,
+    isLoading,
+    isUnfiltered,
+    isProtocolFiltered = true,
+  }) => {
+    if (amountConfig.amount.length !== 1) {
+      throw new Error(
+        `Amount input component only handles single amount: ${amountConfig.amount
+          .map((a) => a.toString())
+          .join(",")}`
+      );
     }
 
-    return () => {
+    const { priceStore } = useStore();
+    const theme = useTheme();
+    const intl = useIntl();
+
+    const price = (() => {
+      return priceStore.calculatePrice(amountConfig.amount[0]);
+    })();
+    const [priceValue, setPriceValue] = useState("");
+    const [isPriceBased, setIsPriceBased] = useState(false);
+
+    const inputRef = useRef<HTMLInputElement | null>(null);
+
+    useEffect(() => {
+      // it frustrating when scrolling inside a number input field unintentionally changes its value
+      // we should prevent default behavior of the wheel event
+      const handleWheel = (e: WheelEvent) => {
+        e.preventDefault();
+      };
+
       if (inputRef.current) {
-        inputRef.current.removeEventListener("wheel", handleWheel);
+        inputRef.current.addEventListener("wheel", handleWheel, {
+          passive: false,
+        });
       }
-    };
-  }, []);
 
-  // Price symbol의 collapsed transition을 기다리기 위해서 사용됨.
-  const [renderPriceSymbol, setRenderPriceSymbol] = useState(isPriceBased);
-  useEffect(() => {
-    if (isPriceBased) {
-      setRenderPriceSymbol(true);
-    }
-  }, [isPriceBased]);
+      return () => {
+        if (inputRef.current) {
+          inputRef.current.removeEventListener("wheel", handleWheel);
+        }
+      };
+    }, []);
 
-  return (
-    <TextInput
-      ref={inputRef}
-      label={intl.formatMessage({
-        id: "components.input.amount-input.amount-label",
-      })}
-      labelAlignment={<Gutter size="0.25rem" />}
-      rightLabel={
-        isLoading ? (
-          <Box alignY="center" marginBottom="0.375rem">
-            <LoadingIcon width="0.75rem" height="0.75rem" />
-          </Box>
-        ) : availableBalance ? (
-          <XAxis alignY="center">
-            <BaseTypography
-              color={
-                theme.mode === "light"
-                  ? ColorPalette["gray-400"]
-                  : ColorPalette["gray-200"]
-              }
-              style={{
-                fontWeight: 400,
-                fontSize: "0.75rem",
-                marginBottom: "0.375rem",
-              }}
-            >
-              <FormattedMessage
-                id="components.input.amount-input.available-balance-label"
-                values={{
-                  balance: availableBalance.toString(),
-                }}
-              />
-            </BaseTypography>
-            <Gutter size="0.25rem" />
-            <Tooltip
-              enabled={!!availableBalance}
-              content={
-                <FormattedMessage
-                  id={
-                    isUnfiltered
-                      ? "components.input.amount-input.available-balance-tooltip-unfiltered"
-                      : "components.input.amount-input.available-balance-tooltip"
-                  }
-                />
-              }
-              forceWidth="15.875rem"
-              hideArrow={true}
-              floatingOffset={-1}
-              allowedPlacements={["bottom"]}
-            >
-              <Box
-                width="1rem"
-                height="1rem"
-                cursor="pointer"
-                padding="0.0625rem"
+    // Price symbol의 collapsed transition을 기다리기 위해서 사용됨.
+    const [renderPriceSymbol, setRenderPriceSymbol] = useState(isPriceBased);
+    useEffect(() => {
+      if (isPriceBased) {
+        setRenderPriceSymbol(true);
+      }
+    }, [isPriceBased]);
+
+    return (
+      <TextInput
+        ref={inputRef}
+        label={intl.formatMessage({
+          id: "components.input.amount-input.amount-label",
+        })}
+        labelAlignment={<Gutter size="0.25rem" />}
+        rightLabel={
+          isLoading ? (
+            <Box alignY="center" marginBottom="0.375rem">
+              <LoadingIcon width="0.75rem" height="0.75rem" />
+            </Box>
+          ) : availableBalance ? (
+            <XAxis alignY="center">
+              <BaseTypography
+                color={
+                  theme.mode === "light"
+                    ? ColorPalette["gray-400"]
+                    : ColorPalette["gray-200"]
+                }
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
+                  fontWeight: 400,
+                  fontSize: "0.75rem",
                   marginBottom: "0.375rem",
                 }}
               >
-                <InformationPlainIcon
-                  color={
-                    theme.mode === "light"
-                      ? ColorPalette["gray-400"]
-                      : ColorPalette["gray-300"]
-                  }
+                <FormattedMessage
+                  id="components.input.amount-input.available-balance-label"
+                  values={{
+                    balance: availableBalance.toString(),
+                  }}
                 />
-              </Box>
-            </Tooltip>
-          </XAxis>
-        ) : null
-      }
-      type="number"
-      onKeyDown={(e) => {
-        if (["e", "E", "-", "+"].includes(e.key)) {
-          e.preventDefault();
+              </BaseTypography>
+              <Gutter size="0.25rem" />
+              <Tooltip
+                enabled={!!availableBalance}
+                content={
+                  <FormattedMessage
+                    id={
+                      isUnfiltered
+                        ? "components.input.amount-input.available-balance-tooltip-unfiltered"
+                        : isProtocolFiltered
+                        ? "components.input.amount-input.available-balance-tooltip"
+                        : "components.input.amount-input.available-balance-tooltip-without-protocol-filter"
+                    }
+                  />
+                }
+                forceWidth="15.875rem"
+                hideArrow={true}
+                floatingOffset={-1}
+                allowedPlacements={["bottom"]}
+              >
+                <Box
+                  width="1rem"
+                  height="1rem"
+                  cursor="pointer"
+                  padding="0.0625rem"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginBottom: "0.375rem",
+                  }}
+                >
+                  <InformationPlainIcon
+                    color={
+                      theme.mode === "light"
+                        ? ColorPalette["gray-400"]
+                        : ColorPalette["gray-300"]
+                    }
+                  />
+                </Box>
+              </Tooltip>
+            </XAxis>
+          ) : null
         }
-      }}
-      value={(() => {
-        if (isPriceBased) {
-          if (amountConfig.fraction != 0) {
-            return price?.toDec().toString(price?.options.maxDecimals);
+        type="number"
+        onKeyDown={(e) => {
+          if (["e", "E", "-", "+"].includes(e.key)) {
+            e.preventDefault();
           }
-          return priceValue;
-        } else {
-          return amountConfig.value;
-        }
-      })()}
-      onChange={(e) => {
-        e.preventDefault();
+        }}
+        value={(() => {
+          if (isPriceBased) {
+            if (amountConfig.fraction != 0) {
+              return price?.toDec().toString(price?.options.maxDecimals);
+            }
+            return priceValue;
+          } else {
+            return amountConfig.value;
+          }
+        })()}
+        onChange={(e) => {
+          e.preventDefault();
 
-        if (isPriceBased) {
-          if (price) {
-            let value = e.target.value;
-            if (value.startsWith(".")) {
-              value = "0" + value;
-            }
-            if (value.trim().length === 0) {
-              amountConfig.setValue("");
-              setPriceValue(value);
-              return;
-            }
-            if (/^\d+(\.\d+)*$/.test(value)) {
-              let dec: Dec;
-              try {
-                dec = new Dec(value);
-              } catch (e) {
-                console.log(e);
-                return;
+          if (isPriceBased) {
+            if (price) {
+              let value = e.target.value;
+              if (value.startsWith(".")) {
+                value = "0" + value;
               }
-              if (dec.lte(new Dec(0))) {
+              if (value.trim().length === 0) {
+                amountConfig.setValue("");
                 setPriceValue(value);
                 return;
               }
+              if (/^\d+(\.\d+)*$/.test(value)) {
+                let dec: Dec;
+                try {
+                  dec = new Dec(value);
+                } catch (e) {
+                  console.log(e);
+                  return;
+                }
+                if (dec.lte(new Dec(0))) {
+                  setPriceValue(value);
+                  return;
+                }
 
-              const onePrice = priceStore.calculatePrice(
-                new CoinPretty(
-                  amountConfig.amount[0].currency,
-                  DecUtils.getTenExponentN(
+                const onePrice = priceStore.calculatePrice(
+                  new CoinPretty(
+                    amountConfig.amount[0].currency,
+                    DecUtils.getTenExponentN(
+                      amountConfig.amount[0].currency.coinDecimals
+                    )
+                  )
+                );
+
+                if (!onePrice) {
+                  // Can't be happen
+                  return;
+                }
+                const onePriceDec = onePrice.toDec();
+                const expectedAmount = dec.quo(onePriceDec);
+
+                setPriceValue(value);
+                amountConfig.setValue(
+                  expectedAmount.toString(
                     amountConfig.amount[0].currency.coinDecimals
                   )
-                )
-              );
-
-              if (!onePrice) {
-                // Can't be happen
-                return;
+                );
               }
-              const onePriceDec = onePrice.toDec();
-              const expectedAmount = dec.quo(onePriceDec);
-
-              setPriceValue(value);
-              amountConfig.setValue(
-                expectedAmount.toString(
-                  amountConfig.amount[0].currency.coinDecimals
-                )
-              );
             }
+          } else {
+            amountConfig.setValue(e.target.value);
           }
-        } else {
-          amountConfig.setValue(e.target.value);
-        }
-      }}
-      left={
-        renderPriceSymbol ? (
-          <PriceSymbol
-            show={isPriceBased}
-            onTransitionEnd={() => {
-              if (!isPriceBased) {
-                setRenderPriceSymbol(false);
-              }
-            }}
-          />
-        ) : null
-      }
-      right={<MaxButton amountConfig={amountConfig} />}
-      bottom={
-        price ? (
-          <BottomPriceButton
-            text={(() => {
-              if (isPriceBased) {
-                return amountConfig.amount[0]
-                  .trim(true)
-                  .maxDecimals(6)
-                  .inequalitySymbol(true)
-                  .shrink(true)
-                  .toString();
-              } else {
-                return price.toString();
-              }
-            })()}
-            onClick={() => {
-              if (!isPriceBased) {
-                if (price.toDec().lte(new Dec(0))) {
-                  setPriceValue("");
-                } else {
-                  setPriceValue(
-                    price.toDec().toString(price.options.maxDecimals).toString()
-                  );
+        }}
+        left={
+          renderPriceSymbol ? (
+            <PriceSymbol
+              show={isPriceBased}
+              onTransitionEnd={() => {
+                if (!isPriceBased) {
+                  setRenderPriceSymbol(false);
                 }
-              }
-              setIsPriceBased(!isPriceBased);
-
-              inputRef.current?.focus();
-            }}
-          />
-        ) : null
-      }
-      error={(() => {
-        const uiProperties = amountConfig.uiProperties;
-
-        const err = uiProperties.error || uiProperties.warning;
-
-        if (err instanceof EmptyAmountError) {
-          return;
+              }}
+            />
+          ) : null
         }
+        right={<MaxButton amountConfig={amountConfig} />}
+        bottom={
+          price ? (
+            <BottomPriceButton
+              text={(() => {
+                if (isPriceBased) {
+                  return amountConfig.amount[0]
+                    .trim(true)
+                    .maxDecimals(6)
+                    .inequalitySymbol(true)
+                    .shrink(true)
+                    .toString();
+                } else {
+                  return price.toString();
+                }
+              })()}
+              onClick={() => {
+                if (!isPriceBased) {
+                  if (price.toDec().lte(new Dec(0))) {
+                    setPriceValue("");
+                  } else {
+                    setPriceValue(
+                      price
+                        .toDec()
+                        .toString(price.options.maxDecimals)
+                        .toString()
+                    );
+                  }
+                }
+                setIsPriceBased(!isPriceBased);
 
-        if (err instanceof ZeroAmountError) {
-          return;
+                inputRef.current?.focus();
+              }}
+            />
+          ) : null
         }
+        error={(() => {
+          const uiProperties = amountConfig.uiProperties;
 
-        if (err) {
-          return err.message || err.toString();
-        }
-      })()}
-    />
-  );
-});
+          const err = uiProperties.error || uiProperties.warning;
+
+          if (err instanceof EmptyAmountError) {
+            return;
+          }
+
+          if (err instanceof ZeroAmountError) {
+            return;
+          }
+
+          if (err) {
+            return err.message || err.toString();
+          }
+        })()}
+      />
+    );
+  }
+);
 
 const PriceSymbol: FunctionComponent<{
   show: boolean;
