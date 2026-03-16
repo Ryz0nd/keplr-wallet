@@ -1,6 +1,6 @@
 {
   "name": "@keplr-wallet/stores-internal",
-  "version": "0.13.12",
+  "version": "0.13.13",
   "main": "build/index.js",
   "author": "chainapsis",
   "license": "Apache-2.0",
@@ -15,12 +15,12 @@
     "typecheck": "npx tsc -p tsconfig.check.json"
   },
   "dependencies": {
-    "@keplr-wallet/common": "0.13.12",
-    "@keplr-wallet/cosmos": "0.13.12",
-    "@keplr-wallet/simple-fetch": "0.13.12",
-    "@keplr-wallet/stores": "0.13.12",
-    "@keplr-wallet/types": "0.13.12",
-    "@keplr-wallet/unit": "0.13.12",
+    "@keplr-wallet/common": "0.13.13",
+    "@keplr-wallet/cosmos": "0.13.13",
+    "@keplr-wallet/simple-fetch": "0.13.13",
+    "@keplr-wallet/stores": "0.13.13",
+    "@keplr-wallet/types": "0.13.13",
+    "@keplr-wallet/unit": "0.13.13",
     "joi": "^17.5.0",
     "lodash.chunk": "^4.2.0",
     "utility-types": "^3.10.0"
