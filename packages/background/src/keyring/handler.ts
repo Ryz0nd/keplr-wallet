@@ -31,11 +31,31 @@ import {
   ShowSensitiveLegacyKeyRingDataMsg,
   ExportKeyRingVaultsMsg,
   SearchKeyRingsMsg,
+  GetAllWalletsMsg,
+  SwitchAccountMsg,
 } from "./messages";
 import { KeyRingService } from "./service";
+import { PermissionService } from "../permission/service";
+import { getBasicAccessPermissionType } from "../permission/types";
+import { ChainsService } from "../chains/service";
+import type { KeyRingCosmosService } from "../keyring-cosmos/service";
+import type { KeyRingStarknetService } from "../keyring-starknet/service";
+import type { PermissionInteractiveService } from "../permission-interactive/service";
 
-export const getHandler: (service: KeyRingService) => Handler = (
-  service: KeyRingService
+export const getHandler: (
+  service: KeyRingService,
+  permissionService: PermissionService,
+  permissionInteractiveService: PermissionInteractiveService,
+  chainsService: ChainsService,
+  keyRingCosmosService: KeyRingCosmosService,
+  keyRingStarknetService: KeyRingStarknetService
+) => Handler = (
+  service,
+  permissionService,
+  permissionInteractiveService,
+  chainsService,
+  keyRingCosmosService,
+  keyRingStarknetService
 ) => {
   return (env: Env, msg: Message<unknown>) => {
     switch (msg.constructor) {
@@ -134,6 +154,20 @@ export const getHandler: (service: KeyRingService) => Handler = (
         );
       case SearchKeyRingsMsg:
         return handleSearchKeyRingsMsg(service)(env, msg as SearchKeyRingsMsg);
+      case GetAllWalletsMsg:
+        return handleGetAllWalletsMsg(
+          service,
+          permissionService,
+          permissionInteractiveService,
+          chainsService,
+          keyRingCosmosService,
+          keyRingStarknetService
+        )(env, msg as GetAllWalletsMsg);
+      case SwitchAccountMsg:
+        return handleSwitchAccountMsg(service, permissionService)(
+          env,
+          msg as SwitchAccountMsg
+        );
       default:
         throw new KeplrError("keyring", 221, "Unknown msg type");
     }
@@ -433,5 +467,138 @@ const handleSearchKeyRingsMsg: (
 ) => InternalHandler<SearchKeyRingsMsg> = (service) => {
   return (_, msg) => {
     return service.searchKeyRings(msg.searchText);
+  };
+};
+
+const handleGetAllWalletsMsg: (
+  service: KeyRingService,
+  permissionService: PermissionService,
+  permissionInteractiveService: PermissionInteractiveService,
+  chainsService: ChainsService,
+  keyRingCosmosService: KeyRingCosmosService,
+  keyRingStarknetService: KeyRingStarknetService
+) => InternalHandler<GetAllWalletsMsg> = (
+  service,
+  permissionService,
+  permissionInteractiveService,
+  chainsService,
+  keyRingCosmosService,
+  keyRingStarknetService
+) => {
+  return async (env, msg) => {
+    const origin = msg.origin;
+    const permittedChains = permissionService.getOriginPermittedChains(
+      origin,
+      getBasicAccessPermissionType()
+    );
+
+    if (permittedChains.length === 0) {
+      throw new KeplrError(
+        "keyring",
+        510,
+        "No permitted chains. Call enable() first."
+      );
+    }
+
+    const returnAll =
+      await permissionInteractiveService.checkOrGrantGetAllKeyRingInfosPermission(
+        env,
+        origin
+      );
+    const keyInfos = returnAll
+      ? service.getKeyInfos()
+      : service.getKeyInfos().filter((k) => k.isSelected);
+    const wallets: {
+      id: string;
+      name: string;
+      isSelected: boolean;
+      addresses: { [chainId: string]: string };
+    }[] = [];
+
+    for (const keyInfo of keyInfos) {
+      const addresses: { [chainId: string]: string } = {};
+
+      for (const chainIdentifier of permittedChains) {
+        try {
+          const modularChainInfo =
+            chainsService.getModularChainInfoOrThrow(chainIdentifier);
+
+          if ("cosmos" in modularChainInfo) {
+            const key = await keyRingCosmosService.getKey(
+              keyInfo.id,
+              modularChainInfo.chainId
+            );
+            const chainInfo = modularChainInfo.cosmos;
+            const isEthermintLike = KeyRingService.isEthermintLike(chainInfo);
+            const evmInfo = ChainsService.getEVMInfo(chainInfo);
+
+            if (isEthermintLike || evmInfo !== undefined) {
+              addresses[modularChainInfo.chainId] = key.ethereumHexAddress;
+            } else {
+              addresses[modularChainInfo.chainId] = key.bech32Address;
+            }
+          } else if ("starknet" in modularChainInfo) {
+            const starknetKey = await keyRingStarknetService.getStarknetKey(
+              keyInfo.id,
+              modularChainInfo.chainId
+            );
+            addresses[modularChainInfo.chainId] = starknetKey.hexAddress;
+          }
+          // Bitcoin: skip (out of scope)
+        } catch (e) {
+          console.log(e);
+          continue;
+        }
+      }
+
+      wallets.push({
+        id: keyInfo.id,
+        name: keyInfo.name,
+        isSelected: keyInfo.isSelected,
+        addresses,
+      });
+    }
+
+    return wallets;
+  };
+};
+
+const handleSwitchAccountMsg: (
+  service: KeyRingService,
+  permissionService: PermissionService
+) => InternalHandler<SwitchAccountMsg> = (service, permissionService) => {
+  return async (env, msg) => {
+    if (msg.id === service.selectedVaultId) {
+      return;
+    }
+
+    await service.ensureUnlockInteractive(env);
+
+    const permittedChains = permissionService.getOriginPermittedChains(
+      msg.origin,
+      getBasicAccessPermissionType()
+    );
+    if (permittedChains.length === 0) {
+      throw new KeplrError(
+        "keyring",
+        510,
+        "No permitted chains. Call enable() first."
+      );
+    }
+
+    if (
+      !permissionService.hasGlobalPermission(
+        "get-all-keyring-infos",
+        msg.origin
+      )
+    ) {
+      throw new KeplrError(
+        "keyring",
+        511,
+        "Permission denied. The requested account is not accessible from this origin."
+      );
+    }
+
+    await service.switchAccountInteractive(env, msg.id, msg.origin);
   };
 };

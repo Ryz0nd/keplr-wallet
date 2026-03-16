@@ -781,3 +781,64 @@ export class SearchKeyRingsMsg extends Message<KeyInfo[]> {
     return SearchKeyRingsMsg.type();
   }
 }
+
+export class GetAllWalletsMsg extends Message<
+  {
+    id: string;
+    name: string;
+    isSelected: boolean;
+    addresses: { [chainId: string]: string };
+  }[]
+> {
+  public static type() {
+    return "get-all-wallets";
+  }
+
+  constructor() {
+    super();
+  }
+
+  validateBasic(): void {
+    // noop
+  }
+
+  override approveExternal(): boolean {
+    return true;
+  }
+
+  route(): string {
+    return ROUTE;
+  }
+
+  type(): string {
+    return GetAllWalletsMsg.type();
+  }
+}
+
+export class SwitchAccountMsg extends Message<void> {
+  public static type() {
+    return "switch-account";
+  }
+
+  constructor(public readonly id: string) {
+    super();
+  }
+
+  validateBasic(): void {
+    if (!this.id) {
+      throw new Error("id not set");
+    }
+  }
+
+  override approveExternal(): boolean {
+    return true;
+  }
+
+  route(): string {
+    return ROUTE;
+  }
+
+  type(): string {
+    return SwitchAccountMsg.type();
+  }
+}

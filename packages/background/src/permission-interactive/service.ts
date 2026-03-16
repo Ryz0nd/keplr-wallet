@@ -240,4 +240,43 @@ export class PermissionInteractiveService {
       origin
     );
   }
+
+  async checkOrGrantGetAllKeyRingInfosPermission(
+    env: Env,
+    origin: string
+  ): Promise<boolean> {
+    await this.keyRingService.ensureUnlockInteractive(env);
+
+    if (
+      this.permissionService.hasGlobalPermission(
+        "get-all-keyring-infos",
+        origin
+      )
+    ) {
+      return true;
+    }
+
+    if (
+      this.permissionService.hasGlobalPermission(
+        "get-current-keyring-info",
+        origin
+      )
+    ) {
+      return false;
+    }
+
+    try {
+      await this.permissionService.checkOrGrantGlobalPermission(
+        env,
+        "get-all-keyring-infos",
+        origin
+      );
+      return true;
+    } catch {
+      this.permissionService.addGlobalPermission("get-current-keyring-info", [
+        origin,
+      ]);
+      return false;
+    }
+  }
 }

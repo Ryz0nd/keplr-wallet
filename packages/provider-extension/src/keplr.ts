@@ -620,6 +620,21 @@ export class Keplr implements IKeplr {
     ]);
   }
 
+  async getAllWallets(): Promise<
+    {
+      id: string;
+      name: string;
+      isSelected: boolean;
+      addresses: { [chainId: string]: string };
+    }[]
+  > {
+    return await this.requestMethod("getAllWallets", []);
+  }
+
+  async switchAccount(id: string): Promise<void> {
+    await this.requestMethod("switchAccount", [id]);
+  }
+
   async sendEthereumTx(chainId: string, tx: Uint8Array): Promise<string> {
     return await this.requestMethod("sendEthereumTx", [chainId, tx]);
   }

@@ -1000,6 +1000,57 @@ export class Keplr implements IKeplr, KeplrCoreTypes {
     });
   }
 
+  async getAllWallets(): Promise<
+    {
+      id: string;
+      name: string;
+      isSelected: boolean;
+      addresses: { [chainId: string]: string };
+    }[]
+  > {
+    return new Promise((resolve, reject) => {
+      let f = false;
+      sendSimpleMessage(
+        this.requester,
+        BACKGROUND_PORT,
+        "keyring-v2",
+        "get-all-wallets",
+        {}
+      )
+        .then(resolve)
+        .catch(reject)
+        .finally(() => (f = true));
+
+      setTimeout(() => {
+        if (!f) {
+          this.protectedTryOpenSidePanelIfEnabled();
+        }
+      }, 300);
+    });
+  }
+
+  async switchAccount(id: string): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      let f = false;
+      sendSimpleMessage(
+        this.requester,
+        BACKGROUND_PORT,
+        "keyring-v2",
+        "switch-account",
+        { id }
+      )
+        .then(resolve)
+        .catch(reject)
+        .finally(() => (f = true));
+
+      setTimeout(() => {
+        if (!f) {
+          this.protectedTryOpenSidePanelIfEnabled();
+        }
+      }, 300);
+    });
+  }
+
   async __core__privilageSignAminoWithdrawRewards(
     chainId: string,
     signer: string,
@@ -1433,7 +1484,7 @@ export class Keplr implements IKeplr, KeplrCoreTypes {
                     transform: translateY(0%) translateX(0);
                   }
                 }
-                    
+
                 @keyframes tada {
                   0% {
                     transform: scale3d(1, 1, 1);
@@ -1451,7 +1502,7 @@ export class Keplr implements IKeplr, KeplrCoreTypes {
                     transform: scale3d(1, 1, 1);
                   }
                 }
-                  
+
             `;
 
               const isLightMode =

@@ -1067,6 +1067,37 @@ export class KeyRingService {
     );
   }
 
+  async switchAccountInteractive(
+    env: Env,
+    vaultId: string,
+    origin: string
+  ): Promise<void> {
+    if (this.vaultService.isLocked) {
+      throw new Error("KeyRing is locked");
+    }
+
+    const vault = this.vaultService.getVault("keyRing", vaultId);
+    if (!vault) {
+      throw new Error("Vault is null");
+    }
+
+    const targetName = this.getKeyRingName(vaultId);
+
+    await this.interactionService.waitApproveV2(
+      env,
+      "/switch-account",
+      "switch-account",
+      {
+        vaultId,
+        name: targetName,
+        origin,
+      },
+      () => {
+        this.selectKeyRing(vaultId);
+      }
+    );
+  }
+
   async deleteKeyRing(vaultId: string, password: string) {
     if (this.vaultService.isLocked) {
       throw new Error("KeyRing is locked");

@@ -345,6 +345,47 @@ export class KeplrWalletConnectV2 implements Keplr {
     throw new Error("Not yet implemented");
   }
 
+  async getAllWallets(): Promise<
+    {
+      id: string;
+      name: string;
+      isSelected: boolean;
+      addresses: { [chainId: string]: string };
+    }[]
+  > {
+    this.checkDeepLink();
+
+    const topic = this.getCurrentTopic();
+    const param = {
+      topic,
+      chainId: this.getNamespaceChainId(),
+      request: {
+        method: "keplr_getAllWallets",
+        params: {},
+      },
+    };
+
+    return await this.sendCustomRequest(param);
+  }
+
+  async switchAccount(id: string): Promise<void> {
+    this.checkDeepLink();
+
+    const topic = this.getCurrentTopic();
+    const param = {
+      topic,
+      chainId: this.getNamespaceChainId(),
+      request: {
+        method: "keplr_switchAccount",
+        params: {
+          id,
+        },
+      },
+    };
+
+    await this.sendCustomRequest<void>(param);
+  }
+
   disable(_chainIds?: string | string[]): Promise<void> {
     throw new Error("Not yet implemented");
   }
