@@ -51,6 +51,10 @@ export interface ChainInfo {
   readonly evm?: EVMInfo;
 
   readonly isTestnet?: boolean;
+
+  readonly explorers?: {
+    readonly txPage: string;
+  };
 }
 
 export type ChainInfoWithoutEndpoints = Omit<

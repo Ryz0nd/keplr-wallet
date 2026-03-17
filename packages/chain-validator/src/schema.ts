@@ -281,6 +281,9 @@ export const ChainInfoSchema = Joi.object<ChainInfo>({
   chainSymbolImageUrl: Joi.string().uri(),
   hideInUI: Joi.boolean(),
   isTestnet: Joi.boolean(),
+  explorers: Joi.object({
+    txPage: Joi.string().required(),
+  }),
 }).custom((value: ChainInfo) => {
   const chainIdentifier1 = ChainIdHelper.parse(value.chainId);
   if (chainIdentifier1.version !== 0) {
